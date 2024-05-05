@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>💡 edit with focus</title>
+    <meta name="color-scheme" content="light dark" />
+    <meta name="viewport" content="width=device-width">
+</head>
+
+<body>
+    <form method="GET">
+        <focus-editor readonly>
+            <pre>
+# FocusEditor as WebComponent
+
+Use the FocusEditor as webcomponent via `&lt;focus-editor&gt;&lt;/focus-editor&gt;`.
+</pre>
+        </focus-editor>
+        <input type="email" placeholder="Your E-Mail">
+        <br><br>
+        <focus-editor placeholder="Write something…"></focus-editor>
+        <button type="submit">Say hello 👋</button>
+
+    </form>
+
+
+    <link rel="stylesheet" href="./font.css" />
+    <script type="module" src="webcomponent.js"></script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+            font-size: 14px;
+        }
+
+        body,
+        input,
+        button {
+            font-family: "iA Writer Duo", monospace;
+            letter-spacing: -0.2px;
+
+        }
+
+        form {
+            max-width: 50rem;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        form>* {
+            margin: 1rem 0;
+        }
+
+        input {
+            border: 2px solid rgba(0, 0, 0, 0.5);
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2px;
+        }
+
+
+
+        focus-editor {
+            --font-family: "iA Writer Duo", monospace;
+
+            .editor {
+                height: 30rem;
+                overflow-y: auto;
+                scroll-behavior: smooth;
+                &:has(textarea) {
+                    overflow: initial;
+                    
+                }
+                textarea {
+                    padding: 0.5rem 0.75rem;
+                    width: calc(100% - 1.5rem);
+                    height: calc(100% - 1rem);
+                    resize: none;
+                }
+            }
+
+            
+        }
+
+        focus-editor[readonly] {
+            height: inherit;
+
+            .editor {
+                background: none;
+                height: inherit;
+                overflow: inherit;
+
+                >div.content-editable-holder {
+                    margin: 0 auto;
+                    min-height: inherit;
+                }
+            }
+        }
+    </style>
+</body>
+
+</html>
