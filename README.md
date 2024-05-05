@@ -5,29 +5,34 @@ An editor which helps you to focus on just writing.
 [See it here in action (you need S3 credentials!)](http://www.bucketnotes.app)
 
 https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1c670e3adde0
+  
+## Features
 
-Features:
+  * minimalistic interface
+  * auto-save
+  * dark mode
+  * different fixed-size fonts
+  * supports a bit of markdown syntax
+  * writes and reads text files from any s3 bucket
+  * supports versioning (if s3 versioning is enabled)
+  * built-in OCR (via tesseract+wasm)
+  * html and pdf to markdown import
+  * progressive web app (means: you can do offline writing)
+  * requires no extra service than the s3 bucket
+  * open source
 
-* minimalistic interface
-* auto-save
-* dark mode
-* different font types
-* supports a bit of markdown syntax
-* writes and reads text files from any s3 bucket
-* supports versioning (if s3 versioning is enabled)
-* built-in OCR (via tesseract+wasm)
-* html and pdf to markdown import
-* progressive web app (means: you can do offline writing)
-* requires no extra service than the s3 bucket
-* open source
+## Setup S3 Bucket in AWS
 
-If you like the concept, give it a try :)
+You can setup a s3 bucket via [aws cloudformation](https://aws.amazon.com/cloudformation/) by uploading the yaml-file below.
 
-## Setup AWS S3 Bucket
+The example has:
 
-You can easily setup a s3 bucket via cloudformation.
+  * versioning enabled
+  * permissive CORS settings
+  * R+W+D permissions
+  * creates a programmatic user access (api access-token with secret)
 
-This example has versioning enabled, permissive CORS settings, R+W+D permissions and includes an api-access-token. Change `BucketName.Default` to your preferred name:
+Change `BucketName.Default` to your preferred bucket name:
 
 ```yaml
 Parameters:
@@ -89,13 +94,15 @@ Outputs:
     Value: !Ref S3User
 ```
 
-You should also be able to use other S3 providers (not tested, but endpoint URL is exhangable in the login).
+## Non-AWS providers
+
+You should also be able to use other S3-compatible-providers (not tested, but endpoint URL is exhangable in the login).
 
 Always ensure, that you have correct (permissive) CORE policies in your S3 bucket, otherwise the direct client-side S3 api calls from the browser will not work.
 
 ## Costs
 
-Depending on your S3 provider, file sizes and overall usage (reading + writing). But I guess it's very hard to come close to the 1 USD per month as single user.
+Depends on your S3 provider, file sizes and overall usage/traffic. But I guess it's very hard to come close to the 1 USD per month as a single user…
 
 ## Build
 
