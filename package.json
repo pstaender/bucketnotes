@@ -9,7 +9,6 @@
     "@dnd-kit/core": "^6.1.0",
     "@sentry/react": "^7.109.0",
     "@vitejs/plugin-react": "^4.2.1",
-    "focuseditor": "file:../focuseditor",
     "idb": "^8.0.0",
     "moment": "^2.30.1",
     "moments": "^0.0.2",
