@@ -2,7 +2,11 @@
 
 An editor which helps you to focus on just writing.
 
-[See it here in action (you need S3 credentials!)](http://www.bucketnotes.app)
+[See it here in action (you need S3 credentials)](http://www.bucketnotes.app)
+
+```
+⚠️ The software/developer is not responsible to possible damage on editing files in your s3 bucket ⚠️
+```  
 
 https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1c670e3adde0
   
@@ -21,18 +25,23 @@ https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1
   * requires no extra service than the s3 bucket
   * open source
 
+## Server requirements
+
+You can host the dist folder (see below how to build) as static files with any webserver. Of couse you need also a S3 bucket. 
+
 ## Setup S3 Bucket in AWS
 
-You can setup a s3 bucket via [aws cloudformation](https://aws.amazon.com/cloudformation/) by uploading the yaml-file below.
+You can setup a S3 bucket via [aws cloudformation](https://aws.amazon.com/cloudformation/) by simply uploading the yaml-file below.
 
-The example has:
+The example cloudformation-file does:
 
-  * versioning enabled
-  * permissive CORS settings
-  * R+W+D permissions
-  * creates a programmatic user access (api access-token with secret)
+  * creates a S3 bucket with
+    * versioning enabled
+    * permissive CORS settings
+    * R+W+D permissions
+  * creates a programmatic user access (api access-token with secret), the credentials will be shown in the `Outputs` tab. 
 
-Change `BucketName.Default` to your preferred bucket name:
+Change ``mybucketnotes` to your preferred bucket name:
 
 ```yaml
 Parameters:
@@ -96,15 +105,17 @@ Outputs:
 
 ## Non-AWS providers
 
-You should also be able to use other S3-compatible-providers (not tested, but endpoint URL is exhangable in the login).
+You can use other S3-compatible-providers (not tested, but endpoint URL is exchangable at the login).
 
-Always ensure, that you have correct (permissive) CORE policies in your S3 bucket, otherwise the direct client-side S3 api calls from the browser will not work.
+Always ensure, that you have correct/permissive CORE policies in your S3 bucket, otherwise the direct client-side S3 api calls from the browser will not work.
 
 ## Costs
 
-Depends on your S3 provider, file sizes and overall usage/traffic. But I guess it's very hard to come close to the 1 USD per month as a single user…
+Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess it's very hard to reach the 1 USD per month as a single user…
 
 ## Build
+
+Clone the repo, ensure Node v18+ is available, then:
 
 ```sh
 $ yarn install
@@ -114,6 +125,5 @@ $ yarn build
 ## Development
 
 ```sh
-$ yarn install
 $ yarn start
 ```

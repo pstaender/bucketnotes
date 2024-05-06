@@ -15,7 +15,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { EditorWrapper } from "./EditorWrapper.jsx";
 import { useLongPress } from "use-long-press";
 
-import { helpText } from "./helpText.js";
 import * as s3 from "./s3.js";
 import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
@@ -912,10 +911,7 @@ export function App({ version, appName } = {}) {
         return;
       }
 
-      if (location.pathname === "/help") {
-        setInitialText(helpText);
-        setReadonly(true);
-      } else if (localStorage.getItem("new-unsaved-text")) {
+      if (localStorage.getItem("new-unsaved-text")) {
         setText(localStorage.getItem("new-unsaved-text"));
       }
     })();
@@ -996,7 +992,7 @@ export function App({ version, appName } = {}) {
                 {isPossiblyOffline && <span>Offline</span>}
               </span>
               <span className="github">
-                <a href="https://github.com/pstaender" target="_blank">
+                <a href="https://github.com/pstaender/bucketnotes" target="_blank">
                   <img src={githubIcon} />
                 </a>
               </span>
