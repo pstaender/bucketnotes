@@ -205,7 +205,8 @@ export async function renameFile(oldKeyName, newKeyName) {
   // Copy object with new key name
   const copyParams = {
     Bucket: bucketName,
-    CopySource: `${bucketName}/${oldKeyName}`,
+    // encodedURIComponent is necessary to handle special characters in the key name (see https://github.com/aws/aws-sdk-js-v3/issues/1896)
+    CopySource: encodeURIComponent(`${bucketName}/${oldKeyName}`),
     Key: newKeyName
   };
   const copyCommand = new CopyObjectCommand(copyParams);

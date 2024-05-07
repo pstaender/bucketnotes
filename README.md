@@ -1,8 +1,8 @@
 # Welcome to Bucketnotes 👋
 
-An editor which helps you to focus on just writing.
+An editor which helps you to focus on just writing. Use your own S3 bucket for cheap, private and fast storage.
 
-[See it here in action (you need S3 credentials)](http://www.bucketnotes.app)
+[Live Demo (you need S3 credentials)](http://www.bucketnotes.app)
 
 ```
 ⚠️ The software/developer is not responsible to possible damage on editing files in your s3 bucket ⚠️
@@ -15,6 +15,7 @@ https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1
   * minimalistic interface
   * auto-save
   * dark mode
+  * responsive (works on desktop, mobile and tablet)
   * different fixed-size fonts
   * supports a bit of markdown syntax
   * writes and reads text files from any s3 bucket

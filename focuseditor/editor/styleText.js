@@ -424,7 +424,6 @@ export function styleLinks(div, { showPictureOnImageHover = false } = {}) {
     div.innerHTML = div.innerHTML.replace(
       markdownLinkPattern,
       (match, previousChar, title, url) => {
-        console.log({match})
         let cssClasses = ["link"];
         if (previousChar === ">" || previousChar === "\\") {
           return match;

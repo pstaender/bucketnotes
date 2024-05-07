@@ -6,7 +6,6 @@ import "./App.scss";
 import { S3Client } from "@aws-sdk/client-s3";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Login } from "./Login.jsx";
-import slugify from "slugify";
 import { useDebouncedCallback } from "use-debounce";
 import * as Sentry from "@sentry/browser";
 
@@ -32,7 +31,6 @@ function slugifyPath(s) {
     .split("/")
     .map((s) => {
       return s.replace(/\s/g, "_").replace(/[^\w\._\-\p{Letter}]/gu, "");
-      //return slugify(s, "_").replace(/^\.+/, "").replace(/\.+$/, "");
     })
     .join("/");
 }
@@ -120,7 +118,6 @@ export function App({ version, appName } = {}) {
   );
 
   const longPressOnFile = useLongPress((ev, arg) => {
-    // alert('Long pressed!');
     let fileKey = arg.context;
     if (fileKey) {
       renameFile(fileKey);
@@ -211,9 +208,7 @@ export function App({ version, appName } = {}) {
   }
 
   async function loadFile(key) {
-    console.log({key})
     let fileFromDatabase = (await db.loadFileFromDatabase(key)) || null;
-    console.log({key})
 
     let content = fileFromDatabase?.content || "";
     let error = null;
@@ -469,11 +464,10 @@ export function App({ version, appName } = {}) {
     updateStatusText(`Renaming '${fileKey}' to '${newFileName}'`);
     setReadonly(true);
 
-    let fileName = null;
-
     try {
       setS3Error(null);
       ({ fileName } = await s3.renameFile(fileKey, newFileName));
+
       await db.saveFileToDatabase(newFileName, {
         content: text,
         bucketName,
@@ -493,7 +487,6 @@ export function App({ version, appName } = {}) {
 
     try {
       await loadS3Files();
-      // await loadFile(newFileName);
       setReadonly(false);
     } catch (_) {}
     navigate(newFileName);
@@ -858,7 +851,6 @@ export function App({ version, appName } = {}) {
             // otherwise the Y scroll position is sometimes a bit off
             setTimeout(() => window.scrollTo(null, 0), 100);
           } catch (err) {
-
             console.error(err);
             updateStatusText(
               `Couldn't load '${filename}' (${err.name || err.message})`
@@ -992,7 +984,10 @@ export function App({ version, appName } = {}) {
                 {isPossiblyOffline && <span>Offline</span>}
               </span>
               <span className="github">
-                <a href="https://github.com/pstaender/bucketnotes" target="_blank">
+                <a
+                  href="https://github.com/pstaender/bucketnotes"
+                  target="_blank"
+                >
                   <img src={githubIcon} />
                 </a>
               </span>
