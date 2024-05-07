@@ -4,9 +4,7 @@ An editor which helps you to focus on just writing. Use your own S3 bucket for c
 
 [Live Demo (you need S3 credentials)](http://www.bucketnotes.app)
 
-```
-⚠️ The software/developer is not responsible to possible damage on editing files in your s3 bucket ⚠️
-```  
+⚠️ **The software / developer is not responsible to possible damage on editing files in your S3 bucket** ⚠️
 
 https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1c670e3adde0
   
