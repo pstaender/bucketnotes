@@ -106,7 +106,7 @@ Outputs:
 
 You can use other S3-compatible-providers (not tested, but endpoint URL is exchangable at the login).
 
-Always ensure, that you have correct/permissive CORE policies in your S3 bucket, otherwise the direct client-side S3 api calls from the browser will not work.
+Always ensure, that you have correct/permissive CORS policies in your S3 bucket, otherwise the direct client-side S3 api calls from the browser will not work.
 
 ## Costs
 
