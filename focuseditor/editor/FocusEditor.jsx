@@ -27,6 +27,8 @@ import {
   elementToAppearOrDisappear
 } from "./helper";
 
+import TurndownService from "turndown";
+
 let defaultKeyboardShortcuts = {
   focus: "Period"
 };
@@ -87,6 +89,7 @@ export function FocusEditor({
   const [isProcessing, setIsProcessing] = useState(true);
   const [maxContentLengthReached, setMaxContentLengthReached] = useState(false);
   const [metaOrAltKeyPressed, setMetaOrAltKeyPressed] = useState(false);
+  const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
   const [guessNextListItemLine, setGuessNextListItemLine] = useState(
     !!guessNextLinePrefixOnEnter
   );
@@ -553,6 +556,7 @@ export function FocusEditor({
       return;
     }
     setMetaOrAltKeyPressed(ev.metaKey || ev.altKey);
+    setShiftKeyPressed(ev.shiftKey);
     if (readOnly) {
       return;
     }
@@ -1296,9 +1300,28 @@ export function FocusEditor({
     const clipboardData = ev.clipboardData || window.clipboardData;
 
     let plainText = clipboardData.getData("text");
+    let htmlText = clipboardData.getData("text/html");
 
     if (typeof onPaste === "function") {
-      plainText = onPaste(ev, { clipboardData });
+      ({ plainText } = onPaste(ev, { clipboardData }));
+    } else if (!shiftKeyPressed && htmlText) {
+      // convert html to markdown
+      // shiftkey mimics behaviour of chrome, when hitting shift+ctrl+v insert plain text
+      ev.preventDefault();
+      let turndownService = new TurndownService({
+        headingStyle: "atx",
+        codeBlockStyle: "fenced",
+        hr: "---"
+      });
+      try {
+        plainText = turndownService.turndown(
+          htmlText
+        );
+        
+      } catch (e) {
+        console.error(e);
+      }
+      forcePlainText = true;
     } else if (maxTextLength > 0 && plainText.length > maxTextLength) {
       ev.preventDefault();
       plainText =
