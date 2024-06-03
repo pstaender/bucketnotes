@@ -8,7 +8,12 @@ import topLevelAwait from "vite-plugin-top-level-await";
 export default defineConfig({
   build: {
     target: "esnext",
-    sourcemap: "inline"
+    sourcemap: "inline",
+    rollupOptions: {
+      output: {
+        manualChunks: { tesseract: ['tesseract-wasm'], pdfjs: ['pdfjs-dist']}
+      }
+    }
   },
   css: {
     devSourcemap: true,

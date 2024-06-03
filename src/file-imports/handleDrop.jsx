@@ -3,7 +3,8 @@ import { OCRImage, tesseractLanguageCodes } from "./ocr";
 import TurndownService from "turndown";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-  document.getElementById("pdfjs-worker-url");
+  document.getElementById("pdfjs-worker-url")?.src ||
+  document.querySelector(`link[href^="/assets/pdfjs"]`).href;
 
 export function handleDrop(
   ev,
@@ -21,7 +22,7 @@ export function handleDrop(
       ev.target.closest(".content-holder")?.querySelector(".cursor-inside") ||
       ev.target.closest(".content-holder")?.querySelector(".active");
     if (active) {
-      active.innerText = (active.innerText + '\n' + newText).trim();
+      active.innerText = (active.innerText + "\n" + newText).trim();
     } else {
       console.warn("No active element found, appending text");
       setInitialText((text += "\n" + newText));
@@ -64,7 +65,10 @@ export function handleDrop(
           try {
             await OCRImage(
               {
-                workerURL: document.getElementById("tesseract-worker-url").src,
+                workerURL:
+                  document.getElementById("tesseract-worker-url")?.src ||
+                  document.querySelector(`link[href^="/assets/tesseract"]`)
+                    .href,
                 file,
                 lang
               },

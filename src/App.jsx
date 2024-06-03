@@ -298,7 +298,6 @@ export function App({ version, appName } = {}) {
 
   async function handleClickOnHistory(ev, fileKey) {
     handleClickOnFile(ev, fileKey);
-    console.log(fileVersions);
     if (fileVersions?.length > 0 && fileVersions[0].Key === fileKey) {
       setFileVersions([]);
       return;
