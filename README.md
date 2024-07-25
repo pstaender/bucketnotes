@@ -40,14 +40,14 @@ The example cloudformation-file does:
     * R+W+D permissions
   * creates a programmatic user access (api access-token with secret), the credentials will be shown in the `Outputs` tab. 
 
-Change ``mybucketnotes` to your preferred bucket name:
+Change `my-example-bucket` to your preferred bucket name:
 
 ```yaml
 Parameters:
   BucketName:
     Type: String
     Description: Name of the S3 bucket
-    Default: mybucketnotes
+    Default: my-example-bucket
 Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
