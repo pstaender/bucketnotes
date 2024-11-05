@@ -229,6 +229,8 @@ focus-editor {
                 margin-bottom: 1rem;
                 --text-indent: -1.3em;
                 text-indent: var(--text-indent);
+                border-radius: var(--border-radius);
+
                 @media screen and (min-width: 55rem) {
                     padding-left: 1.3em;
                     padding-right: 1.2em;
@@ -238,7 +240,6 @@ focus-editor {
                     padding-left: 1.2em;
                     padding-right: 1.2em;
                 }
-                border-radius: var(--border-radius);
                 & + .pre-indent {
                     border-radius: 0;
                 }
