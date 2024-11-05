@@ -11,7 +11,7 @@ export default defineConfig({
     sourcemap: "inline",
     rollupOptions: {
       output: {
-        manualChunks: { tesseract: ['tesseract-wasm'], pdfjs: ['pdfjs-dist']}
+        manualChunks: { pdfjs: ['pdfjs-dist']}
       }
     }
   },

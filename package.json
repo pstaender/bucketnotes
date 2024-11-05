@@ -45,7 +45,7 @@
   "scripts": {
     "preview": "VITE_APP_VERSION=$(echo $npm_package_version) vite preview",
     "build": "VITE_APP_VERSION=$(echo $npm_package_version) vite build && cp -v public/* dist/",
-    "start": "VITE_APP_VERSION=$(echo $npm_package_version) vite",
+    "develop": "VITE_APP_VERSION=$(echo $npm_package_version) vite",
     "serve": "PORT=4433 npx serve dist"
   }
 }
