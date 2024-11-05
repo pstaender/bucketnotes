@@ -1,6 +1,4 @@
 import moreIcon from "./icons/more.svg";
-import githubIcon from "./icons/github.svg";
-import closeIcon from "./icons/close.svg";
 import "./App.scss";
 
 import { S3Client } from "@aws-sdk/client-s3";
@@ -320,6 +318,18 @@ export function App({ version, appName } = {}) {
     }
   }
 
+  function toggleFullScreen() {
+    if (document.fullscreenElement) {
+        document
+          .exitFullscreen()
+          .then(() => console.debug("Document exited from full screen mode"))
+          .catch((err) => console.error(err));
+      } else {
+      console.debug("Document entered full screen mode");
+        document.documentElement.requestFullscreen();
+      }
+  }
+
   const handleBeforePrint = useCallback((ev) => {
     setRenderAllContent(true);
   });
@@ -376,6 +386,11 @@ export function App({ version, appName } = {}) {
       if (ev.key === "g") {
         ev.preventDefault();
         displayGoToParagraphDialog();
+        return;
+      }
+      if (ev.key === "f" && ev.shiftKey) {
+        ev.preventDefault();
+        toggleFullScreen();
         return;
       }
     }
@@ -974,26 +989,6 @@ export function App({ version, appName } = {}) {
       {s3Client && !loginErrorMessage && (
         <>
           <div className="side">
-            <div className="header">
-              <span className="name" onClick={() => navigate("/")}>
-                {appName || "bucketnotes"}
-              </span>
-              <span className="version" style={{ display: "none" }}>
-                v{version}
-                {isPossiblyOffline && <span>Offline</span>}
-              </span>
-              <span className="github">
-                <a
-                  href="https://github.com/pstaender/bucketnotes"
-                  target="_blank"
-                >
-                  <img src={githubIcon} />
-                </a>
-              </span>
-              <span className="close" onClick={() => setShowSideBar(false)}>
-                <img src={closeIcon} />
-              </span>
-            </div>
             <div className="files">
               {folders !== null && files !== null && (
                 <FileList
@@ -1092,12 +1087,6 @@ export function App({ version, appName } = {}) {
                     New with specific name
                   </li>
                   <li
-                    className="border-top border-bottom"
-                    onClick={(ev) => navigate("help")}
-                  >
-                    Help
-                  </li>
-                  <li
                     onClick={() => {
                       if (colorScheme === "dark") {
                         setColorScheme("light");
@@ -1187,6 +1176,9 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li onClick={displayGoToParagraphDialog}>
                     Jump to paragraph <span className="shortcut">⌘ + G</span>
+                  </li>
+                  <li onClick={toggleFullScreen} className={document.fullscreenElement ? "active" : null}>
+                    Fullscreen <span className="shortcut">⌘ + Shift + F</span>
                   </li>
                   <li>
                     <div>
