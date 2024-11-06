@@ -2,3 +2,4 @@
 /dist
 /yarn.lock
 /public/tesseract-data/
+/public/tesseract-worker.js
