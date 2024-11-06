@@ -9,6 +9,8 @@ export default defineConfig({
   build: {
     target: "esnext",
     sourcemap: "inline",
+    cssMinify: false,
+		minify: false,
     rollupOptions: {
       output: {
         manualChunks: { tesseract: ['tesseract-wasm'], pdfjs: ['pdfjs-dist']}

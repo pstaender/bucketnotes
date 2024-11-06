@@ -28,6 +28,8 @@ focus-editor {
     --link-color: var(--dark-grey-color);
     @include css-colors;
 
+    color: var(--text-color);
+
     @media screen and (prefers-color-scheme: dark) {
         @include css-colors-dark;
     }
@@ -41,8 +43,6 @@ focus-editor {
         }
     }
 
-    color: var(--text-color);
-
     &.hide-placeholder {
         .editor > div.content-editable-holder:before {
             display: none;
@@ -52,11 +52,7 @@ focus-editor {
     .editor {
         position: relative;
         margin: 0 auto;
-
-        // *::selection {
-        //     color: var(--background-color);
-        //     background-color: var(--primary-color);
-        // }
+        font-family: var(--font-family);
 
         > textarea {
             border: 0px;
@@ -110,8 +106,6 @@ focus-editor {
             }
             // caret-color: #aaa;
         }
-
-        font-family: var(--font-family);
 
         &.indent-headings .content-holder {
             > .heading {
