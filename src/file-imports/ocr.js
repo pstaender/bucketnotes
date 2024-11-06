@@ -8,12 +8,9 @@ export async function OCRImage({ workerURL, file, lang }, cb) {
   const ocr = new OCRClient({
     workerURL
   });
-  /**
-  Sources: `https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/${lang}.traineddata`
-  */
   try {
     const image = await createImageBitmap(file);
-    const modelUrl = import.meta.env.DEV ? `https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/${lang}.traineddata` : `tesseract-data/${lang}.traineddata`;
+    const modelUrl = `https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/${lang}.traineddata`;
     console.debug(`Using model from url: ${modelUrl}`);
     await ocr.loadModel(modelUrl);
     await ocr.loadImage(image);
