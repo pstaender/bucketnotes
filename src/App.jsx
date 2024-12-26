@@ -46,14 +46,14 @@ export function App({ version, appName } = {}) {
   const [statusText, setStatusText] = useState("");
   const [statusUpdatedAt, setStatusUpdatedAt] = useState(null);
   const [showSideBar, setShowSideBar] = useState(
-    localStorage.getItem("hideSideBar") !== "true"
+    localStorage.getItem("hideSideBar") !== "true",
   );
   const [bucketName, setBucketName] = useState("");
   const [text, setText] = useState("");
   const [s3Client, setS3Client] = useState(null);
   const [loginErrorMessage, setLoginErrorMessage] = useState("");
   const [autoSave, setAutoSave] = useState(
-    localStorage.getItem("autoSave") !== "false"
+    localStorage.getItem("autoSave") !== "false",
   );
   const [lastSavedText, setLastSavedText] = useState(null);
   const [lastEditedFile, setLastEditedFile] = useState(null);
@@ -63,25 +63,25 @@ export function App({ version, appName } = {}) {
   const [errorMessage, setErrorMessage] = useState(null);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [focusMode, setFocusMode] = useState(
-    sessionStorage.getItem("focusMode") === "true"
+    sessionStorage.getItem("focusMode") === "true",
   );
   const [scrollWindowToCenterCaret, setScrollWindowToCenterCaret] = useState(
     isTouch()
       ? false
-      : localStorage.getItem("scrollWindowToCenterCaret") !== "false"
+      : localStorage.getItem("scrollWindowToCenterCaret") !== "false",
   );
   const [createSmartNewLineContent, setCreateSmartNewLineContent] = useState(
-    localStorage.getItem("createSmartNewLineContent") !== "false"
+    localStorage.getItem("createSmartNewLineContent") !== "false",
   );
   const [colorScheme, setColorScheme] = useState(
-    localStorage.getItem("color-scheme")
+    localStorage.getItem("color-scheme"),
   );
   const [fontFamily, setFontFamily] = useState(
-    localStorage.getItem("font-family")
+    localStorage.getItem("font-family"),
   );
   const [fontSize, setFontSize] = useState(null);
   const [showNumberOfParagraphs, setShowNumberOfParagraphs] = useState(
-    sessionStorage.getItem("showNumberOfParagraphs") === "true"
+    sessionStorage.getItem("showNumberOfParagraphs") === "true",
   );
   const [initialCaretPosition, setInitialCaretPosition] = useState(null);
   const [initialParagraphNumber, setInitialParagraphNumber] = useState(null);
@@ -108,11 +108,11 @@ export function App({ version, appName } = {}) {
       }
       console.debug("Auto-save via debounce");
       saveFile(filename, text, { autoSave: true }).catch((e) =>
-        console.error(e)
+        console.error(e),
       );
     },
     // delay in ms
-    5000
+    5000,
   );
 
   const longPressOnFile = useLongPress((ev, arg) => {
@@ -128,7 +128,7 @@ export function App({ version, appName } = {}) {
         .toISOString()
         .replace(/\.\d.+$/, "")
         .replace(/(\d)T(\d)/, "$1-$2")
-        .replace(/\:/g, "-")}.txt`
+        .replace(/\:/g, "-")}.txt`,
     );
   }
 
@@ -176,7 +176,7 @@ export function App({ version, appName } = {}) {
 
     let props = {
       Prefix: prefix,
-      Delimiter: delimiter
+      Delimiter: delimiter,
     };
     let files = [];
     let commonPrefixes = [];
@@ -221,14 +221,14 @@ export function App({ version, appName } = {}) {
       db.saveFileToDatabase(key, {
         content,
         bucketName,
-        fileSavedToS3: true
+        fileSavedToS3: true,
       });
     } catch (err) {
       setS3Error(err);
       db.saveFileToDatabase(key, {
         content,
         bucketName,
-        fileSavedToS3: false
+        fileSavedToS3: false,
       });
     }
     updateStatusText(`Loaded '${key}' with ${content.length} characters`);
@@ -253,7 +253,7 @@ export function App({ version, appName } = {}) {
     } catch (e) {
       if (e.message.includes("contains files")) {
         alert(
-          "The folder still contains files. Press shift and click delete to force deleting all files in the folder."
+          "The folder still contains files. Press shift and click delete to force deleting all files in the folder.",
         );
         return;
       } else {
@@ -320,14 +320,14 @@ export function App({ version, appName } = {}) {
 
   function toggleFullScreen() {
     if (document.fullscreenElement) {
-        document
-          .exitFullscreen()
-          .then(() => console.debug("Document exited from full screen mode"))
-          .catch((err) => console.error(err));
-      } else {
+      document
+        .exitFullscreen()
+        .then(() => console.debug("Document exited from full screen mode"))
+        .catch((err) => console.error(err));
+    } else {
       console.debug("Document entered full screen mode");
-        document.documentElement.requestFullscreen();
-      }
+      document.documentElement.requestFullscreen();
+    }
   }
 
   const handleBeforePrint = useCallback((ev) => {
@@ -414,7 +414,7 @@ export function App({ version, appName } = {}) {
         db.saveFileToDatabase(key, {
           content,
           bucketName,
-          fileSavedToS3
+          fileSavedToS3,
         });
       }
       return;
@@ -448,7 +448,7 @@ export function App({ version, appName } = {}) {
         await db.saveFileToDatabase(fileKey, {
           content: text,
           bucketName,
-          fileSavedToS3: false
+          fileSavedToS3: false,
         });
       }
     }, 1);
@@ -485,14 +485,14 @@ export function App({ version, appName } = {}) {
       await db.saveFileToDatabase(newFileName, {
         content: text,
         bucketName,
-        fileSavedToS3: true
+        fileSavedToS3: true,
       });
     } catch (err) {
       setS3Error(err);
       await db.saveFileToDatabase(newFileName, {
         content: text,
         bucketName,
-        fileSavedToS3: false
+        fileSavedToS3: false,
       });
     }
     await db.deleteFileFromDatabase(fileKey);
@@ -546,7 +546,7 @@ export function App({ version, appName } = {}) {
     text,
     activeElementIndex,
     event,
-    caretPosition
+    caretPosition,
   }) {
     if (text !== undefined) {
       setText(text);
@@ -679,7 +679,7 @@ export function App({ version, appName } = {}) {
     sessionStorage.setItem("showNumberOfParagraphs", !!showNumberOfParagraphs);
     localStorage.setItem(
       "createSmartNewLineContent",
-      !!createSmartNewLineContent
+      !!createSmartNewLineContent,
     );
   }, [focusMode, showNumberOfParagraphs, createSmartNewLineContent]);
 
@@ -730,7 +730,7 @@ export function App({ version, appName } = {}) {
     }
     if (localStorage.getItem("caretPosition")) {
       setInitialCaretPosition(
-        Number(localStorage.getItem("caretPosition")) || 0
+        Number(localStorage.getItem("caretPosition")) || 0,
       );
     }
   }, [s3Client, location, initialCaretPosition, readonly]);
@@ -755,7 +755,7 @@ export function App({ version, appName } = {}) {
             accessKeyId: localStorage.getItem("s3-access-key"),
             secretAccessKey:
               sessionStorage.getItem("s3-secret-access-key") ||
-              localStorage.getItem("s3-secret-access-key")
+              localStorage.getItem("s3-secret-access-key"),
           };
 
     if (!secretAccessKey) {
@@ -771,8 +771,8 @@ export function App({ version, appName } = {}) {
           region,
           credentials: {
             accessKeyId,
-            secretAccessKey
-          }
+            secretAccessKey,
+          },
         });
         setS3Client(_s3Client);
         s3.setS3Client(_s3Client);
@@ -789,7 +789,7 @@ export function App({ version, appName } = {}) {
           setReadonly(true);
           if (/Failed to fetch/i.test(err.message)) {
             setErrorMessage(
-              `${err.message || "No connection"}. Maybe you are offline?`
+              `${err.message || "No connection"}. Maybe you are offline?`,
             );
           } else if (/SignatureDoesNotMatch/i.test(err.name)) {
             logout();
@@ -817,6 +817,9 @@ export function App({ version, appName } = {}) {
   }, [folderPath]);
 
   useEffect(() => {
+    if (location.pathname === "/logout") {
+      return logout();
+    }
     if (!s3Client || location.pathname === "/") {
       return;
     }
@@ -867,7 +870,7 @@ export function App({ version, appName } = {}) {
           } catch (err) {
             console.error(err);
             updateStatusText(
-              `Couldn't load '${filename}' (${err.name || err.message})`
+              `Couldn't load '${filename}' (${err.name || err.message})`,
             );
           }
           setPlaceholder(DEFAULT_PLACEHOLDER_TEXT);
@@ -897,7 +900,7 @@ export function App({ version, appName } = {}) {
           db.saveFileToDatabase(fileName, {
             content: "",
             bucketName,
-            fileSavedToS3: false
+            fileSavedToS3: false,
           });
         }
 
@@ -947,6 +950,18 @@ export function App({ version, appName } = {}) {
       s3Error.message.match(/Offline mode/i) ||
       s3Error.message.match(/Failed to fetch/i)
     ) {
+      if (
+        s3Error.message.match(/Failed to fetch/i) &&
+        window.navigator.onLine
+      ) {
+        if (
+          confirm(
+            `Could not receive a valid response from server. Maybe wrong credentials (or misconfigured CORS).\n\nLogout and try different credentials?`,
+          )
+        ) {
+          return logout();
+        }
+      }
       console.groupCollapsed("offlineMode");
       console.debug("Offline mode", s3Error);
       console.groupEnd("offlineMode");
@@ -970,9 +985,33 @@ export function App({ version, appName } = {}) {
     debounced(
       text,
       decodeURI(location.pathname.replace(/^\//, "")),
-      lastSavedText
+      lastSavedText,
     );
   }, [text, autoSave, location]);
+
+  useEffect(() => {
+    if (credentials) {
+      return;
+    }
+    let data = {
+      accessKeyId: localStorage.getItem("s3-access-key"),
+      bucketName: localStorage.getItem("s3-bucket"),
+      region: localStorage.getItem("s3-region"),
+      endpoint: localStorage.getItem("s3-endpoint"),
+      secretAccessKey:
+        localStorage.getItem("s3-secret-access-key") ||
+        sessionStorage.getItem("s3-secret-access-key"),
+    };
+    if (
+      !data.accessKeyId ||
+      !data.bucketName ||
+      !data.region ||
+      !data.endpoint
+    ) {
+      return;
+    }
+    setCredentials(data);
+  }, [credentials]);
 
   return (
     <div
@@ -980,7 +1019,7 @@ export function App({ version, appName } = {}) {
         "app-window",
         showSideBar ? "sidebar-expanded" : null,
         s3Client ? "logged-in" : "not-logged-in",
-        fileVersions?.length > 0 ? "show-file-versions" : null
+        fileVersions?.length > 0 ? "show-file-versions" : null,
       ]
         .filter((v) => !!v)
         .join(" ")}
@@ -1000,7 +1039,7 @@ export function App({ version, appName } = {}) {
                   handleClickOnFolder={(
                     ev,
                     folderName,
-                    { isGoToParentFolder, goToRootFolder } = {}
+                    { isGoToParentFolder, goToRootFolder } = {},
                   ) => {
                     if (goToRootFolder) {
                       return setFolderPath("");
@@ -1012,7 +1051,7 @@ export function App({ version, appName } = {}) {
                             .split("/")
                             .slice(0, -2)
                             .join("/")
-                        : folderName
+                        : folderName,
                     );
                   }}
                   setShowSideBar={setShowSideBar}
@@ -1102,8 +1141,8 @@ export function App({ version, appName } = {}) {
                     {colorScheme === "dark"
                       ? "light"
                       : colorScheme === "light"
-                      ? "auto"
-                      : "dark"}
+                        ? "auto"
+                        : "dark"}
                     )
                   </li>
                   <li
@@ -1121,8 +1160,8 @@ export function App({ version, appName } = {}) {
                     {fontFamily === "mononoki"
                       ? "ia-writer"
                       : fontFamily === "iawriter"
-                      ? "auto"
-                      : "mononoki"}
+                        ? "auto"
+                        : "mononoki"}
                     )
                   </li>
                   <li
@@ -1145,11 +1184,11 @@ export function App({ version, appName } = {}) {
                     <li
                       onClick={() => {
                         setScrollWindowToCenterCaret(
-                          !scrollWindowToCenterCaret
+                          !scrollWindowToCenterCaret,
                         );
                         localStorage.setItem(
                           "scrollWindowToCenterCaret",
-                          !scrollWindowToCenterCaret
+                          !scrollWindowToCenterCaret,
                         );
                       }}
                       className={scrollWindowToCenterCaret ? "active" : null}
@@ -1177,11 +1216,14 @@ export function App({ version, appName } = {}) {
                   <li onClick={displayGoToParagraphDialog}>
                     Jump to paragraph <span className="shortcut">⌘ + G</span>
                   </li>
-                  <li onClick={toggleFullScreen} className={document.fullscreenElement ? "active" : null}>
+                  <li
+                    onClick={toggleFullScreen}
+                    className={document.fullscreenElement ? "active" : null}
+                  >
                     Fullscreen <span className="shortcut">⌘ + Shift + F</span>
                   </li>
                   <li>
-                    <div>
+                    <div title="Increase or decrease font size">
                       <span
                         onClick={() => {
                           setFontSize(Number(fontSize || 16) + 1);
@@ -1193,7 +1235,7 @@ export function App({ version, appName } = {}) {
                         style={{
                           transform: "scale(0.75)",
                           display: "inline-flex",
-                          paddingLeft: "0.25rem"
+                          paddingLeft: "0.25rem",
                         }}
                         onClick={() => {
                           setFontSize(Number(fontSize || 16) - 1);
@@ -1237,7 +1279,7 @@ export function App({ version, appName } = {}) {
               }}
               class={[
                 colorScheme === "light" ? "light-color-scheme" : null,
-                colorScheme === "dark" ? "dark-color-scheme" : null
+                colorScheme === "dark" ? "dark-color-scheme" : null,
               ]
                 .filter((v) => !!v)
                 .join(" ")}
@@ -1249,7 +1291,7 @@ export function App({ version, appName } = {}) {
                     setInitialText,
                     setText,
                     updateStatusText,
-                    setReadonly
+                    setReadonly,
                   });
                 }}
                 className="drop-wrapper"
@@ -1285,12 +1327,9 @@ export function App({ version, appName } = {}) {
           </div>
         </>
       )}
-      {(loginErrorMessage ||
-        (!sessionStorage.getItem("s3-secret-access-key") &&
-          !localStorage.getItem("s3-secret-access-key"))) && (
+      {(loginErrorMessage || !credentials) && (
         <Login
           setCredentials={setCredentials}
-          loadS3Files={loadS3Files}
           errorMessage={loginErrorMessage}
         ></Login>
       )}

@@ -484,6 +484,7 @@ button {
   color: var(--color-black-responsive);
   padding: 2rem 1.5rem;
   border-radius: 4px;
+
   --font-family: var(--font-family-sans);
   font-family: var(--font-family);
 
@@ -622,6 +623,21 @@ button {
   }
 }
 
+.login {
+  opacity: 0;
+}
+.not-logged-in .login {
+  opacity: 1;
+  animation: fade 0.5s linear;
+  // The animation prevents flashing login form on page load
+  @keyframes fade {
+    0% { opacity: 0 }
+    40% { opacity: 0 }
+    100% { opacity: 1 }
+  }
+}
+
+
 .copyright-badge {
   display: flex;
   font-size: 0.7rem;
@@ -682,6 +698,7 @@ button {
         background: var(--background-color);
         margin-left: -1rem;
         width: calc(100% + 2rem);
+        position: relative;
       }
     }
   }

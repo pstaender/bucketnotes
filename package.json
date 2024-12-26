@@ -1,6 +1,6 @@
 {
   "name": "bucketnotes",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Philipp Staender <pstaender@mailbox.org>",
   "license": "MIT",
   "dependencies": {

@@ -87,10 +87,6 @@ export function handleDrop(
           convertPDFToText({ dataTransferItem: item }, (text) => {
             applyText(text);
           });
-          // convertPDFToMarkdown({ dataTransferItem: item }, (text) => {
-          //   // setText(text);
-          //   // setInitialText(text);
-          // });
         })();
         return;
       }
@@ -123,18 +119,6 @@ export function handleDrop(
         })();
         return;
       }
-      // if (item.type.match(/text\/csv/i)) {
-      //   const f = item.getAsFile();
-      //   const reader = new FileReader();
-      //   reader.onload = (e) => {
-      //     const text = e.target.result;
-      //     console.log(text)
-      //     // setText(text);
-      //     // setInitialText(text);
-      //   };
-      //   reader.readAsText(f);
-      //   return;
-      // }
       if (item.type.match(/text\/.+/)) {
         const f = item.getAsFile();
         applyText("");
