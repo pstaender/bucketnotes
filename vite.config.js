@@ -10,16 +10,11 @@ export default defineConfig({
     target: "esnext",
     sourcemap: "inline",
     cssMinify: false,
-		minify: false,
-    rollupOptions: {
-      output: {
-        manualChunks: { tesseract: ['tesseract-wasm'], pdfjs: ['pdfjs-dist']}
-      }
-    }
+    minify: false,
   },
   css: {
     devSourcemap: true,
-    sourcemap: true
+    sourcemap: true,
   },
   plugins: [
     react(),
@@ -27,7 +22,7 @@ export default defineConfig({
       // The export name of top-level await promise for each chunk module
       promiseExportName: "__tla",
       // The function to generate import names of top-level await promise in each chunk module
-      promiseImportName: (i) => `__tla_${i}`
+      promiseImportName: (i) => `__tla_${i}`,
     }),
     VitePWA({
       registerType: "autoUpdate",
@@ -35,11 +30,11 @@ export default defineConfig({
       workbox: {
         sourcemap: true,
         // index.js is > 5 MB
-        maximumFileSizeToCacheInBytes: 20 * 1024 * 1024
+        maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
       },
       devOptions: {
         enabled: false,
-        type: "module"
+        type: "module",
       },
       start_url: "/?source=pwa",
       manifest: {
@@ -52,15 +47,15 @@ export default defineConfig({
           {
             src: "192px.png",
             sizes: "192x192",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "512px.png",
             sizes: "512x512",
-            type: "image/png"
-          }
-        ]
-      }
-    })
-  ]
+            type: "image/png",
+          },
+        ],
+      },
+    }),
+  ],
 });

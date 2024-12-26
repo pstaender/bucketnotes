@@ -4,7 +4,12 @@ import TurndownService from "turndown";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   document.getElementById("pdfjs-worker-url")?.src ||
-  document.querySelector(`link[href^="/assets/pdfjs"]`).href;
+  document.querySelector(`link[href^="/assets/pdfjs"]`)?.href ||
+  "/pdf.worker.mjs";
+
+const tesseractWorkerURL = document.getElementById("tesseract-worker-url")?.src ||
+document.querySelector(`link[href^="/assets/tesseract"]`)?.href ||
+"/tesseract/tesseract-worker.mjs";
 
 export function handleDrop(
   ev,
@@ -14,8 +19,8 @@ export function handleDrop(
     setText,
     updateStatusText,
     setReadonly,
-    activeElementIndex
-  }
+    activeElementIndex,
+  },
 ) {
   function applyText(newText) {
     let active =
@@ -48,8 +53,8 @@ export function handleDrop(
             lang = "";
             alert(
               `Invalid language code: ${lang}\n\nAvailable languages:\n${tesseractLanguageCodes.join(
-                ", "
-              )}`
+                ", ",
+              )}`,
             );
           }
         }
@@ -65,14 +70,11 @@ export function handleDrop(
           try {
             await OCRImage(
               {
-                workerURL:
-                  document.getElementById("tesseract-worker-url")?.src ||
-                  document.querySelector(`link[href^="/assets/tesseract"]`)
-                    .href,
+                workerURL: tesseractWorkerURL,
                 file,
-                lang
+                lang,
               },
-              (text) => applyText(text)
+              (text) => applyText(text),
             );
           } catch (e) {
             console.error(e);
@@ -105,10 +107,10 @@ export function handleDrop(
           let turndownService = new TurndownService({
             headingStyle: "atx",
             codeBlockStyle: "fenced",
-            hr: "---"
+            hr: "---",
           });
           let markdown = turndownService.turndown(
-            html.querySelector("body").outerHTML
+            html.querySelector("body").outerHTML,
           );
           let _text = markdown
             .split("\n")

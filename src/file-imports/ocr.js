@@ -3,6 +3,8 @@ import { OCRClient } from "tesseract-wasm";
 const worker = new Worker(new URL('/node_modules/tesseract-wasm/dist/tesseract-worker.js', import.meta.url), {
   type: 'module',
 })
+
+
 // Web Workers inlined as base64 strings at build time
 // import InlineWorker from 'tesseract-wasm/dist/tesseract-worker.js?worker&inline'
 

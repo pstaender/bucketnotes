@@ -24,8 +24,3 @@ export function convertPDFToText({ dataTransferItem }, cb) {
 
   reader.readAsArrayBuffer(f);
 }
-
-function tbd_convertPDFToMarkdown({ dataTransferItem }, cb) {
-// import { createPipeline } from "./pdf2md/src/index.js";
-//   createPipeline;
-}
