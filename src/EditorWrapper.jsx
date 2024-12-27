@@ -13,7 +13,7 @@ export function EditorWrapper({
   maxTextLength,
   doGuessNextListItemLine,
   showNumberOfParagraphs,
-  // initialCaretPosition,
+  initialCaretPosition,
   initialParagraphNumber,
   renderAllContent,
   scrollWindowToCenterCaret,
@@ -45,7 +45,7 @@ export function EditorWrapper({
       keyboardShortcuts={keyboardShortcuts}
       guessNextLinePrefixOnEnter={doGuessNextListItemLine}
       showNumberOfParagraphs={showNumberOfParagraphs}
-      // initialCaretPosition={initialCaretPosition}
+      initialCaretPosition={initialCaretPosition}
       initialActiveElementIndex={initialParagraphNumber}
       renderAllContent={renderAllContent}
     ></FocusEditor>

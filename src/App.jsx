@@ -264,6 +264,7 @@ export function App({ version, appName } = {}) {
   }
 
   async function handleClickOnFile(ev, fileKey) {
+    resetCaretPosition();
     if (
       fileKey &&
       (ev.target.classList.contains("delete") || ev.target.alt === "Delete")
@@ -568,12 +569,18 @@ export function App({ version, appName } = {}) {
     setReadonly(true);
   }
 
+  function resetCaretPosition() {
+    localStorage.setItem("caretPosition", 0);
+    setInitialCaretPosition(0);
+  }
+
   async function handleClickOnRestore(ev, version) {
     let content = await s3.contentOfVersion(version.Key, version.VersionId);
     setInitialText(content);
     setText(content);
     setReadonly(false);
     setFileVersions([]);
+    resetCaretPosition();
     // save file
     if (!autoSave) {
       s3.updateTextFile(version.Key, content);
@@ -721,6 +728,9 @@ export function App({ version, appName } = {}) {
     return () => window.removeEventListener("beforeunload", handleUnload);
   }, [handleUnload]);
 
+  /*
+   * restore caret position
+   */
   useEffect(() => {
     if (readonly || !s3Client || initialCaretPosition !== null) {
       return;

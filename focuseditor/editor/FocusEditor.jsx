@@ -13,7 +13,7 @@ import {
   removeStyleClassesOfNotMatchingMarkdownSyntax,
   createBRIfIsEmpty,
   removeStyleClasses,
-  preIndentElement
+  preIndentElement,
 } from "./styleText";
 import {
   isSafari,
@@ -24,13 +24,13 @@ import {
   rtrimSourroundindElements,
   currentElementInsideContentHolderWithCaret,
   putCursorIntoElement,
-  elementToAppearOrDisappear
+  elementToAppearOrDisappear,
 } from "./helper";
 
 import TurndownService from "turndown";
 
 let defaultKeyboardShortcuts = {
-  focus: "Period"
+  focus: "Period",
 };
 
 const onActionStub = () => null;
@@ -38,7 +38,7 @@ const onActionStub = () => null;
 export function FocusEditor({
   initialText,
   initialActiveElementIndex,
-  initialCaretPosition,
+  initialCaretPosition = 0,
   startWithCaretAtEnd,
   focusMode,
   identifier,
@@ -62,7 +62,7 @@ export function FocusEditor({
   preIndent = false,
   disableFocusWhenTextIsSelected = false,
   renderAllContent = false,
-  showPictureOnImageHover = false
+  showPictureOnImageHover = false,
 } = {}) {
   if (!onChange) {
     onChange = onActionStub;
@@ -91,7 +91,7 @@ export function FocusEditor({
   const [metaOrAltKeyPressed, setMetaOrAltKeyPressed] = useState(false);
   const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
   const [guessNextListItemLine, setGuessNextListItemLine] = useState(
-    !!guessNextLinePrefixOnEnter
+    !!guessNextLinePrefixOnEnter,
   );
   const [preIndentation, setPreIndentation] = useState(preIndent || false);
   const [hasContent, setHasContent] = useState(false);
@@ -118,7 +118,7 @@ export function FocusEditor({
 
   function placeCursorAtTheBeginningOfElement(activeElementIndex) {
     let current = [
-      ...refContentHolder.current.querySelectorAll(":scope > div")
+      ...refContentHolder.current.querySelectorAll(":scope > div"),
     ][activeElementIndex - 1];
     if (!current) {
       // fallback
@@ -174,7 +174,7 @@ export function FocusEditor({
     text = text.replace(/ {2}/g, "⇪2spcs⇪");
 
     [...getContentEditableHolderReference().children].forEach((child) =>
-      child.remove()
+      child.remove(),
     );
 
     let div = refContentHolder.current;
@@ -195,7 +195,8 @@ export function FocusEditor({
       .join("\n");
 
     getContentEditableHolderReference().appendChild(div);
-    if (initialActiveElementIndex >= 0) {
+
+    if (initialActiveElementIndex >= 0 && initialCaretPosition === 0) {
       placeCursorAtTheBeginningOfElement(initialActiveElementIndex);
     }
     triggerLastChangedAt();
@@ -245,10 +246,10 @@ export function FocusEditor({
           () => {
             Cursor.setCurrentCursorPosition(
               0,
-              refContentHolder.current.querySelector(":scope > div")
+              refContentHolder.current.querySelector(":scope > div"),
             );
           },
-          isSafari() ? 100 : 10
+          isSafari() ? 100 : 10,
         );
       }
       return;
@@ -259,7 +260,7 @@ export function FocusEditor({
     if (focus && !text) {
       setTimeout(() => {
         let active = currentElementInsideContentHolderWithCaret(
-          getContentEditableHolderReference()
+          getContentEditableHolderReference(),
         );
         let el = refContentHolder.current.querySelector(":scope > div");
         let isDiv = active.tagName === "DIV";
@@ -280,7 +281,7 @@ export function FocusEditor({
   useEffect(() => {
     if (renderAllContent) {
       styleMarkdown(getContentEditableHolderReference(), {
-        styleAll: true
+        styleAll: true,
       });
     }
   }, [renderAllContent]);
@@ -290,19 +291,38 @@ export function FocusEditor({
       initializeText(initialText || "");
       setText(initialText || "");
       setIsProcessing(true);
+      if (getContentEditableHolderReference().innerText.trim()) {
+        styleMarkdown(getContentEditableHolderReference(), {
+          styleAllVisible: true,
+        });
+      }
+
       if (Number(initialCaretPosition) >= 0) {
         setTimeout(() => {
           Cursor.setCurrentCursorPosition(
             Number(initialCaretPosition),
-            getContentEditableHolderReference()
+            getContentEditableHolderReference(),
           );
-        }, 1);
+          setTimeout(() => {
+            let activeElement = currentElementInsideContentHolderWithCaret(
+              getContentEditableHolderReference(),
+            );
+            if (!activeElement) {
+              return;
+            }
+            /*
+             * scroll to caret
+             */
+            activeElement.scrollIntoView();
+            if (scrollWindowToCenterCaret) {
+              scrollCaretToCenter();
+            } else {
+              current.scrollIntoView();
+            }
+          }, 10);
+        }, 100);
       }
-      if (getContentEditableHolderReference().innerText.trim()) {
-        styleMarkdown(getContentEditableHolderReference(), {
-          styleAllVisible: true
-        });
-      }
+
       setIsProcessing(false);
 
       if (initialText !== undefined) {
@@ -315,7 +335,7 @@ export function FocusEditor({
         return;
       }
       let activeElement = currentElementInsideContentHolderWithCaret(
-        getContentEditableHolderReference()
+        getContentEditableHolderReference(),
       );
 
       if (!activeElement && initialActiveElementIndex >= 0) {
@@ -323,7 +343,7 @@ export function FocusEditor({
       } else if (activeElement) {
         Cursor.setCurrentCursorPosition(
           activeElement.innerText.length,
-          activeElement
+          activeElement,
         );
       }
     } catch (e) {
@@ -342,7 +362,7 @@ export function FocusEditor({
         let intervalID = setInterval(() => {
           try {
             styleMarkdown(getContentEditableHolderReference(), {
-              styleAllVisible: true
+              styleAllVisible: true,
             });
             setIsProcessing(false);
             clearInterval(intervalID);
@@ -374,17 +394,17 @@ export function FocusEditor({
         setTempDisableFocus(false);
       }
     },
-    disableFocusWhenTextIsSelected ? 100 : null
+    disableFocusWhenTextIsSelected ? 100 : null,
   );
 
   function activeElementIndex(elementWithCursorInside = null) {
     if (!elementWithCursorInside) {
       elementWithCursorInside = currentElementInsideContentHolderWithCaret(
-        getContentEditableHolderReference()
+        getContentEditableHolderReference(),
       );
     }
     return [
-      ...refContentHolder.current.querySelectorAll(":scope > div")
+      ...refContentHolder.current.querySelectorAll(":scope > div"),
     ].indexOf(elementWithCursorInside);
   }
 
@@ -392,7 +412,7 @@ export function FocusEditor({
     // set cursor-inside class to simulate focus/blur
     if (elementWithCursorInside === undefined) {
       elementWithCursorInside = currentElementInsideContentHolderWithCaret(
-        getContentEditableHolderReference()
+        getContentEditableHolderReference(),
       );
     }
     if (!elementWithCursorInside) {
@@ -409,8 +429,8 @@ export function FocusEditor({
       onChange({
         activeElementIndex: activeElementIndex(),
         caretPosition: Cursor.getCurrentCursorPosition(
-          getContentEditableHolderReference()
-        )
+          getContentEditableHolderReference(),
+        ),
       });
       if (elementWithCursorInside.tagName !== "DIV") {
         // TODO: fix cleanup of class `having-cursor-inside`
@@ -430,8 +450,8 @@ export function FocusEditor({
     let activeElements = [
       refContentHolder.current.querySelector(":scope > div.active") ||
         currentElementInsideContentHolderWithCaret(
-          getContentEditableHolderReference()
-        )
+          getContentEditableHolderReference(),
+        ),
       // TODO: remove:
       // getContentEditableHolderReference().querySelector(
       //   "div.content-holder > div"
@@ -501,16 +521,16 @@ export function FocusEditor({
     // return;
     let elements =
       getContentEditableHolderReference().querySelectorAll(
-        ":scope > div > div"
+        ":scope > div > div",
       );
     let selectedDivs = [...elements].filter((el) =>
-      window.getSelection().containsNode(el)
+      window.getSelection().containsNode(el),
     );
     if (selectedDivs.length === 0) {
       if (typeof window.getSelection().focusNode?.textContent) {
         // find selected div via text
         selectedDivs = [...elements].filter(
-          (ev) => ev.innerText === window.getSelection().focusNode.textContent
+          (ev) => ev.innerText === window.getSelection().focusNode.textContent,
         );
       }
       if (selectedDivs.length !== 1) {
@@ -545,7 +565,7 @@ export function FocusEditor({
           selectedDivs.at(0),
           0,
           selectedDivs.at(-1),
-          1
+          1,
         );
       }, 50);
     }, 200);
@@ -567,7 +587,7 @@ export function FocusEditor({
       let controlKey = /^(Alt|Shift|Arrow|Meta|Escape)/.test(ev.code);
       let el =
         getContentEditableHolderReference().parentElement?.closest(
-          "focus-editor"
+          "focus-editor",
         );
       if (!controlKey) {
         el.classList.add("hide-placeholder");
@@ -581,10 +601,10 @@ export function FocusEditor({
     // indent or outdent via TAB
     triggerLastChangedAt();
     let cursorPosition = Cursor.getCurrentCursorPosition(
-      getContentEditableHolderReference()
+      getContentEditableHolderReference(),
     );
     const activeElement = currentElementInsideContentHolderWithCaret(
-      getContentEditableHolderReference()
+      getContentEditableHolderReference(),
     );
 
     const caretIsAtTheEndOfElement =
@@ -597,7 +617,7 @@ export function FocusEditor({
         let cursorPosition = Cursor.getCurrentCursorPosition(editor);
         let textLengthWithoutLinebreaks = editor.innerText.replace(
           /\n/g,
-          ""
+          "",
         ).length;
         // let browser select next or previous element with tab is caret
         // is at the beginning or end
@@ -619,7 +639,7 @@ export function FocusEditor({
       ev.preventDefault();
 
       let activeElement = currentElementInsideContentHolderWithCaret(
-        getContentEditableHolderReference()
+        getContentEditableHolderReference(),
       );
 
       if (activeElement) {
@@ -654,7 +674,7 @@ export function FocusEditor({
 
           activeElement.innerHTML = activeElement.innerHTML.replace(
             /^(&nbsp;|\s){2}/,
-            ""
+            "",
           );
           let spaces = activeElement.innerText.match(/^\s+/);
 
@@ -666,7 +686,7 @@ export function FocusEditor({
               spaces && spaces[0]
                 ? spaces[0].length
                 : activeElement.innerText.length,
-              activeElement
+              activeElement,
             );
           }
         }
@@ -719,7 +739,7 @@ export function FocusEditor({
             }
             let text = [
               activeElement.innerText.substring(0, cursorPosition),
-              activeElement.innerText.substring(cursorPosition)
+              activeElement.innerText.substring(cursorPosition),
             ].filter((e) => e !== undefined);
             if (text.length == 2) {
               activeElement.innerText = text[0];
@@ -729,7 +749,7 @@ export function FocusEditor({
               setTimeout(() => {
                 Cursor.setCurrentCursorPosition(
                   addEmptyPrefixSpaces.length,
-                  div
+                  div,
                 );
               }, 1);
             }
@@ -745,7 +765,7 @@ export function FocusEditor({
         activeElement.innerText = rtrim(activeElement.innerText);
         styleMarkdown([activeElement, div], {
           onlyStyleGivenElements: true,
-          preIndentation
+          preIndentation,
         });
         setTimeout(() => {
           if (activeElement.innerHTML.trim() === "") {
@@ -759,7 +779,7 @@ export function FocusEditor({
 
             if (
               /^\s*([\*\-\·\•\+\>\|]{1}|\d+\.)\s*$/.test(
-                activeElement.innerText
+                activeElement.innerText,
               )
             ) {
               // last entered new line is an empty list, so clear it
@@ -769,7 +789,7 @@ export function FocusEditor({
               /^(\s*)([\*\-\·\•\+\>\|]{1}\s+)/.test(activeElement.innerText)
             ) {
               let parts = activeElement.innerText.match(
-                /^(\s*)([\*\-\·\•\+\>\|]{1}\s+)/
+                /^(\s*)([\*\-\·\•\+\>\|]{1}\s+)/,
               );
               let add = (parts[0] || "") + (parts[1] || "");
               let textBefore = div.innerText;
@@ -784,7 +804,7 @@ export function FocusEditor({
               /^(\s*)(\d{1,}[\.\)])\s+/.test(activeElement.innerText)
             ) {
               let parts = activeElement.innerText.match(
-                /^(\s*)(\d{1,}[\.\)])(\s+)*/
+                /^(\s*)(\d{1,}[\.\)])(\s+)*/,
               );
               let spaces = parts[1] || "";
               let number = parts[2] || "";
@@ -840,7 +860,7 @@ export function FocusEditor({
         ev.code === "Tab"
       ) {
         createBRIfIsEmpty(
-          removeStyleClassesOfNotMatchingMarkdownSyntaxOfActiveElement()
+          removeStyleClassesOfNotMatchingMarkdownSyntaxOfActiveElement(),
         );
 
         /*
@@ -859,7 +879,7 @@ export function FocusEditor({
         ) {
           setTimeout(() => {
             let activeElement = currentElementInsideContentHolderWithCaret(
-              getContentEditableHolderReference()
+              getContentEditableHolderReference(),
             );
 
             if (!activeElement) return;
@@ -898,7 +918,7 @@ export function FocusEditor({
       /^(Arrow)/.test(ev.code) /* enter is handled below */
     ) {
       let activeElement = currentElementInsideContentHolderWithCaret(
-        getContentEditableHolderReference()
+        getContentEditableHolderReference(),
       );
       rtrimSourroundindElements(activeElement);
     }
@@ -926,7 +946,7 @@ export function FocusEditor({
       // TODO: replace activeElementInsideContentHolderWithCursorInside/activeDivWithCursorInside with
       if (ev.code === "KeyX" && !someTextIsHighlighted()) {
         let activeElement = currentElementInsideContentHolderWithCaret(
-          getContentEditableHolderReference()
+          getContentEditableHolderReference(),
         );
         if (activeElement) {
           // copy to clipbaord
@@ -934,7 +954,7 @@ export function FocusEditor({
           if (activeElement.nextElementSibling) {
             putCursorIntoElement(
               activeElement.nextElementSibling,
-              getContentEditableHolderReference()
+              getContentEditableHolderReference(),
             );
           }
           activeElement.remove();
@@ -980,8 +1000,8 @@ export function FocusEditor({
       onChange({
         text: newText,
         caretPosition: Cursor.getCurrentCursorPosition(
-          getContentEditableHolderReference()
-        )
+          getContentEditableHolderReference(),
+        ),
       });
       triggerLastChangedAt();
     }
@@ -994,8 +1014,8 @@ export function FocusEditor({
       if (
         Cursor.getCurrentCursorPosition(
           currentElementInsideContentHolderWithCaret(
-            getContentEditableHolderReference()
-          )
+            getContentEditableHolderReference(),
+          ),
         ) <= 0
       ) {
         // if the caret is at the beginning of line
@@ -1006,7 +1026,7 @@ export function FocusEditor({
         ev.preventDefault();
       }
       let activeElement = currentElementInsideContentHolderWithCaret(
-        getContentEditableHolderReference()
+        getContentEditableHolderReference(),
       );
       if (activeElement) {
         let cursorPositionInElement =
@@ -1015,7 +1035,7 @@ export function FocusEditor({
         setTimeout(() => {
           Cursor.setCurrentCursorPosition(
             cursorPositionInElement,
-            activeElement
+            activeElement,
           );
         }, 1);
       }
@@ -1025,7 +1045,7 @@ export function FocusEditor({
       // wait for the new div to be created by browser via contenteditable
       setTimeout(() => {
         let activeElement = currentElementInsideContentHolderWithCaret(
-          getContentEditableHolderReference()
+          getContentEditableHolderReference(),
         );
         if (!activeElement.nextElementSibling) {
           return;
@@ -1045,13 +1065,13 @@ export function FocusEditor({
             .forEach((el) => el.classList.remove("active"));
 
           let classList = [
-            ...newCreatedElementByPressingEnter.classList
+            ...newCreatedElementByPressingEnter.classList,
           ].filter((c) => {
             return ["active", "cursor-inside"].includes(c);
           });
           newCreatedElementByPressingEnter.setAttribute(
             "class",
-            classList.join(" ")
+            classList.join(" "),
           );
           rtrimSourroundindElements(newCreatedElementByPressingEnter);
           return;
@@ -1083,8 +1103,8 @@ export function FocusEditor({
         onChange({
           text: newText,
           caretPosition: Cursor.getCurrentCursorPosition(
-            getContentEditableHolderReference()
-          )
+            getContentEditableHolderReference(),
+          ),
         });
       }
       if (
@@ -1096,13 +1116,13 @@ export function FocusEditor({
         // set to new navigated element to active
         setTimeout(() => {
           let activeElement = currentElementInsideContentHolderWithCaret(
-            getContentEditableHolderReference()
+            getContentEditableHolderReference(),
           );
           // TODO: remove all getContentEditableHolderReference() and replace with refContentHolder.current
           if (activeElement) {
             refContentHolder.current
               .querySelectorAll(
-                ":scope > div.active, :scope > div.cursor-inside, :scope > div.having-cursor-inside"
+                ":scope > div.active, :scope > div.cursor-inside, :scope > div.having-cursor-inside",
               )
               .forEach((el) => {
                 if (el !== activeElement) {
@@ -1124,7 +1144,7 @@ export function FocusEditor({
 
     if (ev?.code === "Tab" && ev.shiftKey) {
       let text = currentElementInsideContentHolderWithCaret(
-        getContentEditableHolderReference()
+        getContentEditableHolderReference(),
       ).innerText;
       if (text.trim() === "" || text.match(/^\s{2,}$/)) {
         // do nothing, it just makes things worse :D
@@ -1136,7 +1156,7 @@ export function FocusEditor({
       // only if text has changed and not enter was pressed
       if (ev?.code === "Enter") {
         editor = markFencedCodeBlocks(
-          refContentHolder.current.querySelectorAll(":scope > div")
+          refContentHolder.current.querySelectorAll(":scope > div"),
         );
       } else {
         // dont adjust caret if tab was pressed on empty content (causes s.t. deleting editable divs)
@@ -1144,19 +1164,19 @@ export function FocusEditor({
           ev?.code === "Tab" &&
           getContentEditableHolderReference().innerText.trim() === "";
         let { adjustCursorPositionAfter } = styleMarkdown(editor, {
-          changeCaretPosition: !tabKeyWasPressedOnEmptyContent
+          changeCaretPosition: !tabKeyWasPressedOnEmptyContent,
         });
         setTimeout(() => {
           let el = currentElementInsideContentHolderWithCaret(
-            getContentEditableHolderReference()
+            getContentEditableHolderReference(),
           );
           if (
             currentElementInsideContentHolderWithCaret(
-              getContentEditableHolderReference()
+              getContentEditableHolderReference(),
             )?.classList?.contains("new")
           ) {
             currentElementInsideContentHolderWithCaret(
-              getContentEditableHolderReference()
+              getContentEditableHolderReference(),
             ).classList.remove("new");
             cursorPosition = Cursor.getCurrentCursorPosition(editor);
             el.innerHTML += "&nbsp;";
@@ -1182,8 +1202,8 @@ export function FocusEditor({
       styleAllVisible,
       styleAll,
       onlyStyleGivenElements,
-      preIndentation
-    } = {}
+      preIndentation,
+    } = {},
   ) {
     function styleMarkdownInElement(el) {
       if (el.classList.contains("fenced-code-block")) {
@@ -1206,7 +1226,7 @@ export function FocusEditor({
 
     // only check active/changing divs
     let activeDivWithCursorInside = currentElementInsideContentHolderWithCaret(
-      getContentEditableHolderReference()
+      getContentEditableHolderReference(),
     );
     if (activeDivWithCursorInside) {
       refContentHolder.current
@@ -1256,7 +1276,7 @@ export function FocusEditor({
     }
 
     let activeElements = refContentHolder.current.querySelectorAll(
-      ":scope > div.active"
+      ":scope > div.active",
     );
 
     if (onlyStyleGivenElements) {
@@ -1311,13 +1331,10 @@ export function FocusEditor({
       let turndownService = new TurndownService({
         headingStyle: "atx",
         codeBlockStyle: "fenced",
-        hr: "---"
+        hr: "---",
       });
       try {
-        plainText = turndownService.turndown(
-          htmlText
-        );
-        
+        plainText = turndownService.turndown(htmlText);
       } catch (e) {
         console.error(e);
       }
@@ -1352,13 +1369,13 @@ export function FocusEditor({
         previousText = initializeText(previousText);
         setTimeout(() => {
           styleMarkdown(editableContent, {
-            styleAllVisible: true
+            styleAllVisible: true,
           });
           setIsProcessing(false);
           // set caret to end
           Cursor.setCurrentCursorPosition(
             editableContent.innerText.length - 1,
-            editableContent
+            editableContent,
           );
         }, 10);
         setText(previousText);
@@ -1374,8 +1391,8 @@ export function FocusEditor({
         onChange({
           text: newText,
           caretPosition: Cursor.getCurrentCursorPosition(
-            getContentEditableHolderReference()
-          )
+            getContentEditableHolderReference(),
+          ),
         });
         triggerLastChangedAt();
       }
@@ -1406,7 +1423,7 @@ export function FocusEditor({
         focus && !tempDisableFocus ? "focus" : null,
         lastChangedAt > 0 && hasContent ? "has-content" : null,
         indentHeadings ? "indent-headings" : null,
-        metaOrAltKeyPressed ? "meta-or-alt-key-pressed" : null
+        metaOrAltKeyPressed ? "meta-or-alt-key-pressed" : null,
       ]
         .filter((v) => !!v)
         .join(" ")}
@@ -1427,7 +1444,7 @@ export function FocusEditor({
         <div
           className={[
             "content-holder",
-            showNumberOfParagraphs ? "show-section-counter" : null
+            showNumberOfParagraphs ? "show-section-counter" : null,
           ]
             .filter((v) => !!v)
             .join(" ")}
