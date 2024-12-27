@@ -692,7 +692,7 @@ button {
     > div:last-child {
       &:after {
         content: "";
-        height: 50vh;
+        height: 100vh;
         display: block;
         // overwrite possible existing different background color, e.g. in fenced code blocks
         background: var(--background-color);

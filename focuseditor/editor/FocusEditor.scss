@@ -277,12 +277,9 @@ focus-editor {
         }
         .content-holder > div {
             transition:
-                text-indent var(--transition-duration),
-                margin-left var(--transition-duration),
                 font-size calc(0.3 * var(--transition-duration)),
-                background var(--transition-duration),
-                padding var(--transition-duration),
-                margin var(--transition-duration);
+                font-weight var(--transition-duration),
+                background var(--transition-duration);
             &.fenced-code-block {
                 text-wrap: balance;
                 transition:

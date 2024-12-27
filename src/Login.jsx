@@ -47,16 +47,12 @@ export function Login({ setCredentials, errorMessage }) {
     }
   }
 
-  useEffect(() => {
-    console.log('here!');
-  })
-
   return (
     <>
       <div className="login">
         <div className="headline">
           <picture>
-            <source srcset={LogoDark} media="(prefers-color-scheme: dark)" />
+            <source srcSet={LogoDark} media="(prefers-color-scheme: dark)" />
             <img
               src={Logo}
               className="icon"
