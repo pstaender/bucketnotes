@@ -7,7 +7,7 @@ An editor which helps you to focus on just writing. Use your own S3 bucket for c
 ⚠️ **The software / developer is not responsible to possible damage on editing files in your S3 bucket** ⚠️
 
 https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1c670e3adde0
-  
+
 ## Features
 
   * minimalistic interface
@@ -26,7 +26,7 @@ https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1
 
 ## Server requirements
 
-You can host the dist folder (see below how to build) as static files with any webserver. Of couse you need also a S3 bucket. 
+You can host the dist folder (see below how to build) as static files with any webserver. Of couse you need also a S3 bucket.
 
 ## Setup S3 Bucket in AWS
 
@@ -38,7 +38,7 @@ The example cloudformation-file does:
     * versioning enabled
     * permissive CORS settings
     * R+W+D permissions
-  * creates a programmatic user access (api access-token with secret), the credentials will be shown in the `Outputs` tab. 
+  * creates a programmatic user access (api access-token with secret), the credentials will be shown in the `Outputs` tab.
 
 Change `my-example-bucket` to your preferred bucket name:
 
@@ -117,12 +117,12 @@ Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess i
 Clone the repo, ensure Node v18+ is available, then:
 
 ```sh
-$ yarn install
-$ yarn build
+$ npm install
+$ npm run build
 ```
 
 ## Development
 
 ```sh
-$ yarn start
+$ npm run develop
 ```

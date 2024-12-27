@@ -1,6 +1,6 @@
 {
   "name": "bucketnotes",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Philipp Staender <pstaender@mailbox.org>",
   "license": "MIT",
   "dependencies": {
@@ -17,6 +17,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
+    "serve": "^14.2.4",
     "slugify": "^1.6.6",
     "tesseract-wasm": "^0.10.0",
     "turndown": "^7.1.3",
@@ -28,24 +29,27 @@
   "devDependencies": {
     "@parcel/transformer-sass": "^2.12.0",
     "assert": "^2.1.0",
+    "babel-plugin-transform-import-meta": "^2.2.1",
     "browserify-zlib": "^0.2.0",
     "buffer": "^5.5.0",
     "events": "^3.3.0",
+    "http-server": "^14.1.1",
     "https-browserify": "^1.0.0",
     "https-localhost": "^4.7.1",
-    "parcel": "^2.12.0",
     "process": "^0.11.10",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "url": "^0.11.3",
     "util": "^0.12.5",
-    "vite-plugin-pwa": "^0.19.8",
+    "vite-plugin-pwa": "^0.20",
     "vite-plugin-top-level-await": "^1.4.1"
   },
   "scripts": {
     "preview": "VITE_APP_VERSION=$(echo $npm_package_version) vite preview",
-    "build": "VITE_APP_VERSION=$(echo $npm_package_version) vite build && cp -v public/* dist/",
-    "start": "VITE_APP_VERSION=$(echo $npm_package_version) vite",
-    "serve": "PORT=4433 npx serve dist"
+    "build": "VITE_APP_VERSION=$(echo $npm_package_version) vite build && cp -r -v public/* dist/",
+    "develop": "VITE_APP_VERSION=$(echo $npm_package_version) vite",
+    "tesseract:download": "mkdir -p public/tesseract-data; for lang in afr amh ara asm aze aze_cyrl bel ben bod bos bre bul cat ceb ces chi_sim chi_tra chr cos cym dan dan_frak deu deu_frak deu_latf dzo ell eng enm epo equ est eus fao fas fil fin fra frk frm fry gla gle glg grc guj hat heb hin hrv hun hye iku ind isl ita ita_old jav jpn kan kat kat_old kaz khm kir kmr kor kor_vert kur lao lat lav lit ltz mal mar mkd mlt mon mri msa mya nep nld nor oci ori osd pan pol por pus que ron rus san sin slk slk_frak slv snd spa spa_old sqi srp srp_latn sun swa swe syr tam tat tel tgk tgl tha tir ton tur uig ukr urd uzb uzb_cyrl vie yid yor; do wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/$lang.traineddata -O public/tesseract-data/$lang.traineddata; done",
+    "serve": "npx http-server dist/",
+    "postinstall": "cp ./node_modules/pdfjs-dist/build/pdf.worker.mjs public; mkdir -p public/tesseract; cp ./node_modules/tesseract-wasm/dist/tesseract-worker.js public/tesseract/tesseract-worker.mjs; cp ./node_modules/tesseract-wasm/dist/* public/tesseract/"
   }
 }

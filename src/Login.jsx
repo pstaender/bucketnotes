@@ -1,101 +1,69 @@
 import { useEffect, useState } from "react";
 import Logo from "../logo.svg";
+import LogoDark from "../logo-dark.svg";
 import GitHubLogo from "../src/icons/github.svg";
 
 export function Login({ setCredentials, errorMessage }) {
-  const [loginCredentials, setLogiCredentials] = useState({
-    region: localStorage.getItem("s3-region") || undefined,
-    endpoint: localStorage.getItem("s3-endpoint") || undefined,
-    bucketName: localStorage.getItem("s3-bucket") || undefined,
-    accessKeyId: localStorage.getItem("s3-access-key") || undefined,
-    secretAccessKey:
-      sessionStorage.getItem("s3-secret-access-key") || undefined,
-  });
+  const [region, setRegion] = useState(
+    localStorage.getItem("s3-region") || "eu-central-1",
+  );
+  const [endpoint, setEndpoint] = useState(localStorage.getItem("s3-endpoint"));
+  const [bucketName, setBucketName] = useState(
+    localStorage.getItem("s3-bucket") || '',
+  );
+  const [accessKeyId, setAccessKeyId] = useState(
+    localStorage.getItem("s3-access-key") || '',
+  );
+  const [secretAccessKey, setSecretAccessKey] = useState(
+    sessionStorage.getItem("s3-secret-access-key") || '',
+  );
+
   const [showEndpoint, setShowEndpoint] = useState(false);
   const [rememberCredentials, setRememberCredentials] = useState(true);
   const [rememberSecret, setRememberSecret] = useState(false);
 
-  function handleChange(ev) {
-    if (!ev.target.value?.trim()) {
-      return;
-    }
-
-    switch (ev.target.id) {
-      case "s3-region":
-        setLogiCredentials({
-          ...loginCredentials,
-          ...{ region: ev.target.value },
-        });
-        break;
-      case "s3-bucket":
-        setLogiCredentials({
-          ...loginCredentials,
-          ...{ bucketName: ev.target.value },
-        });
-        break;
-      case "s3-access-key":
-        setLogiCredentials({
-          ...loginCredentials,
-          ...{ accessKeyId: ev.target.value },
-        });
-        break;
-      case "s3-secret-access-key":
-        setLogiCredentials({
-          ...loginCredentials,
-          ...{ secretAccessKey: ev.target.value },
-        });
-        break;
-      case "s3-endpoint":
-        setLogiCredentials({
-          ...loginCredentials,
-          ...{ endpoint: ev.target.value },
-        });
-        break;
-      default:
-        break;
-    }
-  }
-
   async function handleSubmit(ev) {
     ev.preventDefault();
-    if (
-      loginCredentials.region &&
-      loginCredentials.bucketName &&
-      loginCredentials.accessKeyId &&
-      loginCredentials.secretAccessKey
-    ) {
+    if (region && bucketName && accessKeyId && secretAccessKey) {
       if (rememberCredentials) {
-        localStorage.setItem("s3-access-key", loginCredentials.accessKeyId);
-        localStorage.setItem("s3-bucket", loginCredentials.bucketName);
-        localStorage.setItem("s3-region", loginCredentials.region);
-        localStorage.setItem("s3-endpoint", loginCredentials.endpoint);
+        localStorage.setItem("s3-access-key", accessKeyId);
+        localStorage.setItem("s3-bucket", bucketName);
+        localStorage.setItem("s3-region", region);
+        localStorage.setItem("s3-endpoint", endpoint);
         if (rememberSecret) {
-          localStorage.setItem(
-            "s3-secret-access-key",
-            loginCredentials.secretAccessKey,
-          );
+          localStorage.setItem("s3-secret-access-key", secretAccessKey);
         } else {
-          sessionStorage.setItem(
-            "s3-secret-access-key",
-            loginCredentials.secretAccessKey,
-          );
+          sessionStorage.setItem("s3-secret-access-key", secretAccessKey);
         }
       }
       console.debug("Setting credentials");
-      setCredentials(loginCredentials);
+      setCredentials({
+        region,
+        endpoint,
+        bucketName,
+        accessKeyId,
+        secretAccessKey,
+      });
     }
   }
+
+  useEffect(() => {
+    console.log('here!');
+  })
 
   return (
     <>
       <div className="login">
         <div className="headline">
-          <img
-            src={Logo}
-            className="icon"
-            alt="Bucketnotes"
-            title="Bucketnotes"
-          ></img>
+          <picture>
+            <source srcset={LogoDark} media="(prefers-color-scheme: dark)" />
+            <img
+              src={Logo}
+              className="icon"
+              alt="Bucketnotes"
+              title="Bucketnotes"
+            ></img>
+          </picture>
         </div>
         {errorMessage && <div className="error">{errorMessage}</div>}
         <form onSubmit={handleSubmit}>
@@ -107,23 +75,23 @@ export function Login({ setCredentials, errorMessage }) {
                 id="s3-region"
                 autoCapitalize="off"
                 placeholder="e.g. eu-central-1"
-                defaultValue={localStorage.getItem("s3-region")}
-                autoFocus={!localStorage.getItem("s3-region")}
+                value={region}
                 required={true}
-                onChange={handleChange}
+                onChange={(ev) => setRegion(ev.target.value)}
               />
             </div>
 
-            {/* <input type="text" id="s3-url" placeholder="Endpoint" /> */}
             <div className="input">
               <label>Bucketname</label>
               <input
                 type="text"
                 id="s3-bucket"
                 autoCapitalize="off"
-                defaultValue={localStorage.getItem("s3-bucket")}
+                placeholder="mys3bucket"
+                autoFocus={true}
                 required={true}
-                onChange={handleChange}
+                value={bucketName}
+                onChange={(ev) => setBucketName(ev.target.value)}
               />
             </div>
           </div>
@@ -135,9 +103,9 @@ export function Login({ setCredentials, errorMessage }) {
               autoCapitalize="off"
               placeholder="AKIAXXXXXXXX…"
               autoComplete="username"
-              defaultValue={localStorage.getItem("s3-access-key")}
               required={true}
-              onChange={handleChange}
+              value={accessKeyId}
+              onChange={(ev) => setAccessKeyId(ev.target.value)}
             />
           </div>
           <div className="input">
@@ -147,8 +115,8 @@ export function Login({ setCredentials, errorMessage }) {
               id="s3-secret-access-key"
               required={true}
               autoComplete="password"
-              autoFocus={!!localStorage.getItem("s3-region")}
-              onChange={handleChange}
+              value={secretAccessKey}
+              onChange={(ev) => setSecretAccessKey(ev.target.value)}
             />
           </div>
           <div
@@ -224,11 +192,7 @@ export function Login({ setCredentials, errorMessage }) {
           target="_blank"
           className="icon"
         >
-          <img
-            src={GitHubLogo}
-            className="icon"
-            alt="GitHub"
-          ></img>
+          <img src={GitHubLogo} className="icon" alt="GitHub"></img>
         </a>
         bucketnotes is crafted with ❤️ by&nbsp;
         <a href="https://github.com/pstaender">pstaender</a>
