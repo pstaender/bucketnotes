@@ -173,7 +173,7 @@ export function FileList({
             }}
             key="folder-up"
           >
-            ••
+            ←
           </li>
         ) : (
           <li className="no-hover" key="no-hover-folder">

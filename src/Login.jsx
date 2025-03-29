@@ -47,10 +47,6 @@ export function Login({ setCredentials, errorMessage }) {
     }
   }
 
-  useEffect(() => {
-    console.log('here!');
-  })
-
   return (
     <>
       <div className="login">

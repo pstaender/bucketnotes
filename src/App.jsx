@@ -90,6 +90,9 @@ export function App({ version, appName } = {}) {
   const [renderAllContent, setRenderAllContent] = useState(false);
   const [s3Error, setS3Error] = useState(null);
   const [isPossiblyOffline, setIsPossiblyOffline] = useState(false);
+  const [sortFilesByAttribute, setSortFilesByAttribute] = useState(
+    localStorage.getItem("sortFilesByAttribute") || "Key",
+  );
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -190,11 +193,19 @@ export function App({ version, appName } = {}) {
       });
     }
 
-    files = files
-      .filter((c) => VALID_FILE_EXTENSION.test(c?.Key))
-      .sort((a, b) => {
+    files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
+
+    if (sortFilesByAttribute === "LastModified") {
+      files = files.sort((a, b) => {
         return new Date(b.LastModified) - new Date(a.LastModified);
       });
+    }
+    else if (sortFilesByAttribute === "Key") {
+      files = files.sort((a, b) => {
+        return a.Key.localeCompare(b.Key);
+      });
+    }
+
 
     let folders =
       commonPrefixes.filter((f) => f?.Prefix).map((f) => f.Prefix) || [];
@@ -202,7 +213,6 @@ export function App({ version, appName } = {}) {
     console.debug(`Loaded file list of ${files.length} files`);
     setFiles(files.map((f) => f.Key));
     setFolders(folders);
-    // return {files, folders, s3Error};
   }
 
   async function loadFile(key) {
@@ -814,7 +824,7 @@ export function App({ version, appName } = {}) {
 
   useEffect(() => {
     loadS3Files();
-  }, [folderPath]);
+  }, [folderPath, sortFilesByAttribute]);
 
   useEffect(() => {
     if (location.pathname === "/logout") {
@@ -1246,12 +1256,24 @@ export function App({ version, appName } = {}) {
                     </div>
                   </li>
                   <li
-                    onClick={async (ev) => {
+                    onClick={async () => {
                       await db.clearFiles();
                       updateStatusText("Cleared offline data");
                     }}
                   >
                     Clear Offline Data
+                  </li>
+                  <li
+                    onClick={async () => {
+                      const value =
+                        sortFilesByAttribute === "LastModified"
+                          ? "Key"
+                          : "LastModified";
+                      localStorage.setItem("sortFilesByAttribute", value);
+                      setSortFilesByAttribute(value);
+                    }}
+                  >
+                    Sort files by date/name
                   </li>
                   <li
                     onClick={(ev) => {

@@ -127,8 +127,6 @@ export async function loadFiles(
     Bucket: bucketName,
     Prefix: Prefix || "",
     Delimiter: Delimiter || "", // use "/" for top-level only
-    // The default and maximum number of keys returned is 1000. This limits it to
-    // one for demonstration purposes.
     MaxKeys
   });
   let isTruncated = true;
