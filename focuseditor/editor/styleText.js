@@ -441,7 +441,7 @@ export function styleLinks(div, { showPictureOnImageHover = false } = {}) {
     div.innerHTML = div.innerHTML.replace(
       internalLinkPattern,
       (match, previousChar, url) => {
-        if (previousChar === ">" || previousChar === "\\") {
+        if (previousChar && previousChar !== " " && previousChar !== "\n") {
           return match;
         }
         return `${previousChar}<a href="#${url}" class="link internal">#${url}</a>`;
