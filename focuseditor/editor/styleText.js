@@ -379,24 +379,36 @@ export function styleLinks(div, { showPictureOnImageHover = false } = {}) {
   function linkOnMouseLeave(ev) {
     let img =
       ev.target.tagName === "IMG" ? ev.target : ev.target.querySelector("img");
-    img?.remove();
+    //img?.remove();
+
+    setTimeout(() => {
+      if (Date.now() - img.dataset.transitioningStarted > 1000) {
+        img.classList.remove('visible');
+      }
+    }, 5000)
   }
   function linkOnMouseEnter(ev) {
-    if (ev.target.classList.contains("image")) {
-      let a = ev.target;
-      let img = document.createElement("img");
-      img.src = a.href;
-      img.addEventListener("error", () => img.remove());
-      a.appendChild(img);
+    if (!linkOnMouseEnter) {
       return;
     }
+    let img = ev.target.querySelector("img");
+    if (ev.target.classList.contains("image") && !img) {
+      let a = ev.target;
+      img = document.createElement("img");
+      img.src = a.href;
+      img.addEventListener("error", () => img.remove());
+      img.addEventListener("click", () => window.open(a.href, "_blank"));
+      a.appendChild(img);
+    }
+    img.dataset.transitioningStarted = Date.now();
+    setTimeout(() => img.classList.add('visible'), 10);
   }
 
   function visitLinkIfMetaOrAltKeyPressed(e) {
     const metaOrAltKeyPressed = e.metaKey || e.altKey;
 
     if (internalLinkPattern && e.target.innerText.startsWith("#")) {
-      if (metaOrAltKeyPressed) {
+      if (metaOrAltKeyPressed || e.target.innerText.endsWith("/")) {
         // open internakl link in new tab
         visitLink(e);
       } else {

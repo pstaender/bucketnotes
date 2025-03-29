@@ -1317,7 +1317,7 @@ export function FocusEditor({
         plainText = turndownService.turndown(
           htmlText
         );
-        
+
       } catch (e) {
         console.error(e);
       }

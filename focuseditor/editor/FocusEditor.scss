@@ -314,19 +314,16 @@ focus-editor {
             cursor: pointer;
             img {
                 position: absolute;
-                right: -10.5rem;
-                z-index: 999;
-                width: 10rem;
-                height: 10rem;
+                right: calc(calc(-1 * min(20rem, 50vw)) - 0.5rem);
+                z-index: 50;
+                width: min(20rem, 50vw);
                 object-fit: cover;
-                border: 0;
-                box-shadow:
-                    rgba(50, 50, 93, 0.25) 0px 13px 27px -5px,
-                    rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
-                opacity: 1;
-                transition: opacity 0.5s;
-                &.hidden {
-                    opacity: 0;
+                opacity: 0;
+                transition: opacity 0.2s;
+                pointer-events: none;
+                &.visible {
+                    opacity: 1;
+                    pointer-events: inherit;
                 }
             }
         }

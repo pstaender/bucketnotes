@@ -17,6 +17,7 @@ export function EditorWrapper({
   initialParagraphNumber,
   renderAllContent,
   scrollWindowToCenterCaret,
+  previewImages,
 } = {}) {
   const [initialTextForEditor, setInitialTextForEditor] = useState("");
   const refEditor = useRef();
@@ -48,6 +49,7 @@ export function EditorWrapper({
       // initialCaretPosition={initialCaretPosition}
       initialActiveElementIndex={initialParagraphNumber}
       renderAllContent={renderAllContent}
+      showPictureOnImageHover={previewImages}
     ></FocusEditor>
   );
 }

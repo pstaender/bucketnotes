@@ -18,6 +18,7 @@ import { handleDrop } from "./file-imports/handleDrop.jsx";
 import { FileList } from "./FileList.jsx";
 import { isTouch, VALID_FILE_EXTENSION } from "./helper.js";
 import * as db from "./db.js";
+import slugify from "slugify";
 
 const DEFAULT_PLACEHOLDER_TEXT = "Type something…";
 
@@ -28,7 +29,11 @@ function slugifyPath(s) {
   return s
     .split("/")
     .map((s) => {
-      return s.replace(/\s/g, "_").replace(/[^\w\._\-\p{Letter}]/gu, "");
+      // replace all non-word characters with _, otherwise we get url encoded characters :(
+      return slugify(s, {
+        replacement: "_",
+        locale: navigator.language.split('-')[0],
+      })
     })
     .join("/");
 }
@@ -92,6 +97,9 @@ export function App({ version, appName } = {}) {
   const [isPossiblyOffline, setIsPossiblyOffline] = useState(false);
   const [sortFilesByAttribute, setSortFilesByAttribute] = useState(
     localStorage.getItem("sortFilesByAttribute") || "Key",
+  );
+  const [previewImages, setPreviewImages] = useState(
+    localStorage.getItem("previewImages") === "true",
   );
 
   const location = useLocation();
@@ -833,8 +841,16 @@ export function App({ version, appName } = {}) {
     if (!s3Client || location.pathname === "/") {
       return;
     }
-    setFolderPath(decodeURI(location.pathname));
-  }, [location]);
+    // load a bit later, to prevent to be overwritten by the / path loading
+    // this should only be applied on initial page calls
+    if (location.pathname.endsWith('/')) {
+      setTimeout(() => {
+        // open sidebar to show that we have been navigated to a folder
+        setShowSideBar(true);
+        setFolderPath(decodeURI(location.pathname))
+      }, 100);
+    }
+  }, [s3Client, location]);
 
   useEffect(() => {
     setReadonly(fileVersions?.length > 0);
@@ -1277,6 +1293,15 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li
                     onClick={(ev) => {
+                      setPreviewImages(!previewImages);
+                      localStorage.setItem("previewImages", previewImages ? 'false' : 'true');
+                    }}
+                    className={previewImages ? "active" : null}
+                  >
+                    Preview images
+                  </li>
+                  <li
+                    onClick={(ev) => {
                       setFocusMode(!focusMode);
                       setShowSideBar(false);
                     }}
@@ -1334,6 +1359,7 @@ export function App({ version, appName } = {}) {
                     initialParagraphNumber={initialParagraphNumber}
                     renderAllContent={renderAllContent}
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}
+                    previewImages={previewImages}
                   ></EditorWrapper>
                 ) : (
                   <textarea
