@@ -1,6 +1,6 @@
 # Welcome to Bucketnotes 👋
 
-An editor which helps you to focus on just writing. Use your own S3 bucket for cheap, private and fast storage.
+An editor which helps you to focus on just writing. Use your own S3 bucket for cheap, private and fast storage. Organize your notes in zettelkasten-style.
 
 [Live Demo (you need S3 credentials)](http://www.bucketnotes.app)
 
@@ -13,16 +13,21 @@ https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1
   * minimalistic interface
   * auto-save
   * dark mode
+  * offline mode (progressive web app)
   * responsive (works on desktop, mobile and tablet)
   * different fixed-size fonts
-  * supports a bit of markdown syntax
+  * supports some markdown syntax
   * writes and reads text files from any s3 bucket
   * supports versioning (if s3 versioning is enabled)
   * built-in OCR (via tesseract+wasm)
   * html and pdf to markdown import
-  * progressive web app (means: you can do offline writing)
   * requires no extra service than the s3 bucket
   * open source
+
+## What is missing / not working?
+
+  * fully working undo / redo  - therefore the bucket versioning is a good backup
+  * jumping caret (occasionally) - reload the page to fix
 
 ## Server requirements
 
@@ -110,7 +115,7 @@ Always ensure, that you have correct/permissive CORS policies in your S3 bucket,
 
 ## Costs
 
-Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess it's very hard to reach the 1 USD per month as a single user…
+Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess it's hard to reach the 1 USD per month as a single user - even with versioning enabled :)
 
 ## Build
 

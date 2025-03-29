@@ -337,6 +337,12 @@ export function styleText(elements, document) {
 }
 
 export function styleLinks(div, { showPictureOnImageHover = false } = {}) {
+  /**
+   * Internal linking allows easy link to another note
+   * e.g. /#another-note.txt
+   */
+  const internalLinkPattern = /(.{0,1})#(\/.+)[\s\n]*/g; // to disable internal linking, set this to null
+
   if (div.children.length > 0) {
     [...div.children].forEach((e) => {
       styleLinks(e);
@@ -387,7 +393,18 @@ export function styleLinks(div, { showPictureOnImageHover = false } = {}) {
   }
 
   function visitLinkIfMetaOrAltKeyPressed(e) {
-    if (!e.metaKey && !e.altKey) {
+    const metaOrAltKeyPressed = e.metaKey || e.altKey;
+
+    if (internalLinkPattern && e.target.innerText.startsWith("#")) {
+      if (metaOrAltKeyPressed) {
+        // open internakl link in new tab
+        visitLink(e);
+      } else {
+        location.hash = e.target.innerText;
+      }
+    }
+
+    if (!metaOrAltKeyPressed) {
       return;
     }
 
@@ -418,7 +435,21 @@ export function styleLinks(div, { showPictureOnImageHover = false } = {}) {
     return;
   }
 
-  let markdownLinkPattern = /(.{0,1})\[([^\]]+?)\]\((.+?)\)/g;
+  const markdownLinkPattern = /(.{0,1})\[([^\]]+?)\]\((.+?)\)/g;
+
+  if (internalLinkPattern?.test(div.innerText)) {
+    div.innerHTML = div.innerHTML.replace(
+      internalLinkPattern,
+      (match, previousChar, url) => {
+        if (previousChar === ">" || previousChar === "\\") {
+          return match;
+        }
+        return `${previousChar}<a href="#${url}" class="link internal">#${url}</a>`;
+      }
+    );
+  }
+
+
 
   if (markdownLinkPattern.test(div.innerText)) {
     div.innerHTML = div.innerHTML.replace(

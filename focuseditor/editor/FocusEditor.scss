@@ -335,7 +335,7 @@ focus-editor {
             --link-color: var(--text-color);
         }
         @media (hover: hover) {
-            &.meta-or-alt-key-pressed a.link {
+            &.meta-or-alt-key-pressed a.link, a.link[href^="#/"] {
                 --link-color: var(--primary-color);
 
                 &:hover {
