@@ -379,13 +379,17 @@ export function styleLinks(div, { showPictureOnImageHover = false } = {}) {
   function linkOnMouseLeave(ev) {
     let img =
       ev.target.tagName === "IMG" ? ev.target : ev.target.querySelector("img");
-    //img?.remove();
+
+    if (!img) {
+      return;
+    }
+    const time = img.dataset.transitioningStarted;
 
     setTimeout(() => {
-      if (Date.now() - img.dataset.transitioningStarted > 1000) {
+      if (time === img.dataset.transitioningStarted && Date.now() - img.dataset.transitioningStarted > 1000) {
         img.classList.remove('visible');
       }
-    }, 5000)
+    }, 3000)
   }
   function linkOnMouseEnter(ev) {
     if (!linkOnMouseEnter) {
@@ -400,8 +404,11 @@ export function styleLinks(div, { showPictureOnImageHover = false } = {}) {
       img.addEventListener("click", () => window.open(a.href, "_blank"));
       a.appendChild(img);
     }
+    if (!img) {
+      return;
+    }
     img.dataset.transitioningStarted = Date.now();
-    setTimeout(() => img.classList.add('visible'), 10);
+    setTimeout(() => img.classList.add('visible'), 100);
   }
 
   function visitLinkIfMetaOrAltKeyPressed(e) {
@@ -447,7 +454,7 @@ export function styleLinks(div, { showPictureOnImageHover = false } = {}) {
     return;
   }
 
-  const markdownLinkPattern = /(.{0,1})\[([^\]]+?)\]\((.+?)\)/g;
+  const markdownLinkPattern = /(.{0,1})\[([^\]]*?)\]\((.+?)\)/g;
 
   if (internalLinkPattern?.test(div.innerText)) {
     div.innerHTML = div.innerHTML.replace(
