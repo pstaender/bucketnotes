@@ -560,12 +560,10 @@ export function App({ version, appName } = {}) {
     }
   }
 
-  function handleOnChangeEditor({
-    text,
-    activeElementIndex,
-    event,
+  function handleOnChangeEditor(text, {
     caretPosition,
-  }) {
+  } = {}) {
+    console.log({ text });
     if (text !== undefined) {
       setText(text);
       if (location?.pathname && VALID_FILE_EXTENSION.test(location?.pathname)) {
@@ -1319,7 +1317,7 @@ export function App({ version, appName } = {}) {
               )}
             </div>
 
-            <focus-editor
+            <div
               onClick={(ev) => {
                 setShowMoreOptions(false);
                 setShowSideBar(false);
@@ -1362,16 +1360,10 @@ export function App({ version, appName } = {}) {
                     previewImages={previewImages}
                   ></EditorWrapper>
                 ) : (
-                  <textarea
-                    defaultValue={initialText}
-                    readOnly={readonly}
-                    onChange={(ev) => {
-                      handleOnChangeEditor({ text: ev.target.value });
-                    }}
-                  ></textarea>
+                  <div></div>
                 )}
               </div>
-            </focus-editor>
+            </div>
           </div>
         </>
       )}

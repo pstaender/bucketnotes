@@ -1,11 +1,11 @@
 {
   "name": "bucketnotes",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "author": "Philipp Staender <pstaender@mailbox.org>",
   "license": "MIT",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.537.0",
-    "@aws-sdk/s3-request-presigner": "^3.540.0",
+    "@aws-sdk/client-s3": "^3.864.0",
+    "@aws-sdk/s3-request-presigner": "^3.864.0",
     "@dnd-kit/core": "^6.1.0",
     "@r2wc/react-to-web-component": "^2.0.3",
     "@sentry/react": "^7.109.0",
@@ -47,7 +47,7 @@
   "scripts": {
     "preview": "VITE_APP_VERSION=$(echo $npm_package_version) vite preview",
     "build": "VITE_APP_VERSION=$(echo $npm_package_version) vite build && cp -r -v public/* dist/",
-    "develop": "VITE_APP_VERSION=$(echo $npm_package_version) vite",
+    "dev": "VITE_APP_VERSION=$(echo $npm_package_version) vite",
     "tesseract:download": "mkdir -p public/tesseract-data; for lang in afr amh ara asm aze aze_cyrl bel ben bod bos bre bul cat ceb ces chi_sim chi_tra chr cos cym dan dan_frak deu deu_frak deu_latf dzo ell eng enm epo equ est eus fao fas fil fin fra frk frm fry gla gle glg grc guj hat heb hin hrv hun hye iku ind isl ita ita_old jav jpn kan kat kat_old kaz khm kir kmr kor kor_vert kur lao lat lav lit ltz mal mar mkd mlt mon mri msa mya nep nld nor oci ori osd pan pol por pus que ron rus san sin slk slk_frak slv snd spa spa_old sqi srp srp_latn sun swa swe syr tam tat tel tgk tgl tha tir ton tur uig ukr urd uzb uzb_cyrl vie yid yor; do wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/$lang.traineddata -O public/tesseract-data/$lang.traineddata; done",
     "serve": "npx http-server dist/",
     "postinstall": "cp ./node_modules/pdfjs-dist/build/pdf.worker.mjs public; mkdir -p public/tesseract; cp ./node_modules/tesseract-wasm/dist/tesseract-worker.js public/tesseract/tesseract-worker.mjs; cp ./node_modules/tesseract-wasm/dist/* public/tesseract/"

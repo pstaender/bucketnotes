@@ -1,6 +1,13 @@
-// Credit to Liam (Stack Overflow)
-// https://stackoverflow.com/a/41034697/3480193
-export class Cursor {
+/**
+ * Cursor module
+ *
+ * Credit to Liam (Stack Overflow): https://stackoverflow.com/a/41034697/3480193
+ *
+ * ** Not for public use: any function name may change at any time. **
+ * @module Cursor
+ */
+
+class Cursor {
   static getCurrentCursorPosition(parentElement) {
     var selection = window.getSelection(),
       charCount = -1,
@@ -60,7 +67,7 @@ export class Cursor {
       rect = r2.getBoundingClientRect();
       return {
         left: rect.right + pageOffset.x,
-        top: rect.bottom + pageOffset.y
+        top: rect.bottom + pageOffset.y,
       };
     }
   }
@@ -74,7 +81,7 @@ export class Cursor {
     clone.selectNodeContents(divRef);
     clone.setEnd(range.startContainer, range.startOffset);
     return {
-        top: clone.toString().length
+      top: clone.toString().length,
     };
   }
 
@@ -120,3 +127,5 @@ export class Cursor {
     return false;
   }
 }
+
+export default Cursor;

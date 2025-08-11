@@ -1,4 +1,4 @@
-import { FocusEditor } from "../focuseditor/editor/FocusEditor";
+import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
 import { useEffect, useRef, useState } from "react";
 
 export function EditorWrapper({
@@ -13,43 +13,92 @@ export function EditorWrapper({
   maxTextLength,
   doGuessNextListItemLine,
   showNumberOfParagraphs,
-  // initialCaretPosition,
   initialParagraphNumber,
   renderAllContent,
   scrollWindowToCenterCaret,
   previewImages,
 } = {}) {
-  const [initialTextForEditor, setInitialTextForEditor] = useState("");
-  const refEditor = useRef();
+  const containerRef = useRef(null);
+    const editorInstanceRef = useRef(null);
+    const [editor, setEditor] = useState(null);
+    const [editorElement, setEditorElement] = useState(null);
 
-  useEffect(() => {
-    setInitialTextForEditor(initialText);
-  }, [initialText]);
+    const handleChange = (ev) => {
+      if (onChange && editorInstanceRef.current) {
+        onChange(editorInstanceRef.current.textContent, {});
+      }
+    };
 
-  return (
-    <FocusEditor
-      initialText={initialTextForEditor}
-      maxTextLength={maxTextLength}
-      forcePlainText={true}
-      scrollWindowToCenterCaret={Boolean(scrollWindowToCenterCaret)}
-      placeholder={placeholder}
-      indentHeadings={indentHeadings}
-      startWithCaretAtEnd={true}
-      preventUnfocusViaTabKey={true}
-      useTextarea={textarea}
-      onChange={onChange}
-      trimPastedText={false}
-      onBeforePaste={(text) => text?.trim()}
-      forwardRef={refEditor}
-      readOnly={readOnly}
-      focusMode={focusMode}
-      keyboardShortcuts={keyboardShortcuts}
-      guessNextLinePrefixOnEnter={doGuessNextListItemLine}
-      showNumberOfParagraphs={showNumberOfParagraphs}
-      // initialCaretPosition={initialCaretPosition}
-      initialActiveElementIndex={initialParagraphNumber}
-      renderAllContent={renderAllContent}
-      showPictureOnImageHover={previewImages}
-    ></FocusEditor>
-  );
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      // Create the web component element
+      const div = document.createElement('div');
+      const _editorElement = document.createElement('focus-editor');
+      _editorElement.append(div);
+
+      if (indentHeadings) {
+        _editorElement.classList.add('indent-headings');
+      }
+
+      // Set attributes
+      if (placeholder) _editorElement.setAttribute('placeholder', placeholder);
+      if (readOnly) _editorElement.setAttribute('readonly', 'true');
+
+      setEditor(new FocusEditorCore(div, initialText));
+
+      // Append to container
+      container.appendChild(_editorElement);
+      _editorElement.addEventListener('input', handleChange);
+      editorInstanceRef.current = _editorElement;
+
+      setEditorElement(_editorElement);
+
+      // Cleanup
+      return () => {
+        if (container.contains(_editorElement)) {
+          container.removeChild(_editorElement);
+        }
+        editorInstanceRef.current = null;
+      };
+    }, []);
+
+    useEffect(() => {
+      if (!editor) {
+        return;
+      };
+      editor.replaceText(initialText);
+    }, [editor, initialText]);
+
+    // Update attributes when props change
+    useEffect(() => {
+      const editor = editorInstanceRef.current;
+      if (!editor) return;
+
+      if (placeholder !== undefined) {
+        editor.setAttribute('placeholder', placeholder || '');
+      }
+    }, [placeholder]);
+
+    useEffect(() => {
+      const editor = editorInstanceRef.current;
+      if (!editor) return;
+
+      editor.setAttribute('readonly', readOnly ? 'true' : 'false');
+    }, [readOnly]);
+
+    // Expose methods
+    const getValue = () => editorInstanceRef.current?.value || '';
+    const setValue = (text) => {
+      if (editorInstanceRef.current) {
+        editorInstanceRef.current.value = text;
+      }
+    };
+
+    return (
+      <span
+        ref={containerRef}
+      />
+    );
 }
