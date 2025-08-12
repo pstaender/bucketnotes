@@ -1,15 +1,15 @@
 {
   "name": "bucketnotes",
-  "version": "0.2.1",
+  "version": "0.4.0",
   "author": "Philipp Staender <pstaender@mailbox.org>",
   "license": "MIT",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.537.0",
-    "@aws-sdk/s3-request-presigner": "^3.540.0",
+    "@aws-sdk/client-s3": "^3.864.0",
+    "@aws-sdk/s3-request-presigner": "^3.864.0",
     "@dnd-kit/core": "^6.1.0",
     "@r2wc/react-to-web-component": "^2.0.3",
     "@sentry/react": "^7.109.0",
-    "@vitejs/plugin-react": "^4.2.1",
+    "@vitejs/plugin-react": "*",
     "idb": "^8.0.0",
     "moment": "^2.30.1",
     "moments": "^0.0.2",
@@ -24,10 +24,9 @@
     "use-debounce": "^10.0.0",
     "use-long-press": "^3.2.0",
     "usehooks-ts": "^3.0.2",
-    "vite": "^5.2.8"
+    "vite": "^7"
   },
   "devDependencies": {
-    "@parcel/transformer-sass": "^2.12.0",
     "assert": "^2.1.0",
     "babel-plugin-transform-import-meta": "^2.2.1",
     "browserify-zlib": "^0.2.0",
@@ -37,12 +36,13 @@
     "https-browserify": "^1.0.0",
     "https-localhost": "^4.7.1",
     "process": "^0.11.10",
+    "sass-embedded": "^1.90.0",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "url": "^0.11.3",
     "util": "^0.12.5",
-    "vite-plugin-pwa": "^0.20",
-    "vite-plugin-top-level-await": "^1.4.1"
+    "vite-plugin-pwa": "*",
+    "vite-plugin-top-level-await": "*"
   },
   "scripts": {
     "preview": "VITE_APP_VERSION=$(echo $npm_package_version) vite preview",

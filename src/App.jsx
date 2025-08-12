@@ -566,6 +566,7 @@ export function App({ version, appName } = {}) {
     event,
     caretPosition,
   }) {
+    console.log(text, caretPosition)
     if (text !== undefined) {
       setText(text);
       if (location?.pathname && VALID_FILE_EXTENSION.test(location?.pathname)) {
