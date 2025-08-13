@@ -5,15 +5,11 @@ export function EditorWrapper({
   placeholder,
   initialText,
   indentHeadings,
-  textarea,
   onChange,
   readOnly,
   focusMode,
-  keyboardShortcuts,
-  maxTextLength,
   doGuessNextListItemLine,
   showNumberOfParagraphs,
-  // initialCaretPosition,
   initialParagraphNumber,
   renderAllContent,
   scrollWindowToCenterCaret,
@@ -27,7 +23,7 @@ export function EditorWrapper({
   };
 
   useEffect(() => {
-    if (initialText && focusEditor) {
+    if (initialText !== null && initialText !== undefined && focusEditor) {
       focusEditor.replaceText(initialText);
     }
   }, [initialText, focusEditor]);
@@ -75,7 +71,7 @@ export function EditorWrapper({
   }, []);
 
   return (
-    <focus-editor class={[indentHeadings ? "indent-headings" : 'indent-headings']
+    <focus-editor class={[indentHeadings ? "indent-headings" : '']
       .filter((v) => !!v)
       .join(" ")}>
       <div ref={refEditor} onInput={handleInput}></div>

@@ -5,7 +5,6 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Login } from "./Login.jsx";
 import { useDebouncedCallback } from "use-debounce";
-import * as Sentry from "@sentry/browser";
 
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -23,7 +22,6 @@ import slugify from "slugify";
 const DEFAULT_PLACEHOLDER_TEXT = "Type something…";
 
 // need to be outside of component, used in setTimeout
-// let lastAutoSave = 0;/
 
 function slugifyPath(s) {
   return s
@@ -32,17 +30,15 @@ function slugifyPath(s) {
       // replace all non-word characters with _, otherwise we get url encoded characters :(
       return slugify(s, {
         replacement: "_",
-        locale: navigator.language.split('-')[0],
-      })
+        locale: navigator.language.split("-")[0],
+      });
     })
     .join("/");
 }
 
-export function App({ version, appName } = {}) {
-  const localStorage = window.localStorage;
-  // 800.000 - 1.500.000 seems to work on faster machines with enough memory… but loading takes ~ 10secs
-  const maxTextLength = 1500000;
+const localStorage = window.localStorage;
 
+export function App({ version, appName } = {}) {
   const [credentials, setCredentials] = useState(null);
   const [files, setFiles] = useState(null);
   const [folders, setFolders] = useState(null);
@@ -207,13 +203,11 @@ export function App({ version, appName } = {}) {
       files = files.sort((a, b) => {
         return new Date(b.LastModified) - new Date(a.LastModified);
       });
-    }
-    else if (sortFilesByAttribute === "Key") {
+    } else if (sortFilesByAttribute === "Key") {
       files = files.sort((a, b) => {
         return a.Key.localeCompare(b.Key);
       });
     }
-
 
     let folders =
       commonPrefixes.filter((f) => f?.Prefix).map((f) => f.Prefix) || [];
@@ -498,7 +492,7 @@ export function App({ version, appName } = {}) {
 
     try {
       setS3Error(null);
-      ({ fileName } = await s3.renameFile(fileKey, newFileName));
+      await s3.renameFile(fileKey, newFileName);
 
       await db.saveFileToDatabase(newFileName, {
         content: text,
@@ -560,11 +554,7 @@ export function App({ version, appName } = {}) {
     }
   }
 
-  function handleOnChangeEditor(text, {
-    activeElementIndex,
-    event,
-    caretPosition,
-  } = {}) {
+  function handleOnChangeEditor(text, { caretPosition } = {}) {
     if (text !== undefined) {
       setText(text);
       if (location?.pathname && VALID_FILE_EXTENSION.test(location?.pathname)) {
@@ -843,11 +833,11 @@ export function App({ version, appName } = {}) {
     }
     // load a bit later, to prevent to be overwritten by the / path loading
     // this should only be applied on initial page calls
-    if (location.pathname.endsWith('/')) {
+    if (location.pathname.endsWith("/")) {
       setTimeout(() => {
         // open sidebar to show that we have been navigated to a folder
         setShowSideBar(true);
-        setFolderPath(decodeURI(location.pathname))
+        setFolderPath(decodeURI(location.pathname));
       }, 100);
     }
   }, [s3Client, location]);
@@ -953,14 +943,6 @@ export function App({ version, appName } = {}) {
   }, [location, s3Client]);
 
   useEffect(() => {
-    if (showSideBar) {
-      localStorage.setItem("hideSideBar", "false");
-    } else {
-      localStorage.setItem("hideSideBar", "true");
-    }
-  }, [showSideBar]);
-
-  useEffect(() => {
     if (autoSave) {
       localStorage.setItem("autoSave", "");
     } else {
@@ -995,7 +977,6 @@ export function App({ version, appName } = {}) {
     }
     console.groupCollapsed("s3Error");
     console.error(s3Error);
-    Sentry.captureException(s3Error);
     console.groupEnd("s3Error");
   }, [s3Error]);
 
@@ -1294,7 +1275,10 @@ export function App({ version, appName } = {}) {
                   <li
                     onClick={(ev) => {
                       setPreviewImages(!previewImages);
-                      localStorage.setItem("previewImages", previewImages ? 'false' : 'true');
+                      localStorage.setItem(
+                        "previewImages",
+                        previewImages ? "false" : "true",
+                      );
                     }}
                     className={previewImages ? "active" : null}
                   >
@@ -1321,11 +1305,13 @@ export function App({ version, appName } = {}) {
 
             <div
               onClick={(ev) => {
-                setShowMoreOptions(false);
-                setShowSideBar(false);
+                if (ev.isTrusted) {
+                  setShowMoreOptions(false);
+                  setShowSideBar(false);
+                }
               }}
               className={[
-                'editor-wrapper',
+                "editor-wrapper",
                 colorScheme === "light" ? "light-color-scheme" : null,
                 colorScheme === "dark" ? "dark-color-scheme" : null,
               ]
@@ -1344,33 +1330,21 @@ export function App({ version, appName } = {}) {
                 }}
                 className="drop-wrapper"
               >
-                {initialText?.length < maxTextLength ? (
-                  <EditorWrapper
-                    placeholder={placeholder}
-                    indentHeadings={true}
-                    initialText={initialText}
-                    onChange={handleOnChangeEditor}
-                    readOnly={readonly}
-                    focusMode={focusMode}
-                    keyboardShortcuts={false}
-                    maxTextLength={maxTextLength}
-                    doGuessNextListItemLine={createSmartNewLineContent}
-                    showNumberOfParagraphs={showNumberOfParagraphs}
-                    initialCaretPosition={initialCaretPosition}
-                    initialParagraphNumber={initialParagraphNumber}
-                    renderAllContent={renderAllContent}
-                    scrollWindowToCenterCaret={scrollWindowToCenterCaret}
-                    previewImages={previewImages}
-                  ></EditorWrapper>
-                ) : (
-                  <textarea
-                    defaultValue={initialText}
-                    readOnly={readonly}
-                    onChange={(ev) => {
-                      handleOnChangeEditor({ text: ev.target.value });
-                    }}
-                  ></textarea>
-                )}
+                <EditorWrapper
+                  placeholder={placeholder}
+                  indentHeadings={true}
+                  initialText={initialText}
+                  onChange={handleOnChangeEditor}
+                  readOnly={readonly}
+                  focusMode={focusMode}
+                  doGuessNextListItemLine={createSmartNewLineContent}
+                  showNumberOfParagraphs={showNumberOfParagraphs}
+                  initialCaretPosition={initialCaretPosition}
+                  initialParagraphNumber={initialParagraphNumber}
+                  renderAllContent={renderAllContent}
+                  scrollWindowToCenterCaret={scrollWindowToCenterCaret}
+                  previewImages={previewImages}
+                ></EditorWrapper>
               </div>
             </div>
           </div>
