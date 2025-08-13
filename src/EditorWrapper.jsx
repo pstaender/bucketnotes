@@ -1,4 +1,4 @@
-import { FocusEditor } from "../focuseditor/editor/FocusEditor";
+import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
 import { useEffect, useRef, useState } from "react";
 
 export function EditorWrapper({
@@ -19,37 +19,66 @@ export function EditorWrapper({
   scrollWindowToCenterCaret,
   previewImages,
 } = {}) {
-  const [initialTextForEditor, setInitialTextForEditor] = useState("");
   const refEditor = useRef();
+  const [focusEditor, setFocusEditor] = useState(null);
+
+  const handleInput = (event) => {
+    onChange(focusEditor.getMarkdown(), {});
+  };
 
   useEffect(() => {
-    setInitialTextForEditor(initialText);
-  }, [initialText]);
+    if (initialText && focusEditor) {
+      focusEditor.replaceText(initialText);
+    }
+  }, [initialText, focusEditor]);
+
+  useEffect(() => {
+    if (focusEditor && placeholder) {
+      focusEditor.placeholder = placeholder;
+    }
+  }, [focusEditor, placeholder]);
+
+  useEffect(() => {
+    if (!refEditor.current) {
+      return;
+    }
+    const editor = new FocusEditorCore(refEditor.current/*/, {
+      placeholder,
+      initialText: initialTextForEditor,
+      indentHeadings,
+      textarea,
+      onChange,
+      readOnly,
+      focusMode,
+      keyboardShortcuts,
+      maxTextLength,
+      doGuessNextListItemLine,
+      showNumberOfParagraphs,
+      // initialCaretPosition,
+      initialParagraphNumber,
+      renderAllContent,
+      scrollWindowToCenterCaret,
+      previewImages
+    } */);
+
+    if (initialText) {
+      editor.replaceText(initialText);
+    }
+    setFocusEditor(editor);
+    return () => {
+      if (container.contains(_editorElement)) {
+                container.removeChild(_editorElement);
+              }
+              editorInstanceRef.current = null;
+      refEditor.current.destroy();
+    };
+  }, []);
 
   return (
-    <FocusEditor
-      initialText={initialTextForEditor}
-      maxTextLength={maxTextLength}
-      forcePlainText={true}
-      scrollWindowToCenterCaret={Boolean(scrollWindowToCenterCaret)}
-      placeholder={placeholder}
-      indentHeadings={indentHeadings}
-      startWithCaretAtEnd={true}
-      preventUnfocusViaTabKey={true}
-      useTextarea={textarea}
-      onChange={onChange}
-      trimPastedText={false}
-      onBeforePaste={(text) => text?.trim()}
-      forwardRef={refEditor}
-      readOnly={readOnly}
-      focusMode={focusMode}
-      keyboardShortcuts={keyboardShortcuts}
-      guessNextLinePrefixOnEnter={doGuessNextListItemLine}
-      showNumberOfParagraphs={showNumberOfParagraphs}
-      // initialCaretPosition={initialCaretPosition}
-      initialActiveElementIndex={initialParagraphNumber}
-      renderAllContent={renderAllContent}
-      showPictureOnImageHover={previewImages}
-    ></FocusEditor>
+    <focus-editor class={[indentHeadings ? "indent-headings" : 'indent-headings']
+      .filter((v) => !!v)
+      .join(" ")}>
+      <div ref={refEditor} onInput={handleInput}></div>
+    </focus-editor>
   );
 }

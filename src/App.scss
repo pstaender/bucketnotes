@@ -26,17 +26,19 @@
   --file-list-width: 20rem;
   --font-size-small: 0.8rem;
   @include css-colors;
-  --font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
-    Liberation Mono, monospace;
+  --font-family:
+    ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono,
+    monospace;
   --font-family-sans: "SF Pro Text", -apple-system, sans-serif;
   --letter-spacing: 0px;
   --vertical-border-margin: 1.5rem;
   --transition-duration: 0.3s;
   --text-indent: 0px;
   --min-height: 10rem;
-  --strong-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px,
-    rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px,
-    rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+  --strong-shadow:
+    rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px,
+    rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px,
+    rgba(0, 0, 0, 0.09) 0px -3px 5px;
 
   @media screen and (prefers-color-scheme: dark) {
     @include css-colors-dark;
@@ -44,17 +46,11 @@
 }
 
 body {
-  &.font-family-iawriter {
-    --font-family: "iA Writer Duo", ui-monospace, monospace;
-    focus-editor {
-      --font-family: "iA Writer Duo", ui-monospace, monospace;
-    }
+  &.font-family-ibm {
+    --font-family: "IBM Plex Mono", ui-monospace, monospace;
   }
   &.font-family-mononoki {
     --font-family: "mononoki", ui-monospace, monospace;
-    focus-editor {
-      --font-family: "mononoki", ui-monospace, monospace;
-    }
   }
   font-family: var(--font-family);
   margin: 0;
@@ -69,12 +65,21 @@ body {
     }
   }
 }
-body focus-editor {
+focus-editor {
   --primary-color: var(--primary-color);
-  // --transition-duration: 0s;
-  // [contenteditable="true"] {
-  //     --transition-duration: 0.3s;
-  // }
+  --font-family-monospace: var(--font-family);
+  --color-text: var(--text-color);
+  --color-grey-light: var(--background-color-light);
+  background: none;
+  > div {
+    margin: 0 auto;
+    @media screen and (min-width: 900px) {
+      margin-top: 0.5rem;
+    }
+  }
+  @media screen and (max-width: 900px) {
+    margin: 1rem;
+  }
 }
 
 body,
@@ -178,9 +183,7 @@ html {
     font-weight: bold;
   }
 }
-focus-editor .editor .content-holder > div:first-child.heading {
-  margin-top: 0;
-}
+
 .side {
   position: relative;
   // overflow-x: hidden;
@@ -279,25 +282,10 @@ focus-editor .editor .content-holder > div:first-child.heading {
   }
 }
 
-focus-editor .editor {
+focus-editor > div {
   max-width: 50rem;
 }
-focus-editor textarea {
-  width: 100%;
-  max-width: 40rem;
-  min-height: 100vh;
-  resize: none;
-  margin: 0 auto;
-  margin-top: 1.25rem;
-  field-sizing: content;
-  outline: none;
-  border: 0px;
-  background: none;
-  color: currentColor;
-  font-size: 1rem;
-  line-height: 1.75em;
-  max-width: 40rem;
-}
+
 .drop-wrapper:has(> textarea) {
   display: grid;
 }
@@ -631,12 +619,17 @@ button {
   animation: fade 0.5s linear;
   // The animation prevents flashing login form on page load
   @keyframes fade {
-    0% { opacity: 0 }
-    40% { opacity: 0 }
-    100% { opacity: 1 }
+    0% {
+      opacity: 0;
+    }
+    40% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 }
-
 
 .copyright-badge {
   display: flex;
@@ -660,54 +653,28 @@ button {
     opacity: 0.25;
     transition: opacity 0.5s;
     margin-right: 0.5rem;
-    @media(hover) {
+    @media (hover) {
       &:hover {
         opacity: 1;
       }
     }
-
   }
 }
 
 .copyright-badge {
   filter: saturate(0);
   opacity: 0.5;
-  transition: filter 0.5s, opacity 0.5s;
+  transition:
+    filter 0.5s,
+    opacity 0.5s;
   &:hover {
     filter: saturate(1);
     opacity: 1;
   }
 }
 
-@media screen and (min-width: 900px) {
-  focus-editor .editor.indent-headings .content-holder {
-    > div:first-child {
-      &.h1 {
-        margin-top: -0.75rem;
-      }
-      &.h2 {
-        margin-top: -0.4rem;
-      }
-    }
-    > div:last-child {
-      &:after {
-        content: "";
-        height: 50vh;
-        display: block;
-        // overwrite possible existing different background color, e.g. in fenced code blocks
-        background: var(--background-color);
-        margin-left: -1rem;
-        width: calc(100% + 2rem);
-        position: relative;
-      }
-    }
-  }
-}
 
 @media screen and (max-width: 900px) {
-  #app focus-editor .editor > div.content-editable-holder {
-    min-height: unset;
-  }
   .app-window {
     display: block;
     &.sidebar-expanded:not(.not-logged-in) {

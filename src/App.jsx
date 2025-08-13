@@ -560,13 +560,11 @@ export function App({ version, appName } = {}) {
     }
   }
 
-  function handleOnChangeEditor({
-    text,
+  function handleOnChangeEditor(text, {
     activeElementIndex,
     event,
     caretPosition,
-  }) {
-    console.log(text, caretPosition)
+  } = {}) {
     if (text !== undefined) {
       setText(text);
       if (location?.pathname && VALID_FILE_EXTENSION.test(location?.pathname)) {
@@ -684,12 +682,12 @@ export function App({ version, appName } = {}) {
     localStorage.setItem("font-family", fontFamily || "");
 
     document.body.classList.remove("font-family-mononoki");
-    document.body.classList.remove("font-family-iawriter");
+    document.body.classList.remove("font-family-ibm");
 
     if (fontFamily === "mononoki") {
       document.body.classList.add("font-family-mononoki");
-    } else if (fontFamily === "iawriter") {
-      document.body.classList.add("font-family-iawriter");
+    } else if (fontFamily === "ibm") {
+      document.body.classList.add("font-family-ibm");
     }
   }, [fontFamily]);
 
@@ -788,6 +786,7 @@ export function App({ version, appName } = {}) {
         let _s3Client = new S3Client({
           endpoint,
           region,
+          requestChecksumCalculation: "WHEN_REQUIRED", // Workaround for: https://github.com/aws/aws-sdk-js-v3/issues/6834#issuecomment-2611346849
           credentials: {
             accessKeyId,
             secretAccessKey,
@@ -1185,8 +1184,8 @@ export function App({ version, appName } = {}) {
                   >
                     Font ({fontFamily ? fontFamily + " → " : "auto → "}
                     {fontFamily === "mononoki"
-                      ? "ia-writer"
-                      : fontFamily === "iawriter"
+                      ? "ibm"
+                      : fontFamily === "ibm"
                         ? "auto"
                         : "mononoki"}
                     )
@@ -1320,12 +1319,13 @@ export function App({ version, appName } = {}) {
               )}
             </div>
 
-            <focus-editor
+            <div
               onClick={(ev) => {
                 setShowMoreOptions(false);
                 setShowSideBar(false);
               }}
-              class={[
+              className={[
+                'editor-wrapper',
                 colorScheme === "light" ? "light-color-scheme" : null,
                 colorScheme === "dark" ? "dark-color-scheme" : null,
               ]
@@ -1372,7 +1372,7 @@ export function App({ version, appName } = {}) {
                   ></textarea>
                 )}
               </div>
-            </focus-editor>
+            </div>
           </div>
         </>
       )}

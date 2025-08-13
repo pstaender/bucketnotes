@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { VALID_FILE_EXTENSION } from "./helper.js";
-import { isTouchDevice } from "../focuseditor/editor/helper";
+import { VALID_FILE_EXTENSION, isTouchDevice } from "./helper.js";
 
 import DeleteIcon from "./icons/delete.svg";
 import HistoryIcon from "./icons/history.svg";
