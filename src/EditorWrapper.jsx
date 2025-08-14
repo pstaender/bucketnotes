@@ -29,37 +29,30 @@ export function EditorWrapper({
   }, [initialText, focusEditor]);
 
   useEffect(() => {
-    if (focusEditor && placeholder) {
+    if (!focusEditor) {
+      return;
+    }
+    function isSet(val) {
+      return val !== null && val !== undefined;
+    }
+    if (isSet(placeholder)) {
       focusEditor.placeholder = placeholder;
     }
-  }, [focusEditor, placeholder]);
+    if (isSet(readOnly)) {
+      focusEditor.readOnly = readOnly;
+    }
+  }, [focusEditor, placeholder, readOnly]);
 
   useEffect(() => {
     if (!refEditor.current) {
       return;
     }
-    const editor = new FocusEditorCore(refEditor.current/*/, {
-      placeholder,
-      initialText: initialTextForEditor,
-      indentHeadings,
-      textarea,
-      onChange,
-      readOnly,
-      focusMode,
-      keyboardShortcuts,
-      maxTextLength,
-      doGuessNextListItemLine,
-      showNumberOfParagraphs,
-      // initialCaretPosition,
-      initialParagraphNumber,
-      renderAllContent,
-      scrollWindowToCenterCaret,
-      previewImages
-    } */);
+    const editor = new FocusEditorCore(refEditor.current);
 
     if (initialText) {
       editor.replaceText(initialText);
     }
+    editor.tabSize = 2;
     setFocusEditor(editor);
     return () => {
       if (container.contains(_editorElement)) {
@@ -73,7 +66,7 @@ export function EditorWrapper({
   return (
     <focus-editor class={[indentHeadings ? "indent-headings" : '']
       .filter((v) => !!v)
-      .join(" ")}>
+      .join(" ")} image-preview={previewImages ? '*' : null}>
       <div ref={refEditor} onInput={handleInput}></div>
     </focus-editor>
   );

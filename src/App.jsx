@@ -897,7 +897,7 @@ export function App({ version, appName } = {}) {
       let fileName = "";
       if (location.pathname === "/new-ask-for-filename") {
         while (fileName !== null && fileName?.length === 0) {
-          fileName = prompt("Enter file name", newNoteName());
+          fileName = prompt("Enter file name", (folderPath.length > 1 ? folderPath : '') + newNoteName());
           if (fileName) {
             fileName = slugifyPath(fileName);
           }
