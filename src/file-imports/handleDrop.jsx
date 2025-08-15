@@ -1,33 +1,35 @@
 import { convertPDFToText } from "./pdf";
-import { OCRImage, tesseractLanguageCodes } from "./ocr";
+import { uploadImage } from "./uploadImage";
 import TurndownService from "turndown";
+import slugify from "slugify";
+import { unslugify } from "../helper";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   document.getElementById("pdfjs-worker-url")?.src ||
   document.querySelector(`link[href^="/assets/pdfjs"]`)?.href ||
   "/pdf.worker.mjs";
 
-const tesseractWorkerURL = document.getElementById("tesseract-worker-url")?.src ||
-document.querySelector(`link[href^="/assets/tesseract"]`)?.href ||
-"/tesseract/tesseract-worker.mjs";
-
 export function handleDrop(
   ev,
-  {
-    setInitialText,
-    text,
-    setText,
-    updateStatusText,
-    setReadonly,
-    activeElementIndex,
-  },
+  { setInitialText, text, setText, updateStatusText, setReadonly, focusEditor },
 ) {
+  function insertText(text) {
+    if (document.queryCommandSupported("insertText")) {
+      document.execCommand("insertText", false, text);
+    } else {
+      let active =
+        ev.target.closest(".main").querySelector(".block.with-caret") ||
+        ev.target.closest(".main").querySelector(".block:last-child");
+      active.textContent = (active.textContent + " " + text).trim();
+    }
+  }
+
   function applyText(newText) {
     let active =
-      ev.target.closest(".content-holder")?.querySelector(".cursor-inside") ||
-      ev.target.closest(".content-holder")?.querySelector(".active");
+      ev.target.closest(".main")?.querySelector(".block.with-caret") ||
+      ev.target.closest(".main")?.querySelector(".block:last-child");
     if (active) {
-      active.innerText = (active.innerText + "\n" + newText).trim();
+      active.textContent = (active.textContent + "\n" + newText).trim();
     } else {
       console.warn("No active element found, appending text");
       setInitialText((text += "\n" + newText));
@@ -43,45 +45,20 @@ export function handleDrop(
         updateStatusText("Unsupported item type: " + item.kind);
         return;
       }
-      console.debug(item.type);
       if (item.type.match(/^image\/.+/i)) {
-        let lang = "";
+        const uploadFilename = slugify(ev.dataTransfer.files[i].name);
+        const fileExtension = item.type.split('/')[1];
+        uploadImage(
+          item,
+          uploadFilename,
+          fileExtension,
+          ({filename}) => {
+            const text = unslugify(uploadFilename).replace(/\.[^.]+$/, "");
+            insertText(`![${text || "Image"}](${filename})`);
+            focusEditor.refresh();
+          },
+        );
 
-        while (lang === "") {
-          lang = prompt(`What language?`, "eng");
-          if (lang && tesseractLanguageCodes.indexOf(lang) === -1) {
-            lang = "";
-            alert(
-              `Invalid language code: ${lang}\n\nAvailable languages:\n${tesseractLanguageCodes.join(
-                ", ",
-              )}`,
-            );
-          }
-        }
-
-        if (!lang) {
-          return;
-        }
-
-        updateStatusText("Starting OCR");
-        setReadonly(true);
-        let file = item.getAsFile();
-        setTimeout(async () => {
-          try {
-            await OCRImage(
-              {
-                workerURL: tesseractWorkerURL,
-                file,
-                lang,
-              },
-              (text) => applyText(text),
-            );
-          } catch (e) {
-            console.error(e);
-            setReadonly(false);
-            updateStatusText("OCR failed: " + e.message);
-          }
-        }, 1);
         return;
       }
       if (item.type.match(/^application\/pdf/i)) {

@@ -2,4 +2,3 @@
 /dist
 /yarn.lock
 /public/*.mjs
-/public/tesseract/*

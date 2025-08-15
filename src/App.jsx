@@ -5,7 +5,6 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Login } from "./Login.jsx";
 import { useDebouncedCallback } from "use-debounce";
-import * as Sentry from "@sentry/browser";
 
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -23,7 +22,6 @@ import slugify from "slugify";
 const DEFAULT_PLACEHOLDER_TEXT = "Type something…";
 
 // need to be outside of component, used in setTimeout
-// let lastAutoSave = 0;/
 
 function slugifyPath(s) {
   return s
@@ -32,17 +30,15 @@ function slugifyPath(s) {
       // replace all non-word characters with _, otherwise we get url encoded characters :(
       return slugify(s, {
         replacement: "_",
-        locale: navigator.language.split('-')[0],
-      })
+        locale: navigator.language.split("-")[0],
+      });
     })
     .join("/");
 }
 
-export function App({ version, appName } = {}) {
-  const localStorage = window.localStorage;
-  // 800.000 - 1.500.000 seems to work on faster machines with enough memory… but loading takes ~ 10secs
-  const maxTextLength = 1500000;
+const localStorage = window.localStorage;
 
+export function App({ version, appName } = {}) {
   const [credentials, setCredentials] = useState(null);
   const [files, setFiles] = useState(null);
   const [folders, setFolders] = useState(null);
@@ -101,6 +97,8 @@ export function App({ version, appName } = {}) {
   const [previewImages, setPreviewImages] = useState(
     localStorage.getItem("previewImages") === "true",
   );
+  const [focusEditor, setFocusEditor] = useState(null);
+  const [displayImageUrl, setDisplayImageUrl] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -207,13 +205,11 @@ export function App({ version, appName } = {}) {
       files = files.sort((a, b) => {
         return new Date(b.LastModified) - new Date(a.LastModified);
       });
-    }
-    else if (sortFilesByAttribute === "Key") {
+    } else if (sortFilesByAttribute === "Key") {
       files = files.sort((a, b) => {
         return a.Key.localeCompare(b.Key);
       });
     }
-
 
     let folders =
       commonPrefixes.filter((f) => f?.Prefix).map((f) => f.Prefix) || [];
@@ -498,7 +494,7 @@ export function App({ version, appName } = {}) {
 
     try {
       setS3Error(null);
-      ({ fileName } = await s3.renameFile(fileKey, newFileName));
+      await s3.renameFile(fileKey, newFileName);
 
       await db.saveFileToDatabase(newFileName, {
         content: text,
@@ -560,12 +556,7 @@ export function App({ version, appName } = {}) {
     }
   }
 
-  function handleOnChangeEditor({
-    text,
-    activeElementIndex,
-    event,
-    caretPosition,
-  }) {
+  function handleOnChangeEditor(text, { caretPosition } = {}) {
     if (text !== undefined) {
       setText(text);
       if (location?.pathname && VALID_FILE_EXTENSION.test(location?.pathname)) {
@@ -683,12 +674,12 @@ export function App({ version, appName } = {}) {
     localStorage.setItem("font-family", fontFamily || "");
 
     document.body.classList.remove("font-family-mononoki");
-    document.body.classList.remove("font-family-iawriter");
+    document.body.classList.remove("font-family-ibm");
 
     if (fontFamily === "mononoki") {
       document.body.classList.add("font-family-mononoki");
-    } else if (fontFamily === "iawriter") {
-      document.body.classList.add("font-family-iawriter");
+    } else if (fontFamily === "ibm") {
+      document.body.classList.add("font-family-ibm");
     }
   }, [fontFamily]);
 
@@ -787,6 +778,7 @@ export function App({ version, appName } = {}) {
         let _s3Client = new S3Client({
           endpoint,
           region,
+          requestChecksumCalculation: "WHEN_REQUIRED", // Workaround for: https://github.com/aws/aws-sdk-js-v3/issues/6834#issuecomment-2611346849
           credentials: {
             accessKeyId,
             secretAccessKey,
@@ -838,30 +830,28 @@ export function App({ version, appName } = {}) {
     if (location.pathname === "/logout") {
       return logout();
     }
+    if (location.pathname.startsWith("/images/")) {
+      setDisplayImageUrl(location.pathname.replace(/^\/images\//, ""));
+      return;
+    } else {
+      setDisplayImageUrl(null);
+    }
     if (!s3Client || location.pathname === "/") {
       return;
     }
     // load a bit later, to prevent to be overwritten by the / path loading
     // this should only be applied on initial page calls
-    if (location.pathname.endsWith('/')) {
+    if (location.pathname.endsWith("/")) {
       setTimeout(() => {
         // open sidebar to show that we have been navigated to a folder
         setShowSideBar(true);
-        setFolderPath(decodeURI(location.pathname))
+        setFolderPath(decodeURI(location.pathname));
       }, 100);
     }
   }, [s3Client, location]);
 
   useEffect(() => {
     setReadonly(fileVersions?.length > 0);
-    // if (fileVersions?.length > 0) {
-    //   setTextBeforeVersioningView(text);
-    // } else if (textBeforeVersioningView) {
-    //   // "restore" current text
-    //   setTextBeforeVersioningView(null);
-    //   setInitialText(textBeforeVersioningView);
-    //   setText(textBeforeVersioningView);
-    // }
   }, [fileVersions]);
 
   useEffect(() => {
@@ -907,7 +897,10 @@ export function App({ version, appName } = {}) {
       let fileName = "";
       if (location.pathname === "/new-ask-for-filename") {
         while (fileName !== null && fileName?.length === 0) {
-          fileName = prompt("Enter file name", newNoteName());
+          fileName = prompt(
+            "Enter file name",
+            (folderPath.length > 1 ? folderPath : "") + newNoteName(),
+          );
           if (fileName) {
             fileName = slugifyPath(fileName);
           }
@@ -953,14 +946,6 @@ export function App({ version, appName } = {}) {
   }, [location, s3Client]);
 
   useEffect(() => {
-    if (showSideBar) {
-      localStorage.setItem("hideSideBar", "false");
-    } else {
-      localStorage.setItem("hideSideBar", "true");
-    }
-  }, [showSideBar]);
-
-  useEffect(() => {
     if (autoSave) {
       localStorage.setItem("autoSave", "");
     } else {
@@ -995,7 +980,6 @@ export function App({ version, appName } = {}) {
     }
     console.groupCollapsed("s3Error");
     console.error(s3Error);
-    Sentry.captureException(s3Error);
     console.groupEnd("s3Error");
   }, [s3Error]);
 
@@ -1174,8 +1158,8 @@ export function App({ version, appName } = {}) {
                   <li
                     onClick={() => {
                       if (fontFamily === "mononoki") {
-                        setFontFamily("iawriter");
-                      } else if (fontFamily === "iawriter") {
+                        setFontFamily("ibm");
+                      } else if (fontFamily === "ibm") {
                         setFontFamily("");
                       } else {
                         setFontFamily("mononoki");
@@ -1184,8 +1168,8 @@ export function App({ version, appName } = {}) {
                   >
                     Font ({fontFamily ? fontFamily + " → " : "auto → "}
                     {fontFamily === "mononoki"
-                      ? "ia-writer"
-                      : fontFamily === "iawriter"
+                      ? "ibm"
+                      : fontFamily === "ibm"
                         ? "auto"
                         : "mononoki"}
                     )
@@ -1195,6 +1179,7 @@ export function App({ version, appName } = {}) {
                       setCreateSmartNewLineContent(!createSmartNewLineContent)
                     }
                     className={createSmartNewLineContent ? "active" : null}
+                    style={{ display: "none" }}
                   >
                     Guess lists and indents
                   </li>
@@ -1294,7 +1279,10 @@ export function App({ version, appName } = {}) {
                   <li
                     onClick={(ev) => {
                       setPreviewImages(!previewImages);
-                      localStorage.setItem("previewImages", previewImages ? 'false' : 'true');
+                      localStorage.setItem(
+                        "previewImages",
+                        previewImages ? "false" : "true",
+                      );
                     }}
                     className={previewImages ? "active" : null}
                   >
@@ -1318,41 +1306,56 @@ export function App({ version, appName } = {}) {
                 </ul>
               )}
             </div>
-
-            <focus-editor
-              onClick={(ev) => {
-                setShowMoreOptions(false);
-                setShowSideBar(false);
-              }}
-              class={[
-                colorScheme === "light" ? "light-color-scheme" : null,
-                colorScheme === "dark" ? "dark-color-scheme" : null,
-              ]
-                .filter((v) => !!v)
-                .join(" ")}
-            >
+            {displayImageUrl ? (
+              <div className="display-single-image">
+                <img
+                  src={
+                    JSON.parse(
+                      localStorage.getItem(
+                        `s3_signed_url:images/${displayImageUrl}`,
+                      ),
+                    ).url
+                  }
+                ></img>
+              </div>
+            ) : (
               <div
-                onDrop={(ev) => {
-                  handleDrop(ev, {
-                    text,
-                    setInitialText,
-                    setText,
-                    updateStatusText,
-                    setReadonly,
-                  });
+                onClick={(ev) => {
+                  if (ev.isTrusted) {
+                    setShowMoreOptions(false);
+                    setShowSideBar(false);
+                  }
                 }}
-                className="drop-wrapper"
+                className={[
+                  "editor-wrapper",
+                  colorScheme === "light" ? "light-color-scheme" : null,
+                  colorScheme === "dark" ? "dark-color-scheme" : null,
+                ]
+                  .filter((v) => !!v)
+                  .join(" ")}
               >
-                {initialText?.length < maxTextLength ? (
+                <div
+                  onDrop={(ev) => {
+                    handleDrop(ev, {
+                      text,
+                      setInitialText,
+                      setText,
+                      updateStatusText,
+                      setReadonly,
+                      focusEditor,
+                    });
+                  }}
+                  className="drop-wrapper"
+                >
                   <EditorWrapper
+                    focusEditor={focusEditor}
+                    setFocusEditor={setFocusEditor}
                     placeholder={placeholder}
                     indentHeadings={true}
                     initialText={initialText}
                     onChange={handleOnChangeEditor}
                     readOnly={readonly}
                     focusMode={focusMode}
-                    keyboardShortcuts={false}
-                    maxTextLength={maxTextLength}
                     doGuessNextListItemLine={createSmartNewLineContent}
                     showNumberOfParagraphs={showNumberOfParagraphs}
                     initialCaretPosition={initialCaretPosition}
@@ -1361,17 +1364,9 @@ export function App({ version, appName } = {}) {
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}
                     previewImages={previewImages}
                   ></EditorWrapper>
-                ) : (
-                  <textarea
-                    defaultValue={initialText}
-                    readOnly={readonly}
-                    onChange={(ev) => {
-                      handleOnChangeEditor({ text: ev.target.value });
-                    }}
-                  ></textarea>
-                )}
+                </div>
               </div>
-            </focus-editor>
+            )}
           </div>
         </>
       )}
