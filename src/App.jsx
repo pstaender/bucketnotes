@@ -16,6 +16,7 @@ import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
 import { FileList } from "./FileList.jsx";
 import { isTouch, VALID_FILE_EXTENSION } from "./helper.js";
+import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
 import slugify from "slugify";
 
@@ -85,7 +86,6 @@ export function App({ version, appName } = {}) {
     sessionStorage.getItem("showNumberOfParagraphs") === "true",
   );
   const [initialCaretPosition, setInitialCaretPosition] = useState(null);
-  const [initialParagraphNumber, setInitialParagraphNumber] = useState(null);
   // TODO: replace location.pathname with folderPath
   const [folderPath, setFolderPath] = useState("");
   const [renderAllContent, setRenderAllContent] = useState(false);
@@ -327,8 +327,16 @@ export function App({ version, appName } = {}) {
 
   function displayGoToParagraphDialog() {
     let paragraphNumber = prompt("Go to paragraph number");
+    let target = focusEditor.target.querySelector(
+      `:scope > .block:nth-child(${Number(paragraphNumber)})`,
+    );
     if (Number(paragraphNumber) >= 0) {
-      setInitialParagraphNumber(Number(paragraphNumber));
+      if (!target) {
+        target = focusEditor.target.querySelector(`:scope > .block:last-child`);
+      }
+      Cursor.setCurrentCursorPosition(0, target);
+
+      target.scrollIntoView({ block: "center", behavior: "instant" });
     }
   }
 
@@ -607,9 +615,6 @@ export function App({ version, appName } = {}) {
     updateStatusText("Saving file");
     try {
       let textToSave = text;
-      // if (textToSave.trim() === "") {
-      //   return updateStatusText("No content to save");
-      // }
       if (
         location.pathname === "/new" ||
         location.pathname === "new" ||
@@ -1363,7 +1368,6 @@ export function App({ version, appName } = {}) {
                     doGuessNextListItemLine={createSmartNewLineContent}
                     showNumberOfParagraphs={showNumberOfParagraphs}
                     initialCaretPosition={initialCaretPosition}
-                    initialParagraphNumber={initialParagraphNumber}
                     renderAllContent={renderAllContent}
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}
                     previewImages={previewImages}

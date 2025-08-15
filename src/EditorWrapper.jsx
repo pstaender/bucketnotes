@@ -13,7 +13,6 @@ export function EditorWrapper({
   focusMode,
   doGuessNextListItemLine,
   showNumberOfParagraphs,
-  initialParagraphNumber,
   renderAllContent,
   scrollWindowToCenterCaret,
   previewImages,
@@ -92,7 +91,12 @@ export function EditorWrapper({
             }),
         );
       }
-      // checkForImages();
+    });
+
+    refEditor.current.addEventListener("keyup", (ev) => {
+      if (focusEditor?.getMarkdown) {
+        onChange(focusEditor.getMarkdown(), {});
+      }
     });
 
     if (scrollWindowToCenterCaret) {
