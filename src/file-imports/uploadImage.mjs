@@ -13,7 +13,7 @@ export function uploadImage(transferItem, filename, fileExtension, onFinishedCal
     const arrayBuffer = event.target.result;
     if (fileExtension) {
       let hash = await sha1(arrayBuffer);
-      hash = hash.substring(0, 8); // shorten to 8 characters
+      hash = hash.substring(0, 20); // shorten to 20 characters
       filename = `images/${hash}.${fileExtension}`;
     } else {
       filename = `images/${filename}`;
