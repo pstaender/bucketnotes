@@ -4,8 +4,14 @@ import react from "@vitejs/plugin-react";
 
 import topLevelAwait from "vite-plugin-top-level-await";
 
+let base = '/'
+if (process.env.BUILD_BASE_PATH) {
+  base = process.env.BUILD_BASE_PATH;
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
+  base,
   build: {
     target: "esnext",
     sourcemap: "inline",

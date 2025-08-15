@@ -69,7 +69,7 @@ export function App({ version, appName } = {}) {
   const [scrollWindowToCenterCaret, setScrollWindowToCenterCaret] = useState(
     isTouch()
       ? false
-      : localStorage.getItem("scrollWindowToCenterCaret") !== "false",
+      : localStorage.getItem("scrollWindowToCenterCaret") === "true",
   );
   const [createSmartNewLineContent, setCreateSmartNewLineContent] = useState(
     localStorage.getItem("createSmartNewLineContent") !== "false",
