@@ -236,6 +236,11 @@ html {
   li {
     padding: 0.1rem 1rem;
   }
+  @media screen and (max-width: 900px) {
+    li:first-child:not(.no-hover) {
+      padding-top: 1rem;
+    }
+  }
 }
 
 .main {
@@ -469,6 +474,10 @@ focus-editor [contenteditable] div:last-child {
 focus-editor .focus-editor {
   .with-caret .link {
     text-decoration: none;
+  }
+  .link.inline:hover {
+    /* background: #8efbd2; */
+    text-decoration: underline;
   }
   .link:hover {
     text-decoration: none;

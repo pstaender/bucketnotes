@@ -360,6 +360,10 @@ export function App({ version, appName } = {}) {
   }, [window.navigator.onLine]);
 
   useEffect(() => {
+    localStorage.setItem("hideSideBar", String(!showSideBar));
+  }, [showSideBar]);
+
+  useEffect(() => {
     window.addEventListener("beforeprint", handleBeforePrint);
     return () => {
       window.removeEventListener("beforeprint", handleBeforePrint);
