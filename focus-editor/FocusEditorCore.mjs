@@ -21,7 +21,7 @@ class FocusEditorCore {
     refresh: {
       accessKey: "KeyR",
       handler: () => {
-        this.refresh();
+        this.fullRefresh();
       },
     },
     zen: {
@@ -136,10 +136,10 @@ class FocusEditorCore {
 
   /**
    * (Re)renders markdown.
-   * Can be helpfull if not all elements are updated correctly.
+   * Can be helpful if not all elements are updated correctly.
    * Triggering refresh may change the caret position as well.
    */
-  refresh() {
+  fullRefresh() {
     let cursor = Cursor.getCurrentCursorPosition(this.target);
     const lengthBefore = this.target.textContent.length;
 
@@ -157,6 +157,10 @@ class FocusEditorCore {
       Cursor.setCurrentCursorPosition(cursor + diffCursorPosition, this.target);
     }
     this.#addCssClassToBlockWithCaret();
+  }
+
+  refresh() {
+    this.#updateChildrenElementsWithMarkdownClasses();
   }
 
   /**
@@ -185,11 +189,42 @@ class FocusEditorCore {
     return this.allChildren().length > 700;
   }
 
+  #renderParagraphBlocks(children, document) {
+    md2html.addParagraphClasses(children, document);
+    this.target.dispatchEvent(
+      new CustomEvent("renderParagraphBlocks", {
+        bubbles: true,
+        detail: {
+          elements: children,
+        },
+      }),
+    );
+    if (this.target.parentElement.hasAttribute('prevent-dblclick-visit-on-links')) {
+      return;
+    }
+    children.forEach((e) =>
+      e.querySelectorAll("a.link[href]:not(.prevent-dblclick-visit)").forEach((el) => {
+        el.addEventListener("dblclick", (ev) => {
+          if (
+            ev.metaKey ||
+            ev.altKey ||
+            /^http[s]*:\/\//i.test(el.getAttribute("href"))
+          ) {
+            // open in new tab
+            window.open(el.href, "_blank");
+          } else {
+            window.location.href = el.href;
+          }
+        });
+      }),
+    );
+  }
+
   #updateChildrenElementsWithMarkdownClasses() {
     let children = this.allChildren();
     this._warnedAboutTooManyChildren = false;
     md2html.addCodeBlockClasses(children, document);
-    md2html.addParagraphClasses(children, document);
+    this.#renderParagraphBlocks(children, document);
 
     this.#updateAllVisibleElements();
   }
@@ -235,7 +270,7 @@ class FocusEditorCore {
   #updateAllVisibleElements() {
     const visibleElements = this.#visibleChildren();
     md2html.addCodeBlockClasses(this.allChildren(), document);
-    md2html.addParagraphClasses(visibleElements, document);
+    this.#renderParagraphBlocks(visibleElements, document);
   }
 
   #addCssClassToBlockWithCaret() {
@@ -418,7 +453,9 @@ class FocusEditorCore {
   }
 
   #onPaste(event) {
-    let pasteText = (event.clipboardData || window.clipboardData).getData("text");
+    let pasteText = (event.clipboardData || window.clipboardData).getData(
+      "text",
+    );
 
     const selection = window.getSelection();
     if (!selection.rangeCount) return false;
@@ -429,9 +466,8 @@ class FocusEditorCore {
 
     event.preventDefault();
     setTimeout(async () => {
-      this.refresh();
-      let offset =
-        this.target.textContent.length - this.#textLengthOnKeyDown;
+      this.fullRefresh();
+      let offset = this.target.textContent.length - this.#textLengthOnKeyDown;
 
       this.#restoreEditorCaretPosition({
         offset,
@@ -622,7 +658,7 @@ class FocusEditorCore {
       this.target.querySelector(".block").textContent.trim() === ""
     ) {
       /* Firefox Bug (2): When selecting all text and clean it, not div is there anymore */
-      this.refresh();
+      this.fullRefresh();
       Cursor.setCurrentCursorPosition(
         this.target.textContent.length,
         this.target.querySelector(".block"),
@@ -684,8 +720,8 @@ class FocusEditorCore {
         return;
       }
 
-      md2html.addParagraphClasses([currentParagraph], document);
       md2html.addCodeBlockClasses(this.allChildren(), document);
+      this.#renderParagraphBlocks([currentParagraph], document);
 
       this.#updateAllVisibleElements();
       this.#restoreLastCaretPosition();
@@ -955,7 +991,7 @@ class FocusEditorCore {
       div.classList.add("block");
       this.target.appendChild(div);
       if (div.previousElementSibling) {
-        md2html.addParagraphClasses([div.previousElementSibling], document);
+        this.#renderParagraphBlocks([div.previousElementSibling], document);
       }
       this.#updateAllVisibleElements();
       return;
@@ -963,7 +999,7 @@ class FocusEditorCore {
 
     let last = this.target.querySelector(".block:last-child");
     last.textContent += char;
-    md2html.addParagraphClasses([last], document);
+    this.#renderParagraphBlocks([last], document);
   }
 }
 

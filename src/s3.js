@@ -71,24 +71,63 @@ export async function getFile(key) {
   const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
   let result = await (await fetch(signedUrl)).text();
   return { content: result, file: null, error: null };
+}
 
-  /*
-  // this brings problems with being cached in the browser
-  const file = await s3Client.send(command);
-  const { Body } = file;
-  const reader = Body.getReader();
-  let decoder = new TextDecoder("utf-8");
-  let result = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-    result += decoder.decode(value, { stream: true });
+export async function doesFileExists(filename) {
+  // Check if a file exists in the S3 bucket
+  if (forceOffline) {
+    throw new Error("Offline mode");
   }
-  file.Key = key;
-  */
-  // return { content: result, file, error: null };
+  try {
+    await s3Client.send(
+      new HeadObjectCommand({
+        Bucket: bucketName,
+        Key: filename
+      })
+    );
+    return true; // File exists
+  } catch (err) {
+    if (err.name === "NotFound") {
+      return false; // File does not exist
+    }
+    throw err;
+  }
+}
+
+export async function getPublicUrl(filename, expiresIn) {
+  if (forceOffline) {
+    throw new Error("Offline mode");
+  }
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: filename
+  });
+  try {
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
+    return signedUrl;
+  } catch (err) {
+    console.error("Error getting public URL for file:", err);
+    throw new Error(`Error getting public URL for file: ${err.message}`);
+  }
+}
+
+export async function uploadBinaryFile(filename, data, contentType) {
+  if (forceOffline) {
+    throw new Error("Offline mode");
+  }
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: filename,
+    Body: data,
+    ContentType: contentType,
+  });
+  try {
+    await s3Client.send(command);
+    return { fileName: filename, error: null };
+  } catch (err) {
+    console.error("Error uploading image file:", err);
+    return { fileName: null, error: err.message };
+  }
 }
 
 export async function createFile(fileName, content) {

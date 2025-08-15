@@ -2,7 +2,7 @@
 
 An editor which helps you to focus on just writing. Use your own S3 bucket for cheap, private and fast storage. Organize your notes in zettelkasten-style.
 
-[Live Demo (you need S3 credentials)](http://www.bucketnotes.app)
+[🚀 Use the app in your browser for free (you need S3 credentials)](https://pstaender.github.io/bucketnotes/)
 
 ⚠️ **The software / developer is not responsible to possible damage on editing files in your S3 bucket** ⚠️
 
@@ -16,18 +16,16 @@ https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1
   * offline mode (progressive web app)
   * responsive (works on desktop, mobile and tablet)
   * different fixed-size fonts
-  * supports some markdown syntax
+  * supports commonmark syntax
   * writes and reads text files from any s3 bucket
   * supports versioning (if s3 versioning is enabled)
-  * built-in OCR (via tesseract+wasm)
   * html and pdf to markdown import
   * requires no extra service than the s3 bucket
   * open source
 
 ## What is missing / not working?
 
-  * fully working undo / redo  - therefore the bucket versioning is a good backup
-  * jumping caret (occasionally) - reload the page to fix
+  * image upload (to s3)
 
 ## Server requirements
 
@@ -119,10 +117,10 @@ Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess i
 
 ## Build
 
-Clone the repo, ensure Node v18+ is available, then:
+Clone the repo, ensure Node v20+ is available, then:
 
 ```sh
-$ npm install
+$ pnpm install
 $ npm run build
 ```
 

@@ -97,6 +97,7 @@ export function App({ version, appName } = {}) {
   const [previewImages, setPreviewImages] = useState(
     localStorage.getItem("previewImages") === "true",
   );
+  const [focusEditor, setFocusEditor] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -1326,11 +1327,14 @@ export function App({ version, appName } = {}) {
                     setText,
                     updateStatusText,
                     setReadonly,
+                    focusEditor,
                   });
                 }}
                 className="drop-wrapper"
               >
                 <EditorWrapper
+                  focusEditor={focusEditor}
+                  setFocusEditor={setFocusEditor}
                   placeholder={placeholder}
                   indentHeadings={true}
                   initialText={initialText}

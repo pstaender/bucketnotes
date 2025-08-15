@@ -1,5 +1,8 @@
 import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
 import { useEffect, useRef, useState } from "react";
+import * as s3 from "./s3";
+
+const localStorage = window.localStorage;
 
 export function EditorWrapper({
   placeholder,
@@ -14,13 +17,16 @@ export function EditorWrapper({
   renderAllContent,
   scrollWindowToCenterCaret,
   previewImages,
+  focusEditor,
+  setFocusEditor,
 } = {}) {
   const refEditor = useRef();
-  const [focusEditor, setFocusEditor] = useState(null);
 
   const handleInput = (event) => {
     onChange(focusEditor.getMarkdown(), {});
   };
+
+  const handleChange = () => console.log("!");
 
   useEffect(() => {
     if (initialText !== null && initialText !== undefined && focusEditor) {
@@ -47,6 +53,46 @@ export function EditorWrapper({
     if (!refEditor.current) {
       return;
     }
+
+    async function checkForAwsImage(a) {
+      const expiresIn = 3600;
+      if (!a.getAttribute("href")) {
+        return;
+      }
+      const url = a.getAttribute("href");
+      const cacheKey = `s3_signed_url:${url}`;
+      if (localStorage.getItem(cacheKey)) {
+        const data = JSON.parse(localStorage.getItem(cacheKey));
+        if (data.validUntil > new Date().getTime()) {
+          a.style.setProperty("--url", `url(${data.url})`);
+          return;
+        }
+      }
+      const imageUrl = await s3.getPublicUrl(url, expiresIn);
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          validUntil: new Date().getTime() + expiresIn * 1000,
+          url: imageUrl,
+        }),
+      );
+      a.style.setProperty("--url", `url(${imageUrl})`);
+    }
+
+    refEditor.current.addEventListener("renderParagraphBlocks", (ev) => {
+      if (ev.detail.elements) {
+        ev.detail.elements.forEach((el) =>
+          el
+            .querySelectorAll('a.link.image[href^="images/"]:not(.aws-url)')
+            .forEach((a) => {
+              a.classList.add("prevent-dblclick-visit");
+              a.classList.add("aws-url");
+              checkForAwsImage(a);
+            }),
+        );
+      }
+      // checkForImages();
+    });
     const editor = new FocusEditorCore(refEditor.current);
 
     if (initialText) {
@@ -55,18 +101,21 @@ export function EditorWrapper({
     editor.tabSize = 2;
     setFocusEditor(editor);
     return () => {
-      if (container.contains(_editorElement)) {
-                container.removeChild(_editorElement);
-              }
-              editorInstanceRef.current = null;
+      if (container?.contains(_editorElement)) {
+        container?.removeChild(_editorElement);
+      }
+      editorInstanceRef.current = null;
       refEditor.current.destroy();
     };
   }, []);
 
   return (
-    <focus-editor class={[indentHeadings ? "indent-headings" : '']
-      .filter((v) => !!v)
-      .join(" ")} image-preview={previewImages ? '*' : null}>
+    <focus-editor
+      class={[indentHeadings ? "indent-headings" : ""]
+        .filter((v) => !!v)
+        .join(" ")}
+      image-preview={previewImages ? "*" : null}
+    >
       <div ref={refEditor} onInput={handleInput}></div>
     </focus-editor>
   );
