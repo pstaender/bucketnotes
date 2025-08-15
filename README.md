@@ -4,11 +4,11 @@ An editor which helps you to focus on just writing. Use your own S3 bucket for c
 
 The app runs entirely in your browser. You can also use it offline. It does not require any additional server or database. It uses the S3 API to read and write files directly to your S3 bucket.
 
-[🚀 Use the app in your browser for free (you only need a S3 bucket)](https://pstaender.github.io/bucketnotes/)
+[🚀 Use the app now in your browser for free (you only need a S3 bucket)](https://pstaender.github.io/bucketnotes/)
+
+https://github.com/user-attachments/assets/ac485c23-20cc-4852-8483-e41a23bc1a11
 
 ⚠️ **The software / developer is not responsible to possible damage on editing files in your S3 bucket** ⚠️
-
-https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1c670e3adde0
 
 ## Features
 
