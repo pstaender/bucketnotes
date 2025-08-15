@@ -287,6 +287,13 @@ focus-editor > div {
   max-width: 50rem;
 }
 
+focus-editor [contenteditable] div:last-child {
+  margin-bottom: 4rem;
+  @media screen and (min-width: 900px) {
+    margin-bottom: calc(50vh - 5rem);
+  }
+}
+
 .drop-wrapper:has(> textarea) {
   display: grid;
 }

@@ -9,7 +9,6 @@
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/utilities": "*",
     "@r2wc/react-to-web-component": "^2.0.3",
-    "@sentry/react": "^7.109.0",
     "@vitejs/plugin-react": "*",
     "idb": "^8.0.0",
     "moment": "^2.30.1",

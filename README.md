@@ -2,7 +2,9 @@
 
 An editor which helps you to focus on just writing. Use your own S3 bucket for cheap, private and fast storage. Organize your notes in zettelkasten-style.
 
-[🚀 Use the app in your browser for free (you need S3 credentials)](https://pstaender.github.io/bucketnotes/)
+The app runs entirely in your browser. You can also use it offline. It does not require any additional server or database. It uses the S3 API to read and write files directly to your S3 bucket.
+
+[🚀 Use the app in your browser for free (you only need a S3 bucket)](https://pstaender.github.io/bucketnotes/)
 
 ⚠️ **The software / developer is not responsible to possible damage on editing files in your S3 bucket** ⚠️
 
@@ -15,6 +17,7 @@ https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1
   * dark mode
   * offline mode (progressive web app)
   * responsive (works on desktop, mobile and tablet)
+  * image upload to s3 and displaying images
   * different fixed-size fonts
   * supports commonmark syntax
   * writes and reads text files from any s3 bucket
@@ -22,10 +25,6 @@ https://github.com/pstaender/bucketnotes/assets/140571/f1b120da-ce2f-459f-bde0-1
   * html and pdf to markdown import
   * requires no extra service than the s3 bucket
   * open source
-
-## What is missing / not working?
-
-  * image upload (to s3)
 
 ## Server requirements
 
@@ -110,6 +109,10 @@ Outputs:
 You can use other S3-compatible-providers (not tested, but endpoint URL is exchangable at the login).
 
 Always ensure, that you have correct/permissive CORS policies in your S3 bucket, otherwise the direct client-side S3 api calls from the browser will not work.
+
+## Security and Privacy
+
+Yes, by default the credentials (except the secret key) are stored in the browser's local storage. The secret-key can be stored - see checkbox `Remember Secret` at the login. This is a trade-off for simplicity and ease of use. If you are concerned about security, host the project under a custom domain or uncheck `Remember credentials` and `Remember secret` at the login.
 
 ## Costs
 

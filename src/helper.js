@@ -14,7 +14,7 @@ export function isTouchDevice() {
  */
 export function unslugify(slug) {
   return slug
-    .replace(/\-/g, " ")
+    .replace(/[-_]/g, " ")
     .replace(
       /\w\S*/g,
       (text) => text.charAt(0).toUpperCase() + text.slice(1).toLowerCase(),
