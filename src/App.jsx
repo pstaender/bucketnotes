@@ -98,6 +98,7 @@ export function App({ version, appName } = {}) {
     localStorage.getItem("previewImages") === "true",
   );
   const [focusEditor, setFocusEditor] = useState(null);
+  const [displayImageUrl, setDisplayImageUrl] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -829,6 +830,12 @@ export function App({ version, appName } = {}) {
     if (location.pathname === "/logout") {
       return logout();
     }
+    if (location.pathname.startsWith("/images/")) {
+      setDisplayImageUrl(location.pathname.replace(/^\/images\//, ""));
+      return;
+    } else {
+      setDisplayImageUrl(null);
+    }
     if (!s3Client || location.pathname === "/") {
       return;
     }
@@ -845,14 +852,6 @@ export function App({ version, appName } = {}) {
 
   useEffect(() => {
     setReadonly(fileVersions?.length > 0);
-    // if (fileVersions?.length > 0) {
-    //   setTextBeforeVersioningView(text);
-    // } else if (textBeforeVersioningView) {
-    //   // "restore" current text
-    //   setTextBeforeVersioningView(null);
-    //   setInitialText(textBeforeVersioningView);
-    //   setText(textBeforeVersioningView);
-    // }
   }, [fileVersions]);
 
   useEffect(() => {
@@ -898,7 +897,10 @@ export function App({ version, appName } = {}) {
       let fileName = "";
       if (location.pathname === "/new-ask-for-filename") {
         while (fileName !== null && fileName?.length === 0) {
-          fileName = prompt("Enter file name", (folderPath.length > 1 ? folderPath : '') + newNoteName());
+          fileName = prompt(
+            "Enter file name",
+            (folderPath.length > 1 ? folderPath : "") + newNoteName(),
+          );
           if (fileName) {
             fileName = slugifyPath(fileName);
           }
@@ -1177,7 +1179,7 @@ export function App({ version, appName } = {}) {
                       setCreateSmartNewLineContent(!createSmartNewLineContent)
                     }
                     className={createSmartNewLineContent ? "active" : null}
-                    style={{ display: 'none' }}
+                    style={{ display: "none" }}
                   >
                     Guess lists and indents
                   </li>
@@ -1304,54 +1306,67 @@ export function App({ version, appName } = {}) {
                 </ul>
               )}
             </div>
-
-            <div
-              onClick={(ev) => {
-                if (ev.isTrusted) {
-                  setShowMoreOptions(false);
-                  setShowSideBar(false);
-                }
-              }}
-              className={[
-                "editor-wrapper",
-                colorScheme === "light" ? "light-color-scheme" : null,
-                colorScheme === "dark" ? "dark-color-scheme" : null,
-              ]
-                .filter((v) => !!v)
-                .join(" ")}
-            >
-              <div
-                onDrop={(ev) => {
-                  handleDrop(ev, {
-                    text,
-                    setInitialText,
-                    setText,
-                    updateStatusText,
-                    setReadonly,
-                    focusEditor,
-                  });
-                }}
-                className="drop-wrapper"
-              >
-                <EditorWrapper
-                  focusEditor={focusEditor}
-                  setFocusEditor={setFocusEditor}
-                  placeholder={placeholder}
-                  indentHeadings={true}
-                  initialText={initialText}
-                  onChange={handleOnChangeEditor}
-                  readOnly={readonly}
-                  focusMode={focusMode}
-                  doGuessNextListItemLine={createSmartNewLineContent}
-                  showNumberOfParagraphs={showNumberOfParagraphs}
-                  initialCaretPosition={initialCaretPosition}
-                  initialParagraphNumber={initialParagraphNumber}
-                  renderAllContent={renderAllContent}
-                  scrollWindowToCenterCaret={scrollWindowToCenterCaret}
-                  previewImages={previewImages}
-                ></EditorWrapper>
+            {displayImageUrl ? (
+              <div className="display-single-image">
+                <img
+                  src={
+                    JSON.parse(
+                      localStorage.getItem(
+                        `s3_signed_url:images/${displayImageUrl}`,
+                      ),
+                    ).url
+                  }
+                ></img>
               </div>
-            </div>
+            ) : (
+              <div
+                onClick={(ev) => {
+                  if (ev.isTrusted) {
+                    setShowMoreOptions(false);
+                    setShowSideBar(false);
+                  }
+                }}
+                className={[
+                  "editor-wrapper",
+                  colorScheme === "light" ? "light-color-scheme" : null,
+                  colorScheme === "dark" ? "dark-color-scheme" : null,
+                ]
+                  .filter((v) => !!v)
+                  .join(" ")}
+              >
+                <div
+                  onDrop={(ev) => {
+                    handleDrop(ev, {
+                      text,
+                      setInitialText,
+                      setText,
+                      updateStatusText,
+                      setReadonly,
+                      focusEditor,
+                    });
+                  }}
+                  className="drop-wrapper"
+                >
+                  <EditorWrapper
+                    focusEditor={focusEditor}
+                    setFocusEditor={setFocusEditor}
+                    placeholder={placeholder}
+                    indentHeadings={true}
+                    initialText={initialText}
+                    onChange={handleOnChangeEditor}
+                    readOnly={readonly}
+                    focusMode={focusMode}
+                    doGuessNextListItemLine={createSmartNewLineContent}
+                    showNumberOfParagraphs={showNumberOfParagraphs}
+                    initialCaretPosition={initialCaretPosition}
+                    initialParagraphNumber={initialParagraphNumber}
+                    renderAllContent={renderAllContent}
+                    scrollWindowToCenterCaret={scrollWindowToCenterCaret}
+                    previewImages={previewImages}
+                  ></EditorWrapper>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

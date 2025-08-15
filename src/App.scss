@@ -472,6 +472,12 @@ focus-editor[image-preview] .link.image span:after {
   margin-bottom: 1rem;
 }
 
+.display-single-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 button {
   font-size: 1rem;
   padding: 0.5rem 1rem;

@@ -64,7 +64,7 @@ export function EditorWrapper({
       if (localStorage.getItem(cacheKey)) {
         const data = JSON.parse(localStorage.getItem(cacheKey));
         if (data.validUntil > new Date().getTime()) {
-          a.href = data.url;
+          a.href = '#/' +  a.getAttribute("href");
           a.style.setProperty("--url", `url(${data.url})`);
           return;
         }
@@ -77,7 +77,7 @@ export function EditorWrapper({
           url: imageUrl,
         }),
       );
-      a.href = imageUrl;
+      a.href = '#/' + a.getAttribute("href");
       a.style.setProperty("--url", `url(${imageUrl})`);
     }
 
@@ -114,8 +114,11 @@ export function EditorWrapper({
     editor.tabSize = 2;
     setFocusEditor(editor);
     return () => {
-      if (container?.contains(_editorElement)) {
-        container?.removeChild(_editorElement);
+      if (typeof container !== 'undefined' && container.contains(_editorElement)) {
+        container.removeChild(_editorElement);
+      }
+      if (typeof editorInstanceRef === 'undefined') {
+        return;
       }
       editorInstanceRef.current = null;
       refEditor.current.destroy();
