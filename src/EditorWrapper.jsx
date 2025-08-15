@@ -64,6 +64,7 @@ export function EditorWrapper({
       if (localStorage.getItem(cacheKey)) {
         const data = JSON.parse(localStorage.getItem(cacheKey));
         if (data.validUntil > new Date().getTime()) {
+          a.href = data.url;
           a.style.setProperty("--url", `url(${data.url})`);
           return;
         }
@@ -76,6 +77,7 @@ export function EditorWrapper({
           url: imageUrl,
         }),
       );
+      a.href = imageUrl;
       a.style.setProperty("--url", `url(${imageUrl})`);
     }
 
@@ -85,7 +87,6 @@ export function EditorWrapper({
           el
             .querySelectorAll('a.link.image[href^="images/"]:not(.aws-url)')
             .forEach((a) => {
-              a.classList.add("prevent-dblclick-visit");
               a.classList.add("aws-url");
               checkForAwsImage(a);
             }),
@@ -93,6 +94,18 @@ export function EditorWrapper({
       }
       // checkForImages();
     });
+
+    if (scrollWindowToCenterCaret) {
+      refEditor.current.addEventListener("keyup", (ev) => {
+        refEditor.current.querySelector('.block.with-caret')?.scrollIntoView({
+          behaviour: 'smooth',
+          container: 'nearest',
+          block: 'center',
+        })
+      });
+    }
+
+
     const editor = new FocusEditorCore(refEditor.current);
 
     if (initialText) {

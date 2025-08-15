@@ -1156,8 +1156,8 @@ export function App({ version, appName } = {}) {
                   <li
                     onClick={() => {
                       if (fontFamily === "mononoki") {
-                        setFontFamily("iawriter");
-                      } else if (fontFamily === "iawriter") {
+                        setFontFamily("ibm");
+                      } else if (fontFamily === "ibm") {
                         setFontFamily("");
                       } else {
                         setFontFamily("mononoki");
@@ -1177,6 +1177,7 @@ export function App({ version, appName } = {}) {
                       setCreateSmartNewLineContent(!createSmartNewLineContent)
                     }
                     className={createSmartNewLineContent ? "active" : null}
+                    style={{ display: 'none' }}
                   >
                     Guess lists and indents
                   </li>
