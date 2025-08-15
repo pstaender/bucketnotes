@@ -30,7 +30,7 @@ export function EditorWrapper({
 
   useEffect(() => {
     if (initialText !== null && initialText !== undefined && focusEditor) {
-      focusEditor.replaceText(initialText);
+      focusEditor.replaceText(initialText, { clearHistory: true });
     }
   }, [initialText, focusEditor]);
 
@@ -109,7 +109,7 @@ export function EditorWrapper({
     const editor = new FocusEditorCore(refEditor.current);
 
     if (initialText) {
-      editor.replaceText(initialText);
+      editor.replaceText(initialText, { clearHistory: true });
     }
     editor.tabSize = 2;
     setFocusEditor(editor);
