@@ -5,6 +5,7 @@ import { HashRouter } from "react-router-dom";
 import { registerSW } from "virtual:pwa-register";
 import { deleteDatabase, setupDatabase } from "./src/db";
 
+// if nothing works, try #reset
 if (window.location.hash === "#reset") {
   localStorage.clear();
   sessionStorage.clear();

@@ -19,6 +19,7 @@ import { isTouch, VALID_FILE_EXTENSION } from "./helper.js";
 import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
 import slugify from "slugify";
+import * as encrypt from "./encrypt.js";
 
 const DEFAULT_PLACEHOLDER_TEXT = "Type something…";
 
@@ -36,8 +37,6 @@ function slugifyPath(s) {
     })
     .join("/");
 }
-
-const localStorage = window.localStorage;
 
 export function App({ version, appName } = {}) {
   const [credentials, setCredentials] = useState(null);
@@ -758,30 +757,54 @@ export function App({ version, appName } = {}) {
     if (s3Client) {
       return;
     }
-    const { region, endpoint, bucketName, accessKeyId, secretAccessKey } =
-      credentials
-        ? credentials
-        : {
-            region: localStorage.getItem("s3-region"),
-            endpoint:
-              localStorage.getItem("s3-endpoint") &&
-              localStorage.getItem("s3-endpoint") !== "null" &&
-              localStorage.getItem("s3-endpoint") !== "undefined"
-                ? localStorage.getItem("s3-endpoint")
-                : undefined,
-            bucketName: localStorage.getItem("s3-bucket"),
-            accessKeyId: localStorage.getItem("s3-access-key"),
-            secretAccessKey:
-              sessionStorage.getItem("s3-secret-access-key") ||
-              localStorage.getItem("s3-secret-access-key"),
-          };
+    (async () => {
+      const { region, endpoint, bucketName, accessKeyId, secretAccessKey } =
+        credentials
+          ? credentials
+          : {
+              region:
+                sessionStorage.getItem("s3-region") ||
+                (await encrypt.decryptLocalStorageItem(
+                  "s3-region",
+                  localStorage,
+                  sessionStorage,
+                )),
+              endpoint:
+                sessionStorage.getItem("s3-endpoint") ||
+                (await encrypt.decryptLocalStorageItem(
+                  "s3-endpoint",
+                  localStorage,
+                  sessionStorage,
+                )) ||
+                undefined,
+              bucketName:
+                sessionStorage.getItem("s3-bucket") ||
+                (await encrypt.decryptLocalStorageItem(
+                  "s3-bucket",
+                  localStorage,
+                  sessionStorage,
+                )),
+              accessKeyId:
+                sessionStorage.getItem("s3-access-key") ||
+                (await encrypt.decryptLocalStorageItem(
+                  "s3-access-key",
+                  localStorage,
+                  sessionStorage,
+                )),
+              secretAccessKey:
+                sessionStorage.getItem("s3-secret-access-key") ||
+                (await encrypt.decryptLocalStorageItem(
+                  "s3-secret-access-key",
+                  localStorage,
+                  sessionStorage,
+                )),
+            };
 
-    if (!secretAccessKey) {
-      return;
-    }
+      if (credentials === null || !secretAccessKey) {
+        return;
+      }
 
-    if (region && bucketName && accessKeyId && secretAccessKey) {
-      (async () => {
+      if (region && bucketName && accessKeyId && secretAccessKey) {
         console.debug("Setting S3 client");
         setBucketName(bucketName);
         let _s3Client = new S3Client({
@@ -823,12 +846,12 @@ export function App({ version, appName } = {}) {
           return;
         }
         setLoginErrorMessage(null);
-      })();
-    } else {
-      console.error("Could not set up S3 client");
-      setS3Client(null);
-      s3.setS3Client(null);
-    }
+      } else {
+        console.error("Could not set up S3 client");
+        setS3Client(null);
+        s3.setS3Client(null);
+      }
+    })();
   }, [s3Client, credentials]);
 
   useEffect(() => {
@@ -864,6 +887,16 @@ export function App({ version, appName } = {}) {
   }, [fileVersions]);
 
   useEffect(() => {
+    if (location?.pathname === "/reset") {
+      localStorage.clear();
+      sessionStorage.clear();
+      db.deleteDatabase();
+      db.setupDatabase();
+      navigate("/");
+      window.location.reload();
+      return;
+    }
+
     if (!location || !s3Client) {
       return;
     }
@@ -1012,24 +1045,62 @@ export function App({ version, appName } = {}) {
     if (credentials) {
       return;
     }
-    let data = {
-      accessKeyId: localStorage.getItem("s3-access-key"),
-      bucketName: localStorage.getItem("s3-bucket"),
-      region: localStorage.getItem("s3-region"),
-      endpoint: localStorage.getItem("s3-endpoint"),
-      secretAccessKey:
-        localStorage.getItem("s3-secret-access-key") ||
-        sessionStorage.getItem("s3-secret-access-key"),
-    };
-    if (
-      !data.accessKeyId ||
-      !data.bucketName ||
-      !data.region ||
-      !data.endpoint
-    ) {
-      return;
-    }
-    setCredentials(data);
+    (async () => {
+      let data = {
+        accessKeyId: sessionStorage.getItem("s3-access-key"),
+        bucketName: sessionStorage.getItem("s3-bucket"),
+        region: sessionStorage.getItem("s3-region"),
+        endpoint: sessionStorage.getItem("s3-endpoint"),
+        secretAccessKey: sessionStorage.getItem("s3-secret-access-key"),
+      };
+
+      if (!data.accessKeyId || !data.bucketName || !data.region) {
+        if (sessionStorage.getItem("tempPassword")) {
+          data = {
+            accessKeyId: await encrypt.decryptLocalStorageItem(
+              "s3-access-key",
+              localStorage,
+              sessionStorage,
+            ),
+            bucketName: await encrypt.decryptLocalStorageItem(
+              "s3-bucket",
+              localStorage,
+              sessionStorage,
+            ),
+            region: await encrypt.decryptLocalStorageItem(
+              "s3-region",
+              localStorage,
+              sessionStorage,
+            ),
+            endpoint: await encrypt.decryptLocalStorageItem(
+              "s3-endpoint",
+              localStorage,
+              sessionStorage,
+            ),
+            secretAccessKey: await encrypt.decryptLocalStorageItem(
+              "s3-secret-access-key",
+              localStorage,
+              sessionStorage,
+            ),
+          };
+        } else {
+          return;
+        }
+        if (
+          !data.accessKeyId ||
+          !data.bucketName ||
+          !data.region ||
+          !data.secretAccessKey
+        ) {
+          console.debug(
+            "credentials could not be decrypted… try fresh login/reset instead"
+          );
+          return;
+        }
+      }
+
+      setCredentials(data);
+    })();
   }, [credentials]);
 
   return (
@@ -1382,6 +1453,7 @@ export function App({ version, appName } = {}) {
         <Login
           setCredentials={setCredentials}
           errorMessage={loginErrorMessage}
+          setErrorMessage={setLoginErrorMessage}
         ></Login>
       )}
       {errorMessage && (

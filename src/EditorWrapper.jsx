@@ -128,7 +128,7 @@ export function EditorWrapper({
       ) {
         container.removeChild(_editorElement);
       }
-      refEditor.current.destroy();
+      refEditor.current?.destroy();
     };
   }, []);
 
