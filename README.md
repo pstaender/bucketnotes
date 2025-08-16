@@ -2,29 +2,36 @@
 
 An editor which helps you to focus on just writing. Use your own S3 bucket for cheap, private and fast storage. Organize your notes in zettelkasten-style.
 
-The app runs entirely in your browser. You can also use it offline. It does not require any additional server or database. It uses the S3 API to read and write files directly to your S3 bucket.
-
-[🚀 Use the app now in your browser for free (you only need a S3 bucket)](https://pstaender.github.io/bucketnotes/)
-
-https://github.com/user-attachments/assets/ac485c23-20cc-4852-8483-e41a23bc1a11
-
-⚠️ **The software / developer is not responsible to possible damage on editing files in your S3 bucket** ⚠️
-
 ## Features
 
-  * minimalistic interface
-  * auto-save
-  * dark mode
-  * offline mode (progressive web app)
+  * minimalistic distraction-free interface
   * responsive (works on desktop, mobile and tablet)
-  * image upload to s3 and displaying images
-  * different fixed-size fonts
-  * supports commonmark syntax
-  * writes and reads text files from any s3 bucket
+  * image upload to s3
+  * commonmark syntax support
+  * offline mode (progressive web app)
+  * auto-save
   * supports versioning (if s3 versioning is enabled)
   * html and pdf to markdown import
-  * requires no extra service than the s3 bucket
-  * open source
+  * no extra service than the s3 bucket is required
+  * runs entirely in the browser
+  * writes and reads text files from any s3 bucket
+  * free and open source
+
+#### [Use the app for free in your browser (you only need access to a S3 bucket)](https://pstaender.github.io/bucketnotes/)
+
+> ⚠️ The software / developer is not responsible to possible damage on editing files in your S3 bucket ⚠️
+
+## Screenshots
+
+![Editor](https://github.com/user-attachments/assets/c084ed7b-3083-4dd9-8855-4ebc14eb89bf)
+<br><br>
+![Upload images](https://github.com/user-attachments/assets/1b84d7ff-38a4-49e8-8eba-b28f977f0291)
+<br><br>
+![Dark Mode](https://github.com/user-attachments/assets/370e6cec-7b17-4a05-a5eb-5a0f45c5b98a)
+
+## Video
+
+https://github.com/user-attachments/assets/ac485c23-20cc-4852-8483-e41a23bc1a11
 
 ## Server requirements
 
@@ -118,6 +125,13 @@ Yes, by default the credentials (except the secret key) are stored in the browse
 
 Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess it's hard to reach the 1 USD per month as a single user - even with versioning enabled :)
 
+## TODOs
+
+* support deeper subfolders
+* listing images
+* make image folder configurable?
+* encrypt aws credentials with local password instead of storing them in local storage
+
 ## Build
 
 Clone the repo, ensure Node v20+ is available, then:
@@ -130,5 +144,5 @@ $ npm run build
 ## Development
 
 ```sh
-$ npm run develop
+$ npm run dev
 ```
