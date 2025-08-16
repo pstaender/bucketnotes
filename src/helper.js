@@ -21,6 +21,20 @@ export function unslugify(slug) {
     );
 }
 
+export function debounce(func, wait, immediate) {
+  let timeout;
+  return function () {
+    let context = this;
+    let args = arguments;
+    clearTimeout(timeout);
+    timeout = setTimeout(function () {
+      timeout = null;
+      if (!immediate) func.apply(context, args);
+    }, wait);
+    if (immediate && !timeout) func.apply(context, args);
+  };
+}
+
 // from: https://mojoauth.com/hashing/sha-1-in-javascript-in-browser/
 export async function sha1(input) {
 

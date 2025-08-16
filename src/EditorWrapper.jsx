@@ -1,6 +1,7 @@
 import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
 import { useEffect, useRef, useState } from "react";
 import * as s3 from "./s3";
+import { debounce } from "./helper";
 
 const localStorage = window.localStorage;
 
@@ -19,13 +20,16 @@ export function EditorWrapper({
   focusEditor,
   setFocusEditor,
 } = {}) {
+  let currentFocusEditor = null;
   const refEditor = useRef();
 
-  const handleInput = (event) => {
-    onChange(focusEditor.getMarkdown(), {});
+  const handleChange = (event) => {
+    onChange(refEditor.current.editor.getMarkdown(), {});
   };
 
-  const handleChange = () => console.log("!");
+  const handleInput = (event) => {
+    handleChangeDebounced(event);
+  };
 
   useEffect(() => {
     if (initialText !== null && initialText !== undefined && focusEditor) {
@@ -63,7 +67,7 @@ export function EditorWrapper({
       if (localStorage.getItem(cacheKey)) {
         const data = JSON.parse(localStorage.getItem(cacheKey));
         if (data.validUntil > new Date().getTime()) {
-          a.href = '#/' +  a.getAttribute("href");
+          a.href = "#/" + a.getAttribute("href");
           a.style.setProperty("--url", `url(${data.url})`);
           return;
         }
@@ -76,7 +80,7 @@ export function EditorWrapper({
           url: imageUrl,
         }),
       );
-      a.href = '#/' + a.getAttribute("href");
+      a.href = "#/" + a.getAttribute("href");
       a.style.setProperty("--url", `url(${imageUrl})`);
     }
 
@@ -93,24 +97,24 @@ export function EditorWrapper({
       }
     });
 
-    refEditor.current.addEventListener("keyup", (ev) => {
-      if (focusEditor?.getMarkdown) {
-        onChange(focusEditor.getMarkdown(), {});
-      }
-    });
+    const handleChangeDebounced = debounce(handleChange, 200);
+
+    refEditor.current.addEventListener("keyup", handleChangeDebounced);
+    refEditor.current.addEventListener("paste", handleChange);
 
     if (scrollWindowToCenterCaret) {
       refEditor.current.addEventListener("keyup", (ev) => {
-        refEditor.current.querySelector('.block.with-caret')?.scrollIntoView({
-          behaviour: 'smooth',
-          container: 'nearest',
-          block: 'center',
-        })
+        refEditor.current.querySelector(".block.with-caret")?.scrollIntoView({
+          behaviour: "smooth",
+          container: "nearest",
+          block: "center",
+        });
       });
     }
 
-
     const editor = new FocusEditorCore(refEditor.current);
+    refEditor.current.editor = editor;
+
 
     if (initialText) {
       editor.replaceText(initialText, { clearHistory: true });
@@ -118,13 +122,12 @@ export function EditorWrapper({
     editor.tabSize = 2;
     setFocusEditor(editor);
     return () => {
-      if (typeof container !== 'undefined' && container.contains(_editorElement)) {
+      if (
+        typeof container !== "undefined" &&
+        container.contains(_editorElement)
+      ) {
         container.removeChild(_editorElement);
       }
-      if (typeof editorInstanceRef === 'undefined') {
-        return;
-      }
-      editorInstanceRef.current = null;
       refEditor.current.destroy();
     };
   }, []);

@@ -1167,20 +1167,20 @@ export function App({ version, appName } = {}) {
                   <li
                     onClick={() => {
                       if (fontFamily === "mononoki") {
-                        setFontFamily("ibm");
-                      } else if (fontFamily === "ibm") {
                         setFontFamily("");
-                      } else {
+                      } else if (fontFamily === "ibm") {
                         setFontFamily("mononoki");
+                      } else {
+                        setFontFamily("ibm");
                       }
                     }}
                   >
                     Font ({fontFamily ? fontFamily + " → " : "auto → "}
-                    {fontFamily === "mononoki"
-                      ? "ibm"
-                      : fontFamily === "ibm"
+                    {fontFamily === "ibm"
+                      ? "mononoki"
+                      : fontFamily === "mononoki"
                         ? "auto"
-                        : "mononoki"}
+                        : "ibm"}
                     )
                   </li>
                   <li
