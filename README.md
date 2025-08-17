@@ -111,6 +111,54 @@ Outputs:
     Value: !Ref S3User
 ```
 
+If you just want to add an s3 user to an _existing_ bucket, you can use the following snippet:
+
+```yaml
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of the existing S3 bucket
+    Default: my-example-bucket
+
+Resources:
+  S3User:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: bucket-access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - s3:*
+              Resource:
+                - !Sub arn:aws:s3:::${BucketName}
+                - !Sub arn:aws:s3:::${BucketName}/*
+
+  S3UserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref S3User
+
+Outputs:
+  BucketName:
+    Value: !Ref BucketName
+    Description: Name of the existing Amazon S3 bucket.
+  S3BucketSecureURL:
+    Value: !Sub 'https://${BucketName}.s3.amazonaws.com'
+    Description: URL of the existing Amazon S3 bucket
+  AccessKeyID:
+    Value: !Ref S3UserAccessKey
+    Description: Access Key ID for S3 user
+  SecretAccessKey:
+    Value: !GetAtt S3UserAccessKey.SecretAccessKey
+    Description: Secret Access Key for S3 user
+  User:
+    Value: !Ref S3User
+    Description: IAM user name
+```
+
 ## Non-AWS providers
 
 You can use other S3-compatible-providers (not tested, but endpoint URL is exchangable at the login).
