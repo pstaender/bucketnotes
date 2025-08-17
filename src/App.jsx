@@ -98,6 +98,9 @@ export function App({ version, appName } = {}) {
   );
   const [focusEditor, setFocusEditor] = useState(null);
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
+  const [offlineStorageEnabled, setOfflineStorageEnabled] = useState(
+    localStorage.getItem('offlineStorage') === 'true'
+  );
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -193,9 +196,11 @@ export function App({ version, appName } = {}) {
       ({ files, commonPrefixes } = await s3.listFiles(props));
     } catch (err) {
       setS3Error(err);
-      files = (await db.fileKeysFromDatabase()).map((f) => {
-        return { Key: f, Prefix: null };
-      });
+      if (offlineStorageEnabled) {
+        files = (await db.fileKeysFromDatabase()).map((f) => {
+          return { Key: f, Prefix: null };
+        });
+      }
     }
 
     files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
@@ -219,7 +224,7 @@ export function App({ version, appName } = {}) {
   }
 
   async function loadFile(key) {
-    let fileFromDatabase = (await db.loadFileFromDatabase(key)) || null;
+    let fileFromDatabase = offlineStorageEnabled ? (await db.loadFileFromDatabase(key)) || null : null;
 
     let content = fileFromDatabase?.content || "";
     let error = null;
@@ -231,18 +236,22 @@ export function App({ version, appName } = {}) {
         updateStatusText(error);
         return;
       }
-      db.saveFileToDatabase(key, {
-        content,
-        bucketName,
-        fileSavedToS3: true,
-      });
+      if (offlineStorageEnabled) {
+        db.saveFileToDatabase(key, {
+          content,
+          bucketName,
+          fileSavedToS3: true,
+        });
+      }
     } catch (err) {
       setS3Error(err);
-      db.saveFileToDatabase(key, {
-        content,
-        bucketName,
-        fileSavedToS3: false,
-      });
+      if (offlineStorageEnabled) {
+        db.saveFileToDatabase(key, {
+          content,
+          bucketName,
+          fileSavedToS3: false,
+        });
+      }
     }
     updateStatusText(`Loaded '${key}' with ${content.length} characters`);
     if (content !== null && content !== undefined) {
@@ -288,7 +297,9 @@ export function App({ version, appName } = {}) {
         } catch (err) {
           setS3Error(err);
         }
-        await db.deleteFileFromDatabase(fileKey);
+        if (offlineStorageEnabled) {
+          await db.deleteFileFromDatabase(fileKey);
+        }
         setText("");
         setInitialText("");
         setLastEditedFile(null);
@@ -520,7 +531,9 @@ export function App({ version, appName } = {}) {
         fileSavedToS3: false,
       });
     }
-    await db.deleteFileFromDatabase(fileKey);
+    if (offlineStorageEnabled) {
+      await db.deleteFileFromDatabase(fileKey);
+    }
 
     updateStatusText(`File renamed to ${newFileName}`);
 
@@ -1055,7 +1068,10 @@ export function App({ version, appName } = {}) {
       };
 
       if (!data.accessKeyId || !data.bucketName || !data.region) {
-        if (sessionStorage.getItem("tempPassword")) {
+        if (
+          sessionStorage.getItem("tempPassword") ||
+          localStorage.getItem("tempPassword")
+        ) {
           data = {
             accessKeyId: await encrypt.decryptLocalStorageItem(
               "s3-access-key",
@@ -1093,7 +1109,7 @@ export function App({ version, appName } = {}) {
           !data.secretAccessKey
         ) {
           console.debug(
-            "credentials could not be decrypted… try fresh login/reset instead"
+            "credentials could not be decrypted… try fresh login/reset instead",
           );
           return;
         }
@@ -1338,11 +1354,20 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li
                     onClick={async () => {
-                      await db.clearFiles();
-                      updateStatusText("Cleared offline data");
+                      let value = !offlineStorageEnabled;
+                      if (value) {
+                        updateStatusText("Offline Storage enabled");
+                        setOfflineStorageEnabled(true);
+                        localStorage.setItem('offlineStorage', 'true');
+                      } else {
+                        setOfflineStorageEnabled(false);
+                        localStorage.removeItem('offlineStorage');
+                        await db.clearFiles();
+                        updateStatusText("Offline Storage disabled + cleared");
+                      }
                     }}
                   >
-                    Clear Offline Data
+                    {offlineStorageEnabled ? 'Disable Offline Storage' : 'Enable Offline Storage'}
                   </li>
                   <li
                     onClick={async () => {

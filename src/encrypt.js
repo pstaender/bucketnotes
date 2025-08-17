@@ -4,9 +4,10 @@ export async function setEncryptionPassword(
   password,
   localStorage,
   sessionStorage,
-  persist = false,
 ) {
   const tempPassword = generateSafeRandomString(64);
+
+  const persist = password === '';
 
   let encryptionKey = await encryptText(tempPassword, password);
   localStorage.setItem("tempPasswordEncrypted", JSON.stringify(encryptionKey));
@@ -52,10 +53,7 @@ export async function decryptLocalStorageItem(
     sessionStorage.getItem("tempPassword") ||
     localStorage.getItem("tempPassword");
   if (!tempPassword) {
-    console.debug(
-      "password is missing (tempPassword); set with setEncryptionPassword",
-    );
-    return null;
+    tempPassword = '';
   }
 
   let data = localStorage.getItem(itemKey);

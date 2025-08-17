@@ -27,6 +27,8 @@ export function EditorWrapper({
     onChange(refEditor.current.editor.getMarkdown(), {});
   };
 
+  const handleChangeDebounced = debounce(handleChange, 200);
+
   const handleInput = (event) => {
     handleChangeDebounced(event);
   };
@@ -96,8 +98,6 @@ export function EditorWrapper({
         );
       }
     });
-
-    const handleChangeDebounced = debounce(handleChange, 200);
 
     refEditor.current.addEventListener("keyup", handleChangeDebounced);
     refEditor.current.addEventListener("paste", handleChange);

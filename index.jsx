@@ -30,7 +30,10 @@ const updateSW = registerSW({
 const container = document.getElementById("app");
 const root = createRoot(container);
 root.render(
-  <HashRouter>
+  <HashRouter future={{
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    }}>
     <App version={import.meta.env.VITE_APP_VERSION} appName="bucketnotes.app" />
   </HashRouter>
 );

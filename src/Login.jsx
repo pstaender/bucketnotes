@@ -105,10 +105,11 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
   async function handleSubmit(ev) {
     ev.preventDefault();
     if (region && bucketName && accessKeyId && secretAccessKey) {
-      if (rememberLogin && String(tempPassword).trim()) {
+      /* we allow empty password to keep it easier (but unsafer) to use */
+      if (rememberLogin) {
         console.debug("Setting credentials encrypted");
         await encrypt.setEncryptionPassword(
-          tempPassword,
+          tempPassword || '',
           localStorage,
           sessionStorage,
         );
@@ -154,7 +155,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
       sessionStorage.setItem("s3-region", region);
       sessionStorage.setItem("s3-endpoint", endpoint || "");
       sessionStorage.setItem("s3-secret-access-key", secretAccessKey);
-      console.debug("Credentials set");
+      console.debug("Credentials are set");
       setCredentials({
         region,
         endpoint,
@@ -196,7 +197,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
             </div>
 
             <div>
-              <div class="message" onClick={handleClickOnRelogin}>
+              <div className="message" onClick={handleClickOnRelogin}>
                 Login with other S3 credentials
               </div>
               <button type="submit">Login</button>
@@ -212,7 +213,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                   id="s3-region"
                   autoCapitalize="off"
                   placeholder="e.g. eu-central-1"
-                  value={region}
+                  value={region || ''}
                   required={true}
                   onChange={(ev) => setRegion(ev.target.value)}
                 />
@@ -227,7 +228,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                   placeholder="mys3bucket"
                   autoFocus={true}
                   required={true}
-                  value={bucketName}
+                  value={bucketName || ''}
                   onChange={(ev) => setBucketName(ev.target.value)}
                 />
               </div>
@@ -241,7 +242,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                 placeholder="AKIAXXXXXXXX…"
                 autoComplete="username"
                 required={true}
-                value={accessKeyId}
+                value={accessKeyId || ''}
                 onChange={(ev) => setAccessKeyId(ev.target.value)}
               />
             </div>
@@ -252,25 +253,10 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                 id="s3-secret-access-key"
                 required={true}
                 autoComplete="password"
-                value={secretAccessKey}
+                value={secretAccessKey || ''}
                 onChange={(ev) => setSecretAccessKey(ev.target.value)}
               />
             </div>
-            {showPasswordField && (
-              <div className="input">
-                <label>Login Password</label>
-                <input
-                  type="password"
-                  id="temp-password"
-                  required={true}
-                  autoComplete="password"
-                  autoFocus={true}
-                  minLength={1}
-                  placeholder="Set a temporary memorable password"
-                  onChange={(ev) => setTempPassword(ev.target.value)}
-                />
-              </div>
-            )}
             <div
               className={[
                 "endpoint",
@@ -292,6 +278,19 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                 <label htmlFor="s3-endpoint">Endpoint</label>
               </div>
             </div>
+            {showPasswordField && (
+              <div className="input">
+                <label>Lock Password (optional)</label>
+                <input
+                  type="password"
+                  id="temp-password"
+                  autoComplete="password"
+                  autoFocus={true}
+                  placeholder="Memorable password to unlock editor"
+                  onChange={(ev) => setTempPassword(ev.target.value)}
+                />
+              </div>
+            )}
 
             <div className="half-width">
               <div>
