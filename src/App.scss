@@ -276,7 +276,7 @@ html {
   &.not-logged-in {
     display: grid;
     place-content: center;
-    grid-template-columns: unset;
+    grid-template-columns: min(25rem, 100%);
   }
 }
 @media screen and (min-width: 1400px) {
@@ -522,7 +522,6 @@ button {
   border-radius: 4px;
 }
 .login {
-  max-width: 25rem;
   color: var(--color-black-responsive);
   padding: 2rem 1.5rem;
   border-radius: 4px;
@@ -587,10 +586,13 @@ button {
   .error {
     margin-bottom: 1.5rem;
     padding: 0.75rem 0.75rem;
-    background: #ffbfbf;
-    color: #b00f0f;
+    background: #ffeaea;
+    color: #f67474;
     border-radius: 4px;
     line-height: 1.5em;
+    font-size: 0.85rem;
+    margin-left: -0.75rem;
+    width: 100%;
   }
   .input {
     position: relative;
@@ -614,15 +616,14 @@ button {
         display: block;
       }
     }
-    .message {
-      font-size: var(--font-size-small);
-      // color: var(--grey-color);
-      line-height: 1.5em;
-      padding-bottom: 1.5rem;
-      &:hover {
-        cursor: pointer;
-        text-decoration: underline;
-      }
+  }
+  .message {
+    font-size: var(--font-size-small);
+    line-height: 1.5em;
+    padding-bottom: 1.5rem;
+    &:hover {
+      cursor: pointer;
+      text-decoration: underline;
     }
   }
   @media (min-width: 900px) {

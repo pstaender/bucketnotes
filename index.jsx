@@ -5,6 +5,7 @@ import { HashRouter } from "react-router-dom";
 import { registerSW } from "virtual:pwa-register";
 import { deleteDatabase, setupDatabase } from "./src/db";
 
+// if nothing works, try #reset
 if (window.location.hash === "#reset") {
   localStorage.clear();
   sessionStorage.clear();
@@ -29,7 +30,10 @@ const updateSW = registerSW({
 const container = document.getElementById("app");
 const root = createRoot(container);
 root.render(
-  <HashRouter>
+  <HashRouter future={{
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    }}>
     <App version={import.meta.env.VITE_APP_VERSION} appName="bucketnotes.app" />
   </HashRouter>
 );
