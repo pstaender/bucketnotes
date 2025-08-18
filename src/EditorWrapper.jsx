@@ -1,5 +1,6 @@
 import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as s3 from "./s3";
 import { debounce } from "./helper";
 
@@ -22,6 +23,7 @@ export function EditorWrapper({
 } = {}) {
   let currentFocusEditor = null;
   const refEditor = useRef();
+  const navigate = useNavigate();
 
   const handleChange = (event) => {
     onChange(refEditor.current.editor.getMarkdown(), {});
@@ -88,14 +90,22 @@ export function EditorWrapper({
 
     refEditor.current.addEventListener("renderParagraphBlocks", (ev) => {
       if (ev.detail.elements) {
-        ev.detail.elements.forEach((el) =>
-          el
-            .querySelectorAll('a.link.image[href^="images/"]:not(.aws-url)')
-            .forEach((a) => {
-              a.classList.add("aws-url");
-              checkForAwsImage(a);
-            }),
-        );
+        ev.detail.elements.forEach((el) => {
+          el.querySelectorAll(
+            'a.link.image[href^="images/"]:not(.aws-url)',
+          ).forEach((a) => {
+            a.classList.add("aws-url");
+            checkForAwsImage(a);
+          });
+          el.querySelectorAll('a.link[href^="/"]:not(.aws-url)').forEach(
+            (a) => {
+              a.addEventListener("click", (ev) => {
+                ev.preventDefault();
+                navigate(a.getAttribute("href"));
+              });
+            },
+          );
+        });
       }
     });
 
@@ -115,7 +125,6 @@ export function EditorWrapper({
     const editor = new FocusEditorCore(refEditor.current);
     refEditor.current.editor = editor;
 
-
     if (initialText) {
       editor.replaceText(initialText, { clearHistory: true });
     }
@@ -134,7 +143,9 @@ export function EditorWrapper({
 
   return (
     <focus-editor
-      class={[indentHeadings ? "indent-headings" : ""]
+      class={[
+        indentHeadings ? "indent-headings" : "",
+        focusMode ? "highlight-current-paragraph" : "",]
         .filter((v) => !!v)
         .join(" ")}
       image-preview={previewImages ? "*" : null}

@@ -92,6 +92,9 @@ export function handleDrop(
             .forEach((img) => img.remove());
           html.querySelectorAll("title").forEach((el) => {
             let h1 = document.createElement("h1");
+            if (!el.innerText) {
+              return;
+            }
             h1.innerText = el.innerText.trim();
             el.replaceWith(h1);
           });
