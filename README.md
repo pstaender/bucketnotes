@@ -173,12 +173,15 @@ Yes, by default the credentials (except the secret key) are stored in the browse
 
 Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess it's hard to reach the 1 USD per month as a single user - even with versioning enabled :)
 
-## TODOs
+## TODOs / Roadmap
 
 * support deeper subfolders
-* listing images
-* make image folder configurable?
-* encrypt aws credentials with local password instead of storing them in local storage
+* listing images in image folder
+* search all files (fuzzy search)
+* import / migrate external images to S3 bucket
+* import options (extended markdown, images, remove navigation, etc.) (?)
+* make image folder configurable (?)
+* provide tauri stand alone app (?)
 
 ## Build
 

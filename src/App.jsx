@@ -99,7 +99,7 @@ export function App({ version, appName } = {}) {
   const [focusEditor, setFocusEditor] = useState(null);
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
   const [offlineStorageEnabled, setOfflineStorageEnabled] = useState(
-    localStorage.getItem('offlineStorage') === 'true'
+    localStorage.getItem("offlineStorage") === "true",
   );
 
   const location = useLocation();
@@ -224,7 +224,9 @@ export function App({ version, appName } = {}) {
   }
 
   async function loadFile(key) {
-    let fileFromDatabase = offlineStorageEnabled ? (await db.loadFileFromDatabase(key)) || null : null;
+    let fileFromDatabase = offlineStorageEnabled
+      ? (await db.loadFileFromDatabase(key)) || null
+      : null;
 
     let content = fileFromDatabase?.content || "";
     let error = null;
@@ -752,6 +754,9 @@ export function App({ version, appName } = {}) {
   }, [handleUnload]);
 
   useEffect(() => {
+    if (focusEditor) {
+      focusEditor.readonly = readonly;
+    }
     if (readonly || !s3Client || initialCaretPosition !== null) {
       return;
     }
@@ -763,7 +768,7 @@ export function App({ version, appName } = {}) {
         Number(localStorage.getItem("caretPosition")) || 0,
       );
     }
-  }, [s3Client, location, initialCaretPosition, readonly]);
+  }, [s3Client, location, initialCaretPosition, readonly, focusEditor]);
 
   useEffect(() => {
     // return;
@@ -1358,16 +1363,18 @@ export function App({ version, appName } = {}) {
                       if (value) {
                         updateStatusText("Offline Storage enabled");
                         setOfflineStorageEnabled(true);
-                        localStorage.setItem('offlineStorage', 'true');
+                        localStorage.setItem("offlineStorage", "true");
                       } else {
                         setOfflineStorageEnabled(false);
-                        localStorage.removeItem('offlineStorage');
+                        localStorage.removeItem("offlineStorage");
                         await db.clearFiles();
                         updateStatusText("Offline Storage disabled + cleared");
                       }
                     }}
                   >
-                    {offlineStorageEnabled ? 'Disable Offline Storage' : 'Enable Offline Storage'}
+                    {offlineStorageEnabled
+                      ? "Disable Offline Storage"
+                      : "Enable Offline Storage"}
                   </li>
                   <li
                     onClick={async () => {

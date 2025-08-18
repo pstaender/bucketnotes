@@ -1,6 +1,8 @@
 import { convertPDFToText } from "./pdf";
 import { uploadImage } from "./uploadImage";
 import TurndownService from "turndown";
+import { gfm } from "@truto/turndown-plugin-gfm";
+
 import slugify from "slugify";
 import { unslugify } from "../helper";
 
@@ -8,6 +10,16 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
   document.getElementById("pdfjs-worker-url")?.src ||
   document.querySelector(`link[href^="/assets/pdfjs"]`)?.href ||
   "/pdf.worker.mjs";
+
+function createTurndownService() {
+  const turndownService = new TurndownService({
+    headingStyle: "atx",
+    codeBlockStyle: "fenced",
+    hr: "---",
+  });
+  turndownService.use(gfm);
+  return turndownService;
+}
 
 export function handleDrop(
   ev,
@@ -30,11 +42,13 @@ export function handleDrop(
       ev.target.closest(".main")?.querySelector(".block:last-child");
     if (active) {
       active.textContent = (active.textContent + "\n" + newText).trim();
+      setText(active.textContent);
     } else {
       console.warn("No active element found, appending text");
       setInitialText((text += "\n" + newText));
       setText((text += "\n" + newText));
     }
+    focusEditor.fullRefresh();
     setReadonly(false);
   }
 
@@ -47,17 +61,12 @@ export function handleDrop(
       }
       if (item.type.match(/^image\/.+/i)) {
         const uploadFilename = slugify(ev.dataTransfer.files[i].name);
-        const fileExtension = item.type.split('/')[1];
-        uploadImage(
-          item,
-          uploadFilename,
-          fileExtension,
-          ({filename}) => {
-            const text = unslugify(uploadFilename).replace(/\.[^.]+$/, "");
-            insertText(`![${text || "Image"}](${filename})`);
-            focusEditor.refresh();
-          },
-        );
+        const fileExtension = item.type.split("/")[1];
+        uploadImage(item, uploadFilename, fileExtension, ({ filename }) => {
+          const text = unslugify(uploadFilename).replace(/\.[^.]+$/, "");
+          insertText(`![${text || "Image"}](${filename})`);
+          focusEditor.refresh();
+        });
 
         return;
       }
@@ -79,22 +88,26 @@ export function handleDrop(
             !a.innerText.trim() ? a.remove() : null;
           });
           html
-            .querySelectorAll("img, iframe, style, script, video, audio")
+            .querySelectorAll("iframe, style, script, video, audio")
             .forEach((img) => img.remove());
-          let turndownService = new TurndownService({
-            headingStyle: "atx",
-            codeBlockStyle: "fenced",
-            hr: "---",
+          html.querySelectorAll("title").forEach((el) => {
+            let h1 = document.createElement("h1");
+            h1.innerText = el.innerText.trim();
+            el.replaceWith(h1);
           });
-          let markdown = turndownService.turndown(
-            html.querySelector("body").outerHTML,
+          const turndownService = createTurndownService();
+          const markdown = turndownService.turndown(
+            html.querySelector("html")
+              ? html.querySelector("html").innerHTML
+              : html.documentElement.innerHTML,
           );
-          let _text = markdown
-            .split("\n")
-            .map((l) => l.replace(/\s$/, ""))
-            .join("\n");
 
-          applyText(_text);
+          applyText(
+            markdown
+              .split("\n")
+              .map((l) => l.replace(/\s$/, ""))
+              .join("\n"),
+          );
         })();
         return;
       }
