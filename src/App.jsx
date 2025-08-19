@@ -174,7 +174,7 @@ export function App({ version, appName } = {}) {
       .replace(/\/[^\/]+?\.[^\.]+$/, "")
       .replace(/\/+$/, "")
       .replace(/^\//, "");
-    console.log({prefix})
+
     let delimiter = !prefix ? "/" : "";
 
     if (VALID_FILE_EXTENSION.test(prefix)) {
@@ -667,17 +667,20 @@ export function App({ version, appName } = {}) {
   }
 
   async function handleMoveFileToFolder(fileKey, folderName) {
-    let newFileName = folderName + fileKey;
+    let newFileName = folderName + fileKey.split('/').pop();
     let { fileName } = await s3.renameFile(fileKey, newFileName);
 
     updateStatusText(`File moved to ${newFileName}`);
 
     try {
       loadS3Files();
-      await loadFile(newFileName);
+      await loadFile(fileName);
       setReadonly(false);
+      if (offlineStorageEnabled) {
+        db.renameFileInDatabase(fileKey, fileName);
+      }
     } catch (_) {}
-    navigate(newFileName);
+    navigate(fileName);
   }
 
   useEffect(() => {

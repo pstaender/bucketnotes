@@ -60,7 +60,7 @@ export function FileList({
 
   const [parent, setParent] = useState(null);
 
-  function Droppable({ id, folderName }) {
+  function Droppable({ id, folderName, realPath }) {
     const { isOver, setNodeRef } = useDroppable({
       id
     });
@@ -79,9 +79,9 @@ export function FileList({
       >
         <div
           className="file-name"
-          onClick={(ev) => handleClickOnFolder(ev, folderName)}
+          onClick={(ev) => handleClickOnFolder(ev, realPath || folderName)}
         >
-          {folderName}
+          {folderName.replace(/\/*$/, '/')}
         </div>
         <span
           className="icons"
@@ -160,19 +160,19 @@ export function FileList({
     if (!over || !active) {
       return;
     }
-    let folderName = over.id;
+    let destination = over.id;
 
-    if (folderName === 'folder-up') {
+    if (destination === 'folder-up') {
       return;
     }
-    folderName = folderName.replace(/^folder::/, "");
+    destination = destination.replace(/^folder::/, "");
     let el = document.getElementById(active.id);
     if (!el) {
       console.error("Element not found");
     }
     el.style.display = "none";
-    console.debug("Moving file", active.id, "to folder", folderName);
-    await moveFileToFolder(active.id, folderName);
+    console.debug("Moving file", active.id, "to folder", destination);
+    await moveFileToFolder(active.id, destination.replace(/\/*$/, '/'));
   }
 
   files = files.filter(f => f.substring(normalizedFolderPath.length).includes('.') && !f.substring(normalizedFolderPath.length).includes('/'));
@@ -193,11 +193,12 @@ export function FileList({
             &nbsp;
           </li>
         )}
-        {folders.filter(v => v !== '/').map((folderName) => (
+        {folders.concat(subfolders).filter(v => v !== '/').map((folderName) => (
           <Droppable
             folderName={folderName}
-            id={`folder::${folderName}`}
-            key={`folder::${folderName}`}
+            realPath={normalizedFolderPath + folderName}
+            id={`folder::${normalizedFolderPath + folderName}`}
+            key={`folder::${normalizedFolderPath + folderName}`}
           ></Droppable>
         ))}
         {location && ((!files || files.length === 0) && subfolders.length === 0) && (
@@ -205,19 +206,6 @@ export function FileList({
             No files found
           </li>
         )}
-        {subfolders.map((fileKey) => (
-          <li className="sub-folder" key={fileKey} onClick={(ev) => handleClickOnFolder(ev, normalizedFolderPath + fileKey)}>
-            <div className="file-name">{fileKey}/</div>
-            <span
-              className="icons"
-              onClick={(ev) => handleDeleteFolder(ev, fileKey)}
-            >
-              <span className="delete icon">
-                <img src={DeleteIcon} alt="Delete" />
-              </span>
-            </span>
-          </li>
-        ))}
         {files.map((fileKey) => (
           <Draggable
             fileKey={fileKey}
