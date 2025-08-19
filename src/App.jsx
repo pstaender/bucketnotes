@@ -174,14 +174,13 @@ export function App({ version, appName } = {}) {
       .replace(/\/[^\/]+?\.[^\.]+$/, "")
       .replace(/\/+$/, "")
       .replace(/^\//, "");
+    console.log({prefix})
     let delimiter = !prefix ? "/" : "";
 
     if (VALID_FILE_EXTENSION.test(prefix)) {
       if (!prefix.includes("/")) {
         delimiter = "/";
         prefix = "";
-      } else {
-        // prefix = prefix.replace(/\/[^\/]?\..+$/, '');
       }
     }
 
@@ -204,6 +203,7 @@ export function App({ version, appName } = {}) {
     }
 
     files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
+
 
     if (sortFilesByAttribute === "LastModified") {
       files = files.sort((a, b) => {
@@ -1150,20 +1150,17 @@ export function App({ version, appName } = {}) {
                   handleClickOnFolder={(
                     ev,
                     folderName,
-                    { isGoToParentFolder, goToRootFolder } = {},
                   ) => {
-                    if (goToRootFolder) {
-                      return setFolderPath("");
+                    if (folderName.startsWith('← ')) {
+                      // go level up]
+
+                      folderName = folderName.replace(/^← /, '').replace(/^\//, '').replace(/\/$/, '');
+
+                      return setFolderPath(
+                        folderName.includes('.') ? '/' + folderName.split('/').slice(0, -2).join('/') : '/' + folderName.split('/').slice(0, -1).join('/'),
+                      )
                     }
-                    setFolderPath(
-                      isGoToParentFolder
-                        ? folderName
-                            .replace(/\/$/, "")
-                            .split("/")
-                            .slice(0, -2)
-                            .join("/")
-                        : folderName,
-                    );
+                    setFolderPath(folderName.replace(/^← /,''));
                   }}
                   setShowSideBar={setShowSideBar}
                   handleClickOnFile={handleClickOnFile}

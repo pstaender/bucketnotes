@@ -235,6 +235,10 @@ html {
   padding-right: 0;
   li {
     padding: 0.1rem 1rem;
+    &.folder {
+      background: var(--background-color-light);
+      margin-bottom: 2px;
+    }
   }
   @media screen and (max-width: 900px) {
     li:first-child:not(.no-hover) {
