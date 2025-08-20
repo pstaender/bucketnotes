@@ -56,5 +56,16 @@ export async function sha1(input) {
   return hashHex; // Return the SHA-1 hash as a hex string
 }
 
+export function downloadFileByUrl(url) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = url.split("/").pop();
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  // Revoke the object URL to free up memory
+  window.URL.revokeObjectURL(url);
+}
+
 export const VALID_FILE_EXTENSION =
   /\.(txt|md|markdown|csv|html|html|info|tex|xml|xhtml)$/i;

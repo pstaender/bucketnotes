@@ -14,7 +14,6 @@ export function uploadImage(transferItem, filename, fileExtension, onFinishedCal
   const reader = new FileReader();
   // was before: `images/`, remove beginning slashes to ensure correct path
   const imageFolder = FEATURE_FLAGS.IMAGE_UPLOAD_PATH.replace(/^\/*/, '');
-  console.log(imageFolder);
   reader.onload = async (event) => {
     const arrayBuffer = event.target.result;
     if (fileExtension) {

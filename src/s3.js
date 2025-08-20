@@ -380,13 +380,13 @@ export async function cachedSignedPublicS3Url(url) {
       return data.url;
     }
   }
-  const imageUrl = await getPublicUrl(url, expiresIn);
+  const publicUrl = await getPublicUrl(url, expiresIn);
   localStorage.setItem(
     cacheKey,
     JSON.stringify({
       validUntil: new Date().getTime() + expiresIn * 1000,
-      url: imageUrl,
+      url: publicUrl,
     }),
   );
-  return imageUrl;
+  return publicUrl;
 }

@@ -16,7 +16,7 @@ import * as s3 from "./s3.js";
 import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
 import { FileList } from "./FileList.jsx";
-import { isTouch, VALID_FILE_EXTENSION } from "./helper.js";
+import { isTouch, VALID_FILE_EXTENSION, downloadFileByUrl } from "./helper.js";
 import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
 import slugify from "slugify";
@@ -82,9 +82,6 @@ export function App({ version, appName } = {}) {
     localStorage.getItem("font-family"),
   );
   const [fontSize, setFontSize] = useState(null);
-  const [showNumberOfParagraphs, setShowNumberOfParagraphs] = useState(
-    sessionStorage.getItem("showNumberOfParagraphs") === "true",
-  );
   const [initialCaretPosition, setInitialCaretPosition] = useState(null);
   // TODO: replace location.pathname with folderPath
   const [folderPath, setFolderPath] = useState("");
@@ -101,6 +98,9 @@ export function App({ version, appName } = {}) {
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
   const [offlineStorageEnabled, setOfflineStorageEnabled] = useState(
     localStorage.getItem("offlineStorage") === "true",
+  );
+  const [convertPDFToText, setConvertPDFToText] = useState(
+    localStorage.getItem("convertPDFToText") === "true"
   );
 
   const location = useLocation();
@@ -203,10 +203,13 @@ export function App({ version, appName } = {}) {
       }
     }
 
-    if (folderPath === `${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`) {
-      files = files.filter((c) =>
-        /\.(png|avif|webp|jpg|jpeg|svg)$/i.test(c?.Key),
-      );
+    if (
+      FEATURE_FLAGS.IMAGE_UPLOAD_PATH.includes(folderPath) ||
+      FEATURE_FLAGS.VIDEO_UPLOAD_PATH.includes(folderPath) ||
+      FEATURE_FLAGS.AUDIO_UPLOAD_PATH.includes(folderPath) ||
+      FEATURE_FLAGS.ARCHIVE_UPLOAD_PATH.includes(folderPath)
+    ) {
+      /* SHOW ALL FILES AND FOLDER */
     } else {
       files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
     }
@@ -717,12 +720,11 @@ export function App({ version, appName } = {}) {
 
   useEffect(() => {
     sessionStorage.setItem("focusMode", !!focusMode);
-    sessionStorage.setItem("showNumberOfParagraphs", !!showNumberOfParagraphs);
     localStorage.setItem(
       "createSmartNewLineContent",
       !!createSmartNewLineContent,
     );
-  }, [focusMode, showNumberOfParagraphs, createSmartNewLineContent]);
+  }, [focusMode, createSmartNewLineContent]);
 
   useEffect(() => {
     if (!s3Client) {
@@ -898,6 +900,24 @@ export function App({ version, appName } = {}) {
       return;
     } else {
       setDisplayImageUrl(null);
+    }
+    if (location.pathname.startsWith(`${FEATURE_FLAGS.ASSETS_BASE_PATH}/`)) {
+      // download file
+      (async () => {
+        const url = location.pathname.replace(/^\//, "");
+        const publicUrl = await s3.getPublicUrl(url, 60);
+        // download file in the browser
+        fetch(publicUrl)
+          .then(response => response.blob())
+          .then(blob => {
+            // Create a Blob URL
+            const url = window.URL.createObjectURL(blob);
+            downloadFileByUrl(url);
+            updateStatusText(`Downloading file '${url}'`);
+
+          })
+          .catch(error => console.error('Error downloading file:', error));
+      })();
     }
     if (!s3Client || location.pathname === "/") {
       return;
@@ -1296,14 +1316,6 @@ export function App({ version, appName } = {}) {
                   >
                     Guess lists and indents
                   </li>
-                  <li
-                    className={showNumberOfParagraphs ? "active" : null}
-                    onClick={() => {
-                      setShowNumberOfParagraphs(!showNumberOfParagraphs);
-                    }}
-                  >
-                    Number paragraphs{" "}
-                  </li>
                   {!isTouch() && (
                     <li
                       onClick={() => {
@@ -1414,6 +1426,18 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li
                     onClick={(ev) => {
+                      setConvertPDFToText(!convertPDFToText);
+                      localStorage.setItem(
+                        "convertPDFToText",
+                        convertPDFToText ? "false" : "true",
+                      );
+                    }}
+                    className={convertPDFToText ? "active" : null}
+                  >
+                    PDF to text
+                  </li>
+                  <li
+                    onClick={(ev) => {
                       setFocusMode(!focusMode);
                       setShowSideBar(false);
                     }}
@@ -1459,6 +1483,7 @@ export function App({ version, appName } = {}) {
                       updateStatusText,
                       setReadonly,
                       focusEditor,
+                      convertPDFToText,
                     });
                   }}
                   className="drop-wrapper"
@@ -1473,7 +1498,6 @@ export function App({ version, appName } = {}) {
                     readOnly={readonly}
                     focusMode={focusMode}
                     doGuessNextListItemLine={createSmartNewLineContent}
-                    showNumberOfParagraphs={showNumberOfParagraphs}
                     initialCaretPosition={initialCaretPosition}
                     renderAllContent={renderAllContent}
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}

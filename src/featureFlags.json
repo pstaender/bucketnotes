@@ -1,4 +1,9 @@
 {
   "MOVE_FILES_WITH_DRAG_AND_DROP": false,
-  "IMAGE_UPLOAD_PATH": "/assets/images"
+  "ASSETS_BASE_PATH": "/assets",
+  "IMAGE_UPLOAD_PATH": "/assets/images",
+  "PDF_UPLOAD_PATH": "/assets/pdfs",
+  "AUDIO_UPLOAD_PATH": "/assets/audio",
+  "VIDEO_UPLOAD_PATH": "/assets/videos",
+  "ARCHIVE_UPLOAD_PATH": "/assets/archives"
 }

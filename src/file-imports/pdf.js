@@ -1,7 +1,6 @@
 import * as pdfjsLib from "pdfjs-dist/build/pdf.min.mjs";
 
-
-export function convertPDFToText({ dataTransferItem }, cb) {
+export function extractTextFromPDF({ dataTransferItem }, cb) {
   const f = dataTransferItem.getAsFile();
   const reader = new FileReader();
 

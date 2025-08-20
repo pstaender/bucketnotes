@@ -1,5 +1,8 @@
-import { convertPDFToText } from "./pdf";
+import FEATURE_FLAGS from "../featureFlags.json" with { type: "json" };
+
+import { extractTextFromPDF } from "./pdf";
 import { uploadImage } from "./uploadImage";
+import { uploadFile } from "./uploadFile";
 import TurndownService from "turndown";
 import { gfm } from "@truto/turndown-plugin-gfm";
 
@@ -23,7 +26,7 @@ function createTurndownService() {
 
 export function handleDrop(
   ev,
-  { setInitialText, text, setText, updateStatusText, setReadonly, focusEditor },
+  { setInitialText, text, setText, updateStatusText, setReadonly, focusEditor, convertPDFToText },
 ) {
   function insertText(text) {
     if (document.queryCommandSupported("insertText")) {
@@ -59,10 +62,10 @@ export function handleDrop(
         updateStatusText("Unsupported item type: " + item.kind);
         return;
       }
+      const uploadFilename = slugify(ev.dataTransfer.files[i].name);
+      const fileExtension = item.type.split("/")[1];
       if (item.type.match(/^image\/.+/i)) {
-        const uploadFilename = slugify(ev.dataTransfer.files[i].name);
-        const fileExtension = item.type.split("/")[1];
-        uploadImage(item, uploadFilename, fileExtension, ({ filename }) => {
+        uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.IMAGE_UPLOAD_PATH, ({ filename }) => {
           const text = unslugify(uploadFilename).replace(/\.[^.]+$/, "");
           insertText(`![${text || "Image"}](${filename})`);
           focusEditor.refresh();
@@ -71,11 +74,28 @@ export function handleDrop(
         return;
       }
       if (item.type.match(/^application\/pdf/i)) {
-        (async () => {
-          convertPDFToText({ dataTransferItem: item }, (text) => {
-            applyText(text);
+        if (convertPDFToText) {
+          (async () => {
+            extractTextFromPDF({ dataTransferItem: item }, (text) => {
+              applyText(text);
+            });
+          })();
+          return;
+        } else {
+          uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.PDF_UPLOAD_PATH, ({ filename }) => {
+            insertText(`[${unslugify(uploadFilename)}](${filename})`);
+            focusEditor.refresh();
           });
-        })();
+          return;
+        }
+
+        return;
+      }
+      if (item.type.match(/^(application\/zip|application\/x-7z-compressed|application\/x-zip-compressed|application\/x-tar|application\/vnd.rar|application\/gzip|application\/x-gzip|application\/epub\+zip|application\/x-7z-compressed)/i)) {
+        uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.ARCHIVE_UPLOAD_PATH, ({ filename }) => {
+          insertText(`[${unslugify(uploadFilename)}](${filename})`);
+          focusEditor.refresh();
+        });
         return;
       }
       if (item.type.match(/text\/html/i)) {
