@@ -235,10 +235,6 @@ html {
   padding-right: 0;
   li {
     padding: 0.1rem 1rem;
-    &.folder {
-      background: var(--background-color-light);
-      margin-bottom: 2px;
-    }
   }
   @media screen and (max-width: 900px) {
     li:first-child:not(.no-hover) {
@@ -510,7 +506,7 @@ focus-editor[image-preview] .link.image span:after {
   img {
     width: calc(100% - 2rem);
     margin-left: 1rem;
-    height: 100%;
+    max-height: calc(100vh - 2rem);
     object-fit: contain;
     display: block;
   }

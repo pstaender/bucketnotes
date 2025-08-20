@@ -1,3 +1,4 @@
+import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -92,7 +93,7 @@ export function EditorWrapper({
       if (ev.detail.elements) {
         ev.detail.elements.forEach((el) => {
           el.querySelectorAll(
-            'a.link.image[href^="images/"]:not(.aws-url)',
+            `a.link.image[href^="${FEATURE_FLAGS.IMAGE_UPLOAD_PATH.replace(/^\/*/,  '')}"]:not(.aws-url)`,
           ).forEach((a) => {
             a.classList.add("aws-url");
             checkForAwsImage(a);

@@ -1,3 +1,4 @@
+import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import { useCallback, useEffect, useState } from "react";
 import { VALID_FILE_EXTENSION, isTouchDevice } from "./helper.js";
 
@@ -38,7 +39,7 @@ export function FileList({
   const subfolders = files.filter(file => file.substring(normalizedFolderPath.length).includes('/')).map(file => file.split('/')[1]).filter((value, index, self) => self.indexOf(value) === index);
 
   useEffect(() => {
-    setAllowFileDragAndDrop(key === "Meta" || key === "Control");
+    setAllowFileDragAndDrop(FEATURE_FLAGS.MOVE_FILES_WITH_DRAG_AND_DROP && (key === "Meta" || key === "Control"));
   }, [key]);
 
   const registerKeyPress = useCallback((e) => {

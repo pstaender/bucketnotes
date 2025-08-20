@@ -1,3 +1,4 @@
+import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import moreIcon from "./icons/more.svg";
 import "./App.scss";
 
@@ -202,8 +203,13 @@ export function App({ version, appName } = {}) {
       }
     }
 
-    files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
-
+    if (folderPath === `${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`) {
+      files = files.filter((c) =>
+        /\.(png|avif|webp|jpg|jpeg|svg)$/i.test(c?.Key),
+      );
+    } else {
+      files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
+    }
 
     if (sortFilesByAttribute === "LastModified") {
       files = files.sort((a, b) => {
@@ -667,7 +673,7 @@ export function App({ version, appName } = {}) {
   }
 
   async function handleMoveFileToFolder(fileKey, folderName) {
-    let newFileName = folderName + fileKey.split('/').pop();
+    let newFileName = folderName + fileKey.split("/").pop();
     let { fileName } = await s3.renameFile(fileKey, newFileName);
 
     updateStatusText(`File moved to ${newFileName}`);
@@ -883,8 +889,12 @@ export function App({ version, appName } = {}) {
     if (location.pathname === "/logout") {
       return logout();
     }
-    if (location.pathname.startsWith("/images/")) {
-      setDisplayImageUrl(location.pathname.replace(/^\/images\//, ""));
+    if (location.pathname.startsWith(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`)) {
+      (async () => {
+        const url = location.pathname.replace(/^\//, "");
+        const publicUrl = await s3.cachedSignedPublicS3Url(url);
+        setDisplayImageUrl(publicUrl);
+      })();
       return;
     } else {
       setDisplayImageUrl(null);
@@ -1150,20 +1160,22 @@ export function App({ version, appName } = {}) {
                   files={files}
                   folderPath={folderPath}
                   moveFileToFolder={handleMoveFileToFolder}
-                  handleClickOnFolder={(
-                    ev,
-                    folderName,
-                  ) => {
-                    if (folderName.startsWith('← ')) {
+                  handleClickOnFolder={(ev, folderName) => {
+                    if (folderName.startsWith("← ")) {
                       // go level up]
 
-                      folderName = folderName.replace(/^← /, '').replace(/^\//, '').replace(/\/$/, '');
+                      folderName = folderName
+                        .replace(/^← /, "")
+                        .replace(/^\//, "")
+                        .replace(/\/$/, "");
 
                       return setFolderPath(
-                        folderName.includes('.') ? '/' + folderName.split('/').slice(0, -2).join('/') : '/' + folderName.split('/').slice(0, -1).join('/'),
-                      )
+                        folderName.includes(".")
+                          ? "/" + folderName.split("/").slice(0, -2).join("/")
+                          : "/" + folderName.split("/").slice(0, -1).join("/"),
+                      );
                     }
-                    setFolderPath(folderName.replace(/^← /,''));
+                    setFolderPath(folderName.replace(/^← /, ""));
                   }}
                   setShowSideBar={setShowSideBar}
                   handleClickOnFile={handleClickOnFile}
@@ -1420,15 +1432,7 @@ export function App({ version, appName } = {}) {
             </div>
             {displayImageUrl ? (
               <div className="display-single-image">
-                <img
-                  src={
-                    JSON.parse(
-                      localStorage.getItem(
-                        `s3_signed_url:images/${displayImageUrl}`,
-                      ),
-                    ).url
-                  }
-                ></img>
+                <img src={displayImageUrl}></img>
               </div>
             ) : (
               <div

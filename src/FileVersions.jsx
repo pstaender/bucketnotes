@@ -25,7 +25,7 @@ export function FileVersions({
               navigate(location.pathname);
             }}
           >
-            Cancel
+            Close
           </button>
           <button
             onClick={(ev) => {
