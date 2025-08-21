@@ -6,16 +6,16 @@ async function db() {
   if (_db) {
     return _db;
   }
-  return _db = await openDB("bucketnotes", 1, {
+  return (_db = await openDB("bucketnotes", 1, {
     upgrade(db) {
       db.createObjectStore("files");
-    }
-  });
+    },
+  }));
 }
 
 export async function setupDatabase() {
-  console.debug(`Setting up local database 'bucketnotes'`)
-  await db(); 
+  console.debug(`Setting up local database 'bucketnotes'`);
+  await db();
 }
 
 export async function deleteDatabase() {
@@ -31,8 +31,18 @@ export async function loadFileFromDatabase(key) {
 }
 
 export async function saveFileToDatabase(key, value) {
-  value.timestamp = new Date().toISOString()
+  value.timestamp = new Date().toISOString();
   return await (await db()).put("files", value, key);
+}
+
+export async function renameFileInDatabase(oldKey, newKey) {
+  const fileData =  await (await db()).get("files", oldKey);
+  if (!fileData) {
+    return;
+  }
+
+  await (await db()).delete("files", oldKey);
+  return  await (await db()).put("files", fileData, newKey);
 }
 
 export async function deleteFileFromDatabase(key) {

@@ -1,5 +1,8 @@
-import { convertPDFToText } from "./pdf";
+import FEATURE_FLAGS from "../featureFlags.json" with { type: "json" };
+
+import { extractTextFromPDF } from "./pdf";
 import { uploadImage } from "./uploadImage";
+import { uploadFile } from "./uploadFile";
 import TurndownService from "turndown";
 import { gfm } from "@truto/turndown-plugin-gfm";
 
@@ -23,7 +26,7 @@ function createTurndownService() {
 
 export function handleDrop(
   ev,
-  { setInitialText, text, setText, updateStatusText, setReadonly, focusEditor },
+  { setInitialText, text, setText, updateStatusText, setReadonly, focusEditor, convertPDFToText },
 ) {
   function insertText(text) {
     if (document.queryCommandSupported("insertText")) {
@@ -53,16 +56,19 @@ export function handleDrop(
   }
 
   ev.preventDefault();
+
+  /* https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types/Common_types  */
+
   if (ev.dataTransfer.items) {
     [...ev.dataTransfer.items].forEach((item, i) => {
       if (item.kind !== "file") {
         updateStatusText("Unsupported item type: " + item.kind);
         return;
       }
+      const uploadFilename = slugify(ev.dataTransfer.files[i].name);
+      const fileExtension = item.type.split("/")[1];
       if (item.type.match(/^image\/.+/i)) {
-        const uploadFilename = slugify(ev.dataTransfer.files[i].name);
-        const fileExtension = item.type.split("/")[1];
-        uploadImage(item, uploadFilename, fileExtension, ({ filename }) => {
+        uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.IMAGE_UPLOAD_PATH, ({ filename }) => {
           const text = unslugify(uploadFilename).replace(/\.[^.]+$/, "");
           insertText(`![${text || "Image"}](${filename})`);
           focusEditor.refresh();
@@ -71,15 +77,60 @@ export function handleDrop(
         return;
       }
       if (item.type.match(/^application\/pdf/i)) {
-        (async () => {
-          convertPDFToText({ dataTransferItem: item }, (text) => {
-            applyText(text);
+        if (convertPDFToText) {
+          (async () => {
+            updateStatusText('Extracting text from PDF…');
+            extractTextFromPDF({ dataTransferItem: item }, (text) => {
+              applyText(text);
+            });
+          })();
+          return;
+        } else {
+          updateStatusText('Uploading file, please wait…', 0);
+          uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.PDF_UPLOAD_PATH, ({ filename }) => {
+            insertText(`[${unslugify(uploadFilename)}](${filename})`);
+            focusEditor.refresh();
+            updateStatusText('Uploading finished');
           });
-        })();
+          return;
+        }
+
         return;
       }
+
+      if (item.type.match(/^(application\/zip|application\/x-7z-compressed|application\/x-zip-compressed|application\/x-tar|application\/vnd.rar|application\/gzip|application\/x-gzip|application\/epub\+zip|application\/x-7z-compressed)/i)) {
+        updateStatusText('Uploading archive file, please wait…', 0);
+        uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.ARCHIVE_UPLOAD_PATH, ({ filename }) => {
+          insertText(`[${unslugify(uploadFilename)}](${filename})`);
+          focusEditor.refresh();
+          updateStatusText('Uploading finished');
+        });
+        return;
+      }
+
+      if (FEATURE_FLAGS.VIDEO_UPLOAD_PATH && item.type.match(/^video\//i)) {
+        updateStatusText('Uploading video file, please wait…', 0);
+        uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.VIDEO_UPLOAD_PATH, ({ filename }) => {
+          insertText(`[${unslugify(uploadFilename)}](${filename})`);
+          focusEditor.refresh();
+          updateStatusText('Uploading finished');
+        });
+        return;
+      }
+
+      if (FEATURE_FLAGS.AUDIO_UPLOAD_PATH && item.type.match(/^audio\//i)) {
+        updateStatusText('Uploading audio file, please wait…', 0);
+        uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.AUDIO_UPLOAD_PATH, ({ filename }) => {
+          insertText(`[${unslugify(uploadFilename)}](${filename})`);
+          focusEditor.refresh();
+          updateStatusText('Uploading finished');
+        });
+        return;
+      }
+
       if (item.type.match(/text\/html/i)) {
         (async () => {
+          updateStatusText('Converting HTML to Markdown…');
           const f = item.getAsFile();
           let html = await f.text();
           html = new DOMParser().parseFromString(html, "text/html");

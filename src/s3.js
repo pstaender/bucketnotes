@@ -370,3 +370,23 @@ export async function corsRules() {
     const response = await s3Client.send(command);
     return response.CORSRules;
 }
+
+export async function cachedSignedPublicS3Url(url) {
+  const expiresIn = 3600;
+  const cacheKey = `s3_signed_url:${url}`;
+  if (localStorage.getItem(cacheKey)) {
+    const data = JSON.parse(localStorage.getItem(cacheKey));
+    if (data.validUntil > new Date().getTime()) {
+      return data.url;
+    }
+  }
+  const publicUrl = await getPublicUrl(url, expiresIn);
+  localStorage.setItem(
+    cacheKey,
+    JSON.stringify({
+      validUntil: new Date().getTime() + expiresIn * 1000,
+      url: publicUrl,
+    }),
+  );
+  return publicUrl;
+}

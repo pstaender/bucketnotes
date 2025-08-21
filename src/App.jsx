@@ -1,3 +1,4 @@
+import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import moreIcon from "./icons/more.svg";
 import "./App.scss";
 
@@ -15,7 +16,7 @@ import * as s3 from "./s3.js";
 import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
 import { FileList } from "./FileList.jsx";
-import { isTouch, VALID_FILE_EXTENSION } from "./helper.js";
+import { isTouch, VALID_FILE_EXTENSION, downloadFileByUrl } from "./helper.js";
 import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
 import slugify from "slugify";
@@ -39,6 +40,10 @@ function slugifyPath(s) {
 }
 
 export function App({ version, appName } = {}) {
+  const defaultShowStatusTextInMilliseconds = 3000;
+  const [showStatusTextInMilliseconds, setShowStatusTextInMilliseconds] =
+    useState(defaultShowStatusTextInMilliseconds);
+
   const [credentials, setCredentials] = useState(null);
   const [files, setFiles] = useState(null);
   const [folders, setFolders] = useState(null);
@@ -81,9 +86,6 @@ export function App({ version, appName } = {}) {
     localStorage.getItem("font-family"),
   );
   const [fontSize, setFontSize] = useState(null);
-  const [showNumberOfParagraphs, setShowNumberOfParagraphs] = useState(
-    sessionStorage.getItem("showNumberOfParagraphs") === "true",
-  );
   const [initialCaretPosition, setInitialCaretPosition] = useState(null);
   // TODO: replace location.pathname with folderPath
   const [folderPath, setFolderPath] = useState("");
@@ -98,8 +100,18 @@ export function App({ version, appName } = {}) {
   );
   const [focusEditor, setFocusEditor] = useState(null);
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
+  const [playVideoUrl, setPlayVideoUrl] = useState(null);
+  const [playAudioUrl, setPlayAudioUrl] = useState(null);
   const [offlineStorageEnabled, setOfflineStorageEnabled] = useState(
     localStorage.getItem("offlineStorage") === "true",
+  );
+  const [convertPDFToText, setConvertPDFToText] = useState(
+    localStorage.getItem("convertPDFToText") === "true",
+  );
+  const [showAdditionalMenuOption, setShowAdditionalMenuOption] =
+    useState(false);
+  const [fullWithEditor, setFullWithEditor] = useState(
+    localStorage.getItem("fullWithEditor") === "true",
   );
 
   const location = useLocation();
@@ -174,14 +186,13 @@ export function App({ version, appName } = {}) {
       .replace(/\/[^\/]+?\.[^\.]+$/, "")
       .replace(/\/+$/, "")
       .replace(/^\//, "");
+
     let delimiter = !prefix ? "/" : "";
 
     if (VALID_FILE_EXTENSION.test(prefix)) {
       if (!prefix.includes("/")) {
         delimiter = "/";
         prefix = "";
-      } else {
-        // prefix = prefix.replace(/\/[^\/]?\..+$/, '');
       }
     }
 
@@ -203,7 +214,16 @@ export function App({ version, appName } = {}) {
       }
     }
 
-    files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
+    if (
+      FEATURE_FLAGS.IMAGE_UPLOAD_PATH.includes(folderPath) ||
+      FEATURE_FLAGS.VIDEO_UPLOAD_PATH.includes(folderPath) ||
+      FEATURE_FLAGS.AUDIO_UPLOAD_PATH.includes(folderPath) ||
+      FEATURE_FLAGS.ARCHIVE_UPLOAD_PATH.includes(folderPath)
+    ) {
+      /* SHOW ALL FILES AND FOLDER */
+    } else {
+      files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
+    }
 
     if (sortFilesByAttribute === "LastModified") {
       files = files.sort((a, b) => {
@@ -331,9 +351,13 @@ export function App({ version, appName } = {}) {
     setFileVersions(versions.filter((v) => v.Size > 0));
   }
 
-  function updateStatusText(text) {
+  function updateStatusText(
+    text,
+    timeout = defaultShowStatusTextInMilliseconds,
+  ) {
     console.debug(text);
     setStatusText(text);
+    setShowStatusTextInMilliseconds(timeout);
     setStatusUpdatedAt(new Date().getTime());
   }
 
@@ -667,17 +691,20 @@ export function App({ version, appName } = {}) {
   }
 
   async function handleMoveFileToFolder(fileKey, folderName) {
-    let newFileName = folderName + fileKey;
+    let newFileName = folderName + fileKey.split("/").pop();
     let { fileName } = await s3.renameFile(fileKey, newFileName);
 
     updateStatusText(`File moved to ${newFileName}`);
 
     try {
       loadS3Files();
-      await loadFile(newFileName);
+      await loadFile(fileName);
       setReadonly(false);
+      if (offlineStorageEnabled) {
+        db.renameFileInDatabase(fileKey, fileName);
+      }
     } catch (_) {}
-    navigate(newFileName);
+    navigate(fileName);
   }
 
   useEffect(() => {
@@ -708,12 +735,11 @@ export function App({ version, appName } = {}) {
 
   useEffect(() => {
     sessionStorage.setItem("focusMode", !!focusMode);
-    sessionStorage.setItem("showNumberOfParagraphs", !!showNumberOfParagraphs);
     localStorage.setItem(
       "createSmartNewLineContent",
       !!createSmartNewLineContent,
     );
-  }, [focusMode, showNumberOfParagraphs, createSmartNewLineContent]);
+  }, [focusMode, createSmartNewLineContent]);
 
   useEffect(() => {
     if (!s3Client) {
@@ -731,19 +757,21 @@ export function App({ version, appName } = {}) {
   }, [files, credentials, s3Client]);
 
   useEffect(() => {
-    const showInMilliseconds = 3000;
+    if (!showStatusTextInMilliseconds) {
+      return;
+    }
     if (statusText) {
       // let statusTextBefore = statusText;
       setTimeout(() => {
         if (
-          statusUpdatedAt + (showInMilliseconds - 100) <
+          statusUpdatedAt + (showStatusTextInMilliseconds - 100) <
           new Date().getTime()
         ) {
           // remove status text
           setStatusUpdatedAt(0);
           setStatusText(null);
         }
-      }, showInMilliseconds);
+      }, showStatusTextInMilliseconds);
     }
   }, [statusText]);
 
@@ -880,11 +908,49 @@ export function App({ version, appName } = {}) {
     if (location.pathname === "/logout") {
       return logout();
     }
-    if (location.pathname.startsWith("/images/")) {
-      setDisplayImageUrl(location.pathname.replace(/^\/images\//, ""));
+    setDisplayImageUrl(null);
+    setPlayAudioUrl(false);
+    setPlayVideoUrl(false);
+    if (location.pathname.startsWith(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`)) {
+      (async () => {
+        const url = location.pathname.replace(/^\//, "");
+        const publicUrl = await s3.cachedSignedPublicS3Url(url);
+        setDisplayImageUrl(publicUrl);
+      })();
       return;
-    } else {
-      setDisplayImageUrl(null);
+    }
+    if (location.pathname.startsWith(`${FEATURE_FLAGS.VIDEO_UPLOAD_PATH}/`)) {
+      (async () => {
+        const url = location.pathname.replace(/^\//, "");
+        const publicUrl = await s3.cachedSignedPublicS3Url(url);
+        setPlayVideoUrl(publicUrl);
+      })();
+      return;
+    }
+    if (location.pathname.startsWith(`${FEATURE_FLAGS.AUDIO_UPLOAD_PATH}/`)) {
+      (async () => {
+        const url = location.pathname.replace(/^\//, "");
+        const publicUrl = await s3.cachedSignedPublicS3Url(url);
+        setPlayAudioUrl(publicUrl);
+      })();
+      return;
+    }
+    if (location.pathname.startsWith(`${FEATURE_FLAGS.ASSETS_BASE_PATH}/`)) {
+      // download file
+      (async () => {
+        const url = location.pathname.replace(/^\//, "");
+        const publicUrl = await s3.getPublicUrl(url, 60);
+        // download file in the browser
+        fetch(publicUrl)
+          .then((response) => response.blob())
+          .then((blob) => {
+            // Create a Blob URL
+            const url = window.URL.createObjectURL(blob);
+            downloadFileByUrl(url);
+            updateStatusText(`Downloading file '${url}'`);
+          })
+          .catch((error) => console.error("Error downloading file:", error));
+      })();
     }
     if (!s3Client || location.pathname === "/") {
       return;
@@ -959,7 +1025,8 @@ export function App({ version, appName } = {}) {
         while (fileName !== null && fileName?.length === 0) {
           fileName = prompt(
             "Enter file name",
-            (folderPath.length > 1 ? folderPath : "") + newNoteName(),
+            (folderPath.length > 1 ? folderPath.replace(/^\/+/, "") : "") +
+              newNoteName(),
           );
           if (fileName) {
             fileName = slugifyPath(fileName);
@@ -1147,23 +1214,22 @@ export function App({ version, appName } = {}) {
                   files={files}
                   folderPath={folderPath}
                   moveFileToFolder={handleMoveFileToFolder}
-                  handleClickOnFolder={(
-                    ev,
-                    folderName,
-                    { isGoToParentFolder, goToRootFolder } = {},
-                  ) => {
-                    if (goToRootFolder) {
-                      return setFolderPath("");
+                  handleClickOnFolder={(ev, folderName) => {
+                    if (folderName.startsWith("← ")) {
+                      // go level up]
+
+                      folderName = folderName
+                        .replace(/^← /, "")
+                        .replace(/^\//, "")
+                        .replace(/\/$/, "");
+
+                      return setFolderPath(
+                        folderName.includes(".")
+                          ? "/" + folderName.split("/").slice(0, -2).join("/")
+                          : "/" + folderName.split("/").slice(0, -1).join("/"),
+                      );
                     }
-                    setFolderPath(
-                      isGoToParentFolder
-                        ? folderName
-                            .replace(/\/$/, "")
-                            .split("/")
-                            .slice(0, -2)
-                            .join("/")
-                        : folderName,
-                    );
+                    setFolderPath(folderName.replace(/^← /, ""));
                   }}
                   setShowSideBar={setShowSideBar}
                   handleClickOnFile={handleClickOnFile}
@@ -1199,7 +1265,10 @@ export function App({ version, appName } = {}) {
           <div
             className="main"
             onClick={(ev) => {
-              if (ev.target.tagName !== "INPUT") {
+              if (
+                !ev.target.dataset.isMoreOptionsItem &&
+                ev.target.tagName !== "INPUT"
+              ) {
                 setShowMoreOptions(false);
               }
             }}
@@ -1216,7 +1285,14 @@ export function App({ version, appName } = {}) {
               {showMoreOptions && (
                 <ul
                   className="menu"
-                  onClick={(ev) => setShowMoreOptions(false)}
+                  onClick={(ev) => {
+                    if (ev.target.dataset.isMoreOptionsItem) {
+                      // don't close menu
+                      return;
+                    }
+                    setShowMoreOptions(false);
+                    setShowAdditionalMenuOption(false);
+                  }}
                 >
                   <li
                     className="create-file"
@@ -1231,49 +1307,9 @@ export function App({ version, appName } = {}) {
                   <li
                     onClick={(ev) => {
                       navigate("new-ask-for-filename");
-                      setFolderPath("/");
                     }}
                   >
                     New with specific name
-                  </li>
-                  <li
-                    onClick={() => {
-                      if (colorScheme === "dark") {
-                        setColorScheme("light");
-                      } else if (colorScheme === "light") {
-                        setColorScheme("");
-                      } else {
-                        setColorScheme("dark");
-                      }
-                    }}
-                  >
-                    Color scheme (
-                    {colorScheme ? colorScheme + " → " : "auto → "}
-                    {colorScheme === "dark"
-                      ? "light"
-                      : colorScheme === "light"
-                        ? "auto"
-                        : "dark"}
-                    )
-                  </li>
-                  <li
-                    onClick={() => {
-                      if (fontFamily === "mononoki") {
-                        setFontFamily("");
-                      } else if (fontFamily === "ibm") {
-                        setFontFamily("mononoki");
-                      } else {
-                        setFontFamily("ibm");
-                      }
-                    }}
-                  >
-                    Font ({fontFamily ? fontFamily + " → " : "auto → "}
-                    {fontFamily === "ibm"
-                      ? "mononoki"
-                      : fontFamily === "mononoki"
-                        ? "auto"
-                        : "ibm"}
-                    )
                   </li>
                   <li
                     onClick={() =>
@@ -1285,31 +1321,6 @@ export function App({ version, appName } = {}) {
                     Guess lists and indents
                   </li>
                   <li
-                    className={showNumberOfParagraphs ? "active" : null}
-                    onClick={() => {
-                      setShowNumberOfParagraphs(!showNumberOfParagraphs);
-                    }}
-                  >
-                    Number paragraphs{" "}
-                  </li>
-                  {!isTouch() && (
-                    <li
-                      onClick={() => {
-                        setScrollWindowToCenterCaret(
-                          !scrollWindowToCenterCaret,
-                        );
-                        localStorage.setItem(
-                          "scrollWindowToCenterCaret",
-                          !scrollWindowToCenterCaret,
-                        );
-                      }}
-                      className={scrollWindowToCenterCaret ? "active" : null}
-                    >
-                      Scroll to center
-                    </li>
-                  )}
-
-                  <li
                     onClick={() => setAutoSave(!autoSave)}
                     className={[autoSave ? "active" : null, "border-bottom"]
                       .filter((v) => !!v)
@@ -1317,6 +1328,163 @@ export function App({ version, appName } = {}) {
                   >
                     Autosave
                   </li>
+                  {true && (
+                    <li
+                      className={["border-bottom"].filter((v) => !!v).join(" ")}
+                      data-is-more-options-item="true"
+                      style={{ position: "relative" }}
+                      onMouseEnter={() => setShowAdditionalMenuOption(true)}
+                      onMouseLeave={() => setShowAdditionalMenuOption(false)}
+                    >
+                      More Options
+                      {showAdditionalMenuOption && (
+                        <div className="more-options">
+                          <ul className="menu">
+                            <li
+                              onClick={() => {
+                                if (colorScheme === "dark") {
+                                  setColorScheme("light");
+                                } else if (colorScheme === "light") {
+                                  setColorScheme("");
+                                } else {
+                                  setColorScheme("dark");
+                                }
+                              }}
+                            >
+                              Color scheme (
+                              {colorScheme ? colorScheme + " → " : "auto → "}
+                              {colorScheme === "dark"
+                                ? "light"
+                                : colorScheme === "light"
+                                  ? "auto"
+                                  : "dark"}
+                              )
+                            </li>
+                            <li
+                              onClick={() => {
+                                if (fontFamily === "mononoki") {
+                                  setFontFamily("");
+                                } else if (fontFamily === "ibm") {
+                                  setFontFamily("mononoki");
+                                } else {
+                                  setFontFamily("ibm");
+                                }
+                              }}
+                            >
+                              Font (
+                              {fontFamily ? fontFamily + " → " : "auto → "}
+                              {fontFamily === "ibm"
+                                ? "mononoki"
+                                : fontFamily === "mononoki"
+                                  ? "auto"
+                                  : "ibm"}
+                              )
+                            </li>
+                            {!isTouch() && (
+                              <li
+                                onClick={() => {
+                                  setScrollWindowToCenterCaret(
+                                    !scrollWindowToCenterCaret,
+                                  );
+                                  localStorage.setItem(
+                                    "scrollWindowToCenterCaret",
+                                    !scrollWindowToCenterCaret,
+                                  );
+                                }}
+                                /* NOT WORKING?! TODO: check why not… */
+                                style={{ display: "none" }}
+                                className={
+                                  scrollWindowToCenterCaret ? "active" : null
+                                }
+                              >
+                                Scroll to center
+                              </li>
+                            )}
+                            <li
+                              onClick={toggleFullScreen}
+                              className={
+                                document.fullscreenElement ? "active" : null
+                              }
+                            >
+                              Fullscreen{" "}
+                              <span className="shortcut">⌘ + Shift + F</span>
+                            </li>
+                            <li>
+                              <div title="Increase or decrease font size">
+                                <span
+                                  onClick={() => {
+                                    setFontSize(Number(fontSize || 16) + 1);
+                                  }}
+                                >
+                                  Larger font
+                                </span>
+                                <span
+                                  style={{
+                                    transform: "scale(0.75)",
+                                    display: "inline-flex",
+                                    paddingLeft: "0.25rem",
+                                  }}
+                                  onClick={() => {
+                                    setFontSize(Number(fontSize || 16) - 1);
+                                  }}
+                                >
+                                  Smaller Font
+                                </span>
+                              </div>
+                            </li>
+                            <li
+                              onClick={async () => {
+                                let value = !offlineStorageEnabled;
+                                if (value) {
+                                  updateStatusText("Offline Storage enabled");
+                                  setOfflineStorageEnabled(true);
+                                  localStorage.setItem(
+                                    "offlineStorage",
+                                    "true",
+                                  );
+                                } else {
+                                  setOfflineStorageEnabled(false);
+                                  localStorage.removeItem("offlineStorage");
+                                  await db.clearFiles();
+                                  updateStatusText(
+                                    "Offline Storage disabled + cleared",
+                                  );
+                                }
+                              }}
+                            >
+                              {offlineStorageEnabled
+                                ? "Disable Offline Storage"
+                                : "Enable Offline Storage"}
+                            </li>
+                            <li
+                              onClick={(ev) => {
+                                setConvertPDFToText(!convertPDFToText);
+                                localStorage.setItem(
+                                  "convertPDFToText",
+                                  convertPDFToText ? "false" : "true",
+                                );
+                              }}
+                              className={convertPDFToText ? "active" : null}
+                            >
+                              Extract text from PDF on drop
+                            </li>
+                            <li
+                              onClick={(ev) => {
+                                setFullWithEditor(!fullWithEditor);
+                                localStorage.setItem(
+                                  "fullWithEditor",
+                                  fullWithEditor ? "false" : "true",
+                                );
+                              }}
+                              className={fullWithEditor ? "active" : null}
+                            >
+                              Full width editing
+                            </li>
+                          </ul>
+                        </div>
+                      )}
+                    </li>
+                  )}
                   <li
                     onClick={(ev) => {
                       setShowSideBar(!showSideBar);
@@ -1327,54 +1495,6 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li onClick={displayGoToParagraphDialog}>
                     Jump to paragraph <span className="shortcut">⌘ + G</span>
-                  </li>
-                  <li
-                    onClick={toggleFullScreen}
-                    className={document.fullscreenElement ? "active" : null}
-                  >
-                    Fullscreen <span className="shortcut">⌘ + Shift + F</span>
-                  </li>
-                  <li>
-                    <div title="Increase or decrease font size">
-                      <span
-                        onClick={() => {
-                          setFontSize(Number(fontSize || 16) + 1);
-                        }}
-                      >
-                        ABC
-                      </span>
-                      <span
-                        style={{
-                          transform: "scale(0.75)",
-                          display: "inline-flex",
-                          paddingLeft: "0.25rem",
-                        }}
-                        onClick={() => {
-                          setFontSize(Number(fontSize || 16) - 1);
-                        }}
-                      >
-                        ABC
-                      </span>
-                    </div>
-                  </li>
-                  <li
-                    onClick={async () => {
-                      let value = !offlineStorageEnabled;
-                      if (value) {
-                        updateStatusText("Offline Storage enabled");
-                        setOfflineStorageEnabled(true);
-                        localStorage.setItem("offlineStorage", "true");
-                      } else {
-                        setOfflineStorageEnabled(false);
-                        localStorage.removeItem("offlineStorage");
-                        await db.clearFiles();
-                        updateStatusText("Offline Storage disabled + cleared");
-                      }
-                    }}
-                  >
-                    {offlineStorageEnabled
-                      ? "Disable Offline Storage"
-                      : "Enable Offline Storage"}
                   </li>
                   <li
                     onClick={async () => {
@@ -1418,24 +1538,45 @@ export function App({ version, appName } = {}) {
                 </ul>
               )}
             </div>
-            {displayImageUrl ? (
-              <div className="display-single-image">
-                <img
-                  src={
-                    JSON.parse(
-                      localStorage.getItem(
-                        `s3_signed_url:images/${displayImageUrl}`,
-                      ),
-                    ).url
-                  }
-                ></img>
-              </div>
+            {displayImageUrl || playVideoUrl || playAudioUrl ? (
+              <>
+                {displayImageUrl && (
+                  <div className="display-single-image">
+                    <img src={displayImageUrl}></img>
+                  </div>
+                )}
+                {playVideoUrl && (
+                  <div className="display-single-image">
+                    <video controls>
+                      <source src={playVideoUrl} />
+                    </video>
+                  </div>
+                )}
+                {playAudioUrl && (
+                  <div className="display-single-image">
+                    <figure>
+                      <audio controls src={playAudioUrl}></audio>
+
+                      <figcaption style={{ textAlign: "center" }}>
+                        <p>
+                          <a href={playAudioUrl}>Download audio file</a>
+                        </p>
+                      </figcaption>
+                    </figure>
+                  </div>
+                )}
+              </>
             ) : (
               <div
                 onClick={(ev) => {
+                  if (ev.target.dataset.isMoreOptionsItem) {
+                    // don't close menu
+                    return;
+                  }
                   if (ev.isTrusted) {
                     setShowMoreOptions(false);
                     setShowSideBar(false);
+                    setShowAdditionalMenuOption(false);
                   }
                 }}
                 className={[
@@ -1455,6 +1596,7 @@ export function App({ version, appName } = {}) {
                       updateStatusText,
                       setReadonly,
                       focusEditor,
+                      convertPDFToText,
                     });
                   }}
                   className="drop-wrapper"
@@ -1469,11 +1611,11 @@ export function App({ version, appName } = {}) {
                     readOnly={readonly}
                     focusMode={focusMode}
                     doGuessNextListItemLine={createSmartNewLineContent}
-                    showNumberOfParagraphs={showNumberOfParagraphs}
                     initialCaretPosition={initialCaretPosition}
                     renderAllContent={renderAllContent}
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}
                     previewImages={previewImages}
+                    fullWithEditor={fullWithEditor}
                   ></EditorWrapper>
                 </div>
               </div>

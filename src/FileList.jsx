@@ -1,5 +1,8 @@
+import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import { useCallback, useEffect, useState } from "react";
 import { VALID_FILE_EXTENSION, isTouchDevice } from "./helper.js";
+
+import { useNavigate } from "react-router-dom";
 
 import DeleteIcon from "./icons/delete.svg";
 import HistoryIcon from "./icons/history.svg";
@@ -24,11 +27,19 @@ export function FileList({
   const [allowFileDragAndDrop, setAllowFileDragAndDrop] = useState(false);
   const [key, setKey] = useState(null);
 
+
+  const normalizedFolderPath = (/\/[^.]+$/.test(folderPath) ? folderPath : folderPath.split('/').slice(0, -1).join('/')).replace(/\/+/, '/').replace(/[/]*$/, '/');
+
+  const parentFolder = normalizedFolderPath
+    .split("/")
+    .slice(0, -2)
+    .join("/");
+
+
+  const subfolders = files.filter(file => file.substring(normalizedFolderPath.length).includes('/')).map(file => file.split('/')[1]).filter((value, index, self) => self.indexOf(value) === index);
+
   useEffect(() => {
-    setAllowFileDragAndDrop(false);
-    if (key === "Meta" || key === "Control") {
-      setAllowFileDragAndDrop(true);
-    }
+    setAllowFileDragAndDrop(FEATURE_FLAGS.MOVE_FILES_WITH_DRAG_AND_DROP && (key === "Meta" || key === "Control"));
   }, [key]);
 
   const registerKeyPress = useCallback((e) => {
@@ -50,7 +61,7 @@ export function FileList({
 
   const [parent, setParent] = useState(null);
 
-  function Droppable({ id, folderName }) {
+  function Droppable({ id, folderName, realPath }) {
     const { isOver, setNodeRef } = useDroppable({
       id
     });
@@ -60,6 +71,7 @@ export function FileList({
         ref={setNodeRef}
         key={`folder-${folderName}`}
         className={[
+          'folder',
           location.pathname?.startsWith(folderName) ? "active" : null,
           isOver ? "over" : null
         ]
@@ -68,9 +80,17 @@ export function FileList({
       >
         <div
           className="file-name"
-          onClick={(ev) => handleClickOnFolder(ev, folderName)}
+          onClick={(ev) => handleClickOnFolder(ev, realPath || folderName)}
         >
-          {folderName}
+          {folderName.startsWith('← ') ? (
+            <>
+              <span>{folderName.substring(0, 2)}</span>
+              <span className="folder-path-text">{folderName.split('← ')[1]}</span>
+            </>
+          ) : (
+            <>{folderName.replace(/\/*$/, '/')}</>
+          )}
+
         </div>
         <span
           className="icons"
@@ -126,9 +146,7 @@ export function FileList({
         }
       >
         <span className="file-name">
-          {fileKey.includes("/")
-            ? fileKey.split("/").splice(1).join("/")
-            : fileKey}
+          {fileKey.split('/').at(-1)}
         </span>
         <span className="icons">
           {!isPossiblyOffline && (
@@ -151,14 +169,22 @@ export function FileList({
     if (!over || !active) {
       return;
     }
-    let folderName = over.id.replace(/^folder::/, "");
+    let destination = over.id;
+
+    if (destination === 'folder-up') {
+      return;
+    }
+    destination = destination.replace(/^folder::/, "");
     let el = document.getElementById(active.id);
     if (!el) {
       console.error("Element not found");
     }
     el.style.display = "none";
-    await moveFileToFolder(active.id, folderName);
+    console.debug("Moving file", active.id, "to folder", destination);
+    await moveFileToFolder(active.id, destination.replace(/\/*$/, '/'));
   }
+
+  files = files.filter(f => f.substring(normalizedFolderPath.length).includes('.') && !f.substring(normalizedFolderPath.length).includes('/'));
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
@@ -166,29 +192,27 @@ export function FileList({
         {folderPath &&
         folderPath !== "/" &&
         (!VALID_FILE_EXTENSION.test(folderPath) || folderPath.includes("/")) ? (
-          <li
-            onClick={(ev) => {
-              handleClickOnFolder(ev, folderPath, { goToRootFolder: true });
-            }}
-            key="folder-up"
-          >
-            ←
-          </li>
+          <Droppable
+            folderName={'← ' + normalizedFolderPath.split('/').slice(0, -1).join('/').replace(/^\/*/, '/')}
+              id="folder-up"
+              key="folder-up"
+          ></Droppable>
         ) : (
           <li className="no-hover" key="no-hover-folder">
             &nbsp;
           </li>
         )}
-        {folders.map((folderName) => (
+        {folders.concat(subfolders).filter(v => v !== '/').map((folderName) => (
           <Droppable
             folderName={folderName}
-            id={`folder::${folderName}`}
-            key={`folder::${folderName}`}
+            realPath={normalizedFolderPath + folderName}
+            id={`folder::${normalizedFolderPath + folderName}`}
+            key={`folder::${normalizedFolderPath + folderName}`}
           ></Droppable>
         ))}
-        {location && (!files || files.length === 0) && (
+        {location && ((!files || files.length === 0) && subfolders.length === 0) && (
           <li className="no-files-found" key="no-text-file-found">
-            No text files found
+            No files found
           </li>
         )}
         {files.map((fileKey) => (
@@ -198,18 +222,6 @@ export function FileList({
             allowDragAndDrop={allowFileDragAndDrop}
           ></Draggable>
         ))}
-        {/* {!isTouchDevice() && (
-          <li key="allow-dad" className="no-hover allow-dad">
-            <input
-              type="checkbox"
-              id="allow-file-dad"
-              onChange={(ev) => setAllowFileDragAndDrop(ev.target.checked)}
-            ></input>
-            <label htmlFor="allow-file-dad">
-              allow drag + drop file on folder
-            </label>
-          </li>
-        )} */}
       </ul>
     </DndContext>
   );

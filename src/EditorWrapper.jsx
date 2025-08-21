@@ -1,8 +1,9 @@
+import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as s3 from "./s3";
-import { debounce } from "./helper";
+import { debounce, downloadFileByUrl } from "./helper";
 
 const localStorage = window.localStorage;
 
@@ -14,12 +15,12 @@ export function EditorWrapper({
   readOnly,
   focusMode,
   doGuessNextListItemLine,
-  showNumberOfParagraphs,
   renderAllContent,
   scrollWindowToCenterCaret,
   previewImages,
   focusEditor,
   setFocusEditor,
+  fullWithEditor,
 } = {}) {
   let currentFocusEditor = null;
   const refEditor = useRef();
@@ -61,7 +62,7 @@ export function EditorWrapper({
       return;
     }
 
-    async function checkForAwsImage(a) {
+    async function checkForAwsFile(a) {
       const expiresIn = 3600;
       if (!a.getAttribute("href")) {
         return;
@@ -86,20 +87,45 @@ export function EditorWrapper({
       );
       a.href = "#/" + a.getAttribute("href");
       a.style.setProperty("--url", `url(${imageUrl})`);
+      return a;
     }
 
     refEditor.current.addEventListener("renderParagraphBlocks", (ev) => {
       if (ev.detail.elements) {
         ev.detail.elements.forEach((el) => {
           el.querySelectorAll(
-            'a.link.image[href^="images/"]:not(.aws-url)',
+            `a.link.image[href^="${FEATURE_FLAGS.IMAGE_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
           ).forEach((a) => {
             a.classList.add("aws-url");
-            checkForAwsImage(a);
+            checkForAwsFile(a);
           });
-          el.querySelectorAll('a.link[href^="/"]:not(.aws-url)').forEach(
+          el.querySelectorAll(
+            `a.link[href^="${FEATURE_FLAGS.AUDIO_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
+          ).forEach((a) => {
+            a.classList.add("aws-url");
+            console.log(a.href);
+            a.setAttribute('href', "#/" + a.getAttribute("href"));
+          });
+          el.querySelectorAll(
+            `a.link[href^="${FEATURE_FLAGS.VIDEO_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
+          ).forEach((a) => {
+            a.classList.add("aws-url");
+            a.setAttribute('href', "#/" + a.getAttribute("href"));
+          });
+          el.querySelectorAll(
+            `a.link:not(.aws-url)[href^="${FEATURE_FLAGS.ASSETS_BASE_PATH.replace(/^\/*/, "")}"]`,
+          ).forEach((a) => {
+            a.classList.add("aws-url");
+            a.classList.add("prevent-dblclick-visit");
+            a.addEventListener("dblclick", (ev) => {
+              ev.preventDefault();
+              downloadFileByUrl(a.getAttribute("href"));
+            });
+          });
+          el.querySelectorAll('a.link:not(.aws-url)[href^="/"]').forEach(
             (a) => {
-              a.addEventListener("click", (ev) => {
+              a.classList.add("prevent-dblclick-visit");
+              a.addEventListener("dblick", (ev) => {
                 ev.preventDefault();
                 navigate(a.getAttribute("href"));
               });
@@ -145,7 +171,9 @@ export function EditorWrapper({
     <focus-editor
       class={[
         indentHeadings ? "indent-headings" : "",
-        focusMode ? "highlight-current-paragraph" : "",]
+        focusMode ? "highlight-current-paragraph" : "",
+        fullWithEditor ? "full-width-editor" : "",
+      ]
         .filter((v) => !!v)
         .join(" ")}
       image-preview={previewImages ? "*" : null}
