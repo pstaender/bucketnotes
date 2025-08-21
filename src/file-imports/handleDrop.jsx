@@ -56,6 +56,9 @@ export function handleDrop(
   }
 
   ev.preventDefault();
+
+  /* https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types/Common_types  */
+
   if (ev.dataTransfer.items) {
     [...ev.dataTransfer.items].forEach((item, i) => {
       if (item.kind !== "file") {
@@ -76,30 +79,58 @@ export function handleDrop(
       if (item.type.match(/^application\/pdf/i)) {
         if (convertPDFToText) {
           (async () => {
+            updateStatusText('Extracting text from PDF…');
             extractTextFromPDF({ dataTransferItem: item }, (text) => {
               applyText(text);
             });
           })();
           return;
         } else {
+          updateStatusText('Uploading file, please wait…', 0);
           uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.PDF_UPLOAD_PATH, ({ filename }) => {
             insertText(`[${unslugify(uploadFilename)}](${filename})`);
             focusEditor.refresh();
+            updateStatusText('Uploading finished');
           });
           return;
         }
 
         return;
       }
+
       if (item.type.match(/^(application\/zip|application\/x-7z-compressed|application\/x-zip-compressed|application\/x-tar|application\/vnd.rar|application\/gzip|application\/x-gzip|application\/epub\+zip|application\/x-7z-compressed)/i)) {
+        updateStatusText('Uploading archive file, please wait…', 0);
         uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.ARCHIVE_UPLOAD_PATH, ({ filename }) => {
           insertText(`[${unslugify(uploadFilename)}](${filename})`);
           focusEditor.refresh();
+          updateStatusText('Uploading finished');
         });
         return;
       }
+
+      if (FEATURE_FLAGS.VIDEO_UPLOAD_PATH && item.type.match(/^video\//i)) {
+        updateStatusText('Uploading video file, please wait…', 0);
+        uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.VIDEO_UPLOAD_PATH, ({ filename }) => {
+          insertText(`[${unslugify(uploadFilename)}](${filename})`);
+          focusEditor.refresh();
+          updateStatusText('Uploading finished');
+        });
+        return;
+      }
+
+      if (FEATURE_FLAGS.AUDIO_UPLOAD_PATH && item.type.match(/^audio\//i)) {
+        updateStatusText('Uploading audio file, please wait…', 0);
+        uploadFile(item, uploadFilename, fileExtension, FEATURE_FLAGS.AUDIO_UPLOAD_PATH, ({ filename }) => {
+          insertText(`[${unslugify(uploadFilename)}](${filename})`);
+          focusEditor.refresh();
+          updateStatusText('Uploading finished');
+        });
+        return;
+      }
+
       if (item.type.match(/text\/html/i)) {
         (async () => {
+          updateStatusText('Converting HTML to Markdown…');
           const f = item.getAsFile();
           let html = await f.text();
           html = new DOMParser().parseFromString(html, "text/html");

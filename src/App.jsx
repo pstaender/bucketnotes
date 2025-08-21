@@ -16,7 +16,12 @@ import * as s3 from "./s3.js";
 import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
 import { FileList } from "./FileList.jsx";
-import { isTouch, VALID_FILE_EXTENSION, downloadFileByUrl, isMobileDeviceRegardingToScreenWith } from "./helper.js";
+import {
+  isTouch,
+  VALID_FILE_EXTENSION,
+  downloadFileByUrl,
+  isMobileDeviceRegardingToScreenWith,
+} from "./helper.js";
 import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
 import slugify from "slugify";
@@ -40,6 +45,10 @@ function slugifyPath(s) {
 }
 
 export function App({ version, appName } = {}) {
+
+  const defaultShowStatusTextInMilliseconds = 3000;
+  const [showStatusTextInMilliseconds, setShowStatusTextInMilliseconds] = useState(defaultShowStatusTextInMilliseconds);
+
   const [credentials, setCredentials] = useState(null);
   const [files, setFiles] = useState(null);
   const [folders, setFolders] = useState(null);
@@ -96,13 +105,16 @@ export function App({ version, appName } = {}) {
   );
   const [focusEditor, setFocusEditor] = useState(null);
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
+  const [playVideoUrl, setPlayVideoUrl] = useState(null);
+  const [playAudioUrl, setPlayAudioUrl] = useState(null);
   const [offlineStorageEnabled, setOfflineStorageEnabled] = useState(
     localStorage.getItem("offlineStorage") === "true",
   );
   const [convertPDFToText, setConvertPDFToText] = useState(
-    localStorage.getItem("convertPDFToText") === "true"
+    localStorage.getItem("convertPDFToText") === "true",
   );
-  const [showAdditionalMenuOption, setShowAdditionalMenuOption] = useState(false);
+  const [showAdditionalMenuOption, setShowAdditionalMenuOption] =
+    useState(false);
   const [fullWithEditor, setFullWithEditor] = useState(
     localStorage.getItem("fullWithEditor") === "true",
   );
@@ -344,9 +356,10 @@ export function App({ version, appName } = {}) {
     setFileVersions(versions.filter((v) => v.Size > 0));
   }
 
-  function updateStatusText(text) {
+  function updateStatusText(text, timeout = defaultShowStatusTextInMilliseconds) {
     console.debug(text);
     setStatusText(text);
+    setShowStatusTextInMilliseconds(timeout);
     setStatusUpdatedAt(new Date().getTime());
   }
 
@@ -746,19 +759,21 @@ export function App({ version, appName } = {}) {
   }, [files, credentials, s3Client]);
 
   useEffect(() => {
-    const showInMilliseconds = 3000;
+    if (!showStatusTextInMilliseconds) {
+      return;
+    }
     if (statusText) {
       // let statusTextBefore = statusText;
       setTimeout(() => {
         if (
-          statusUpdatedAt + (showInMilliseconds - 100) <
+          statusUpdatedAt + (showStatusTextInMilliseconds - 100) <
           new Date().getTime()
         ) {
           // remove status text
           setStatusUpdatedAt(0);
           setStatusText(null);
         }
-      }, showInMilliseconds);
+      }, showStatusTextInMilliseconds);
     }
   }, [statusText]);
 
@@ -895,6 +910,9 @@ export function App({ version, appName } = {}) {
     if (location.pathname === "/logout") {
       return logout();
     }
+    setDisplayImageUrl(null);
+    setPlayAudioUrl(false);
+    setPlayVideoUrl(false);
     if (location.pathname.startsWith(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`)) {
       (async () => {
         const url = location.pathname.replace(/^\//, "");
@@ -902,8 +920,22 @@ export function App({ version, appName } = {}) {
         setDisplayImageUrl(publicUrl);
       })();
       return;
-    } else {
-      setDisplayImageUrl(null);
+    }
+    if (location.pathname.startsWith(`${FEATURE_FLAGS.VIDEO_UPLOAD_PATH}/`)) {
+      (async () => {
+        const url = location.pathname.replace(/^\//, "");
+        const publicUrl = await s3.cachedSignedPublicS3Url(url);
+        setPlayVideoUrl(publicUrl);
+      })();
+      return;
+    }
+    if (location.pathname.startsWith(`${FEATURE_FLAGS.AUDIO_UPLOAD_PATH}/`)) {
+      (async () => {
+        const url = location.pathname.replace(/^\//, "");
+        const publicUrl = await s3.cachedSignedPublicS3Url(url);
+        setPlayAudioUrl(publicUrl);
+      })();
+      return;
     }
     if (location.pathname.startsWith(`${FEATURE_FLAGS.ASSETS_BASE_PATH}/`)) {
       // download file
@@ -912,15 +944,14 @@ export function App({ version, appName } = {}) {
         const publicUrl = await s3.getPublicUrl(url, 60);
         // download file in the browser
         fetch(publicUrl)
-          .then(response => response.blob())
-          .then(blob => {
+          .then((response) => response.blob())
+          .then((blob) => {
             // Create a Blob URL
             const url = window.URL.createObjectURL(blob);
             downloadFileByUrl(url);
             updateStatusText(`Downloading file '${url}'`);
-
           })
-          .catch(error => console.error('Error downloading file:', error));
+          .catch((error) => console.error("Error downloading file:", error));
       })();
     }
     if (!s3Client || location.pathname === "/") {
@@ -996,7 +1027,8 @@ export function App({ version, appName } = {}) {
         while (fileName !== null && fileName?.length === 0) {
           fileName = prompt(
             "Enter file name",
-            (folderPath.length > 1 ? folderPath.replace(/^\/+/, '') : "") + newNoteName(),
+            (folderPath.length > 1 ? folderPath.replace(/^\/+/, "") : "") +
+              newNoteName(),
           );
           if (fileName) {
             fileName = slugifyPath(fileName);
@@ -1292,7 +1324,12 @@ export function App({ version, appName } = {}) {
                     Autosave
                   </li>
                   {!isMobileDeviceRegardingToScreenWith() && (
-                    <li className={["border-bottom"].filter(v => !!v).join(' ')} style={{ position: "relative" }} onMouseEnter={() => setShowAdditionalMenuOption(true)} onMouseLeave={() => setShowAdditionalMenuOption(false)}>
+                    <li
+                      className={["border-bottom"].filter((v) => !!v).join(" ")}
+                      style={{ position: "relative" }}
+                      onMouseEnter={() => setShowAdditionalMenuOption(true)}
+                      onMouseLeave={() => setShowAdditionalMenuOption(false)}
+                    >
                       More Options
                       {showAdditionalMenuOption && (
                         <div className="more-options">
@@ -1328,7 +1365,8 @@ export function App({ version, appName } = {}) {
                                 }
                               }}
                             >
-                              Font ({fontFamily ? fontFamily + " → " : "auto → "}
+                              Font (
+                              {fontFamily ? fontFamily + " → " : "auto → "}
                               {fontFamily === "ibm"
                                 ? "mononoki"
                                 : fontFamily === "mononoki"
@@ -1349,16 +1387,21 @@ export function App({ version, appName } = {}) {
                                 }}
                                 /* NOT WORKING?! TODO: check why not… */
                                 style={{ display: "none" }}
-                                className={scrollWindowToCenterCaret ? "active" : null}
+                                className={
+                                  scrollWindowToCenterCaret ? "active" : null
+                                }
                               >
                                 Scroll to center
                               </li>
                             )}
                             <li
                               onClick={toggleFullScreen}
-                              className={document.fullscreenElement ? "active" : null}
+                              className={
+                                document.fullscreenElement ? "active" : null
+                              }
                             >
-                              Fullscreen <span className="shortcut">⌘ + Shift + F</span>
+                              Fullscreen{" "}
+                              <span className="shortcut">⌘ + Shift + F</span>
                             </li>
                             <li>
                               <div title="Increase or decrease font size">
@@ -1389,12 +1432,17 @@ export function App({ version, appName } = {}) {
                                 if (value) {
                                   updateStatusText("Offline Storage enabled");
                                   setOfflineStorageEnabled(true);
-                                  localStorage.setItem("offlineStorage", "true");
+                                  localStorage.setItem(
+                                    "offlineStorage",
+                                    "true",
+                                  );
                                 } else {
                                   setOfflineStorageEnabled(false);
                                   localStorage.removeItem("offlineStorage");
                                   await db.clearFiles();
-                                  updateStatusText("Offline Storage disabled + cleared");
+                                  updateStatusText(
+                                    "Offline Storage disabled + cleared",
+                                  );
                                 }
                               }}
                             >
@@ -1484,10 +1532,34 @@ export function App({ version, appName } = {}) {
                 </ul>
               )}
             </div>
-            {displayImageUrl ? (
-              <div className="display-single-image">
-                <img src={displayImageUrl}></img>
-              </div>
+            {displayImageUrl || playVideoUrl || playAudioUrl ? (
+              <>
+                {displayImageUrl && (
+                  <div className="display-single-image">
+                    <img src={displayImageUrl}></img>
+                  </div>
+                )}
+                {playVideoUrl && (
+                  <div className="display-single-image">
+                    <video controls>
+                      <source src={playVideoUrl} />
+                    </video>
+                  </div>
+                )}
+                {playAudioUrl && (
+                  <div className="display-single-image">
+                    <figure>
+                      <audio controls src={playAudioUrl}></audio>
+
+                      <figcaption style={{ textAlign: "center" }}>
+                        <p>
+                          <a href={playAudioUrl}>Download audio file</a>
+                        </p>
+                      </figcaption>
+                    </figure>
+                  </div>
+                )}
+              </>
             ) : (
               <div
                 onClick={(ev) => {

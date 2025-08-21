@@ -100,7 +100,20 @@ export function EditorWrapper({
             checkForAwsFile(a);
           });
           el.querySelectorAll(
-            `a.link:not(.image)[href^="${FEATURE_FLAGS.ASSETS_BASE_PATH.replace(/^\/*/, "")}"]`,
+            `a.link[href^="${FEATURE_FLAGS.AUDIO_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
+          ).forEach((a) => {
+            a.classList.add("aws-url");
+            console.log(a.href);
+            a.setAttribute('href', "#/" + a.getAttribute("href"));
+          });
+          el.querySelectorAll(
+            `a.link[href^="${FEATURE_FLAGS.VIDEO_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
+          ).forEach((a) => {
+            a.classList.add("aws-url");
+            a.setAttribute('href', "#/" + a.getAttribute("href"));
+          });
+          el.querySelectorAll(
+            `a.link:not(.aws-url)[href^="${FEATURE_FLAGS.ASSETS_BASE_PATH.replace(/^\/*/, "")}"]`,
           ).forEach((a) => {
             a.classList.add("aws-url");
             a.classList.add("prevent-dblclick-visit");

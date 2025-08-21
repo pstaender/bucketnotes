@@ -514,7 +514,7 @@ focus-editor[image-preview] .link.image span:after {
   width: calc(100% - 1rem);
   display: grid;
   place-content: center;
-  img {
+  img, video {
     width: calc(100% - 2rem);
     margin-left: 1rem;
     max-height: calc(100vh - 2rem);
