@@ -6,6 +6,11 @@ export function isTouchDevice() {
   return "ontouchstart" in window || navigator.maxTouchPoints;
 }
 
+
+export function isMobileDeviceRegardingToScreenWith() {
+  return window.matchMedia("(max-width: 900px)").matches; // Adjust breakpoint as needed
+}
+
 /**
  * Unslugifies a slugified string. (Source: https://github.com/danny-wood/unslugify/blob/master/index.js)
  *

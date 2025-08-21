@@ -25,6 +25,7 @@
   --primary-color: #00c7f9;
   --file-list-width: 20rem;
   --font-size-small: 0.8rem;
+  --sidebar-width: 30rem;
   @include css-colors;
   --font-family:
     ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono,
@@ -122,12 +123,9 @@ html {
     text-overflow: ellipsis;
     white-space: nowrap;
     flex-grow: 1;
-    // @media (hover) {
-    //     &:hover {
-    //         overflow: unset;
-    //         white-space: unset;
-    //     }
-    // }
+    .folder-path-text {
+      opacity: 0.3;
+    }
   }
 
   .no-files-found {
@@ -281,15 +279,22 @@ html {
 }
 @media screen and (min-width: 1400px) {
   .app-window.sidebar-expanded:not(.not-logged-in) {
-    grid-template-columns: 30rem 1fr;
+    grid-template-columns: var(--sidebar-width) 1fr;
     &.show-file-versions {
-      grid-template-columns: 30rem 20rem 1fr;
+      grid-template-columns: var(--sidebar-width) 20rem 1fr;
     }
   }
 }
 
 focus-editor > div {
   max-width: 50rem;
+}
+
+focus-editor.full-width-editor > div {
+  max-width: calc(100vw - 6rem);
+}
+.sidebar-expanded focus-editor.full-width-editor > div {
+  max-width: calc(100vw - 6rem - var(--sidebar-width));
 }
 
 focus-editor [contenteditable] div:last-child {
@@ -427,10 +432,8 @@ focus-editor [contenteditable] div:last-child {
   ul.menu {
     margin-top: 2rem;
     padding: 0;
-    // padding: 1rem;
     background: var(--background-color-light);
     border-radius: 4px;
-    overflow: hidden;
     box-shadow:
       rgba(0, 0, 0, 0.2) 0px 12px 28px 0px,
       rgba(0, 0, 0, 0.1) 0px 2px 4px 0px,
@@ -468,7 +471,15 @@ focus-editor [contenteditable] div:last-child {
         border-bottom: 2px solid var(--background-color-lighter);
       }
     }
+    ul.menu {
+      margin-top: 0;
+      position: absolute;
+      left: -20rem;
+      width: 20rem;
+      top: 0;
+    }
   }
+
 }
 
 focus-editor .focus-editor {

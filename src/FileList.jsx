@@ -82,7 +82,15 @@ export function FileList({
           className="file-name"
           onClick={(ev) => handleClickOnFolder(ev, realPath || folderName)}
         >
-          {folderName.replace(/\/*$/, '/')}
+          {folderName.startsWith('← ') ? (
+            <>
+              <span>{folderName.substring(0, 2)}</span>
+              <span className="folder-path-text">{folderName.split('← ')[1]}</span>
+            </>
+          ) : (
+            <>{folderName.replace(/\/*$/, '/')}</>
+          )}
+
         </div>
         <span
           className="icons"

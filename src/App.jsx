@@ -16,7 +16,7 @@ import * as s3 from "./s3.js";
 import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
 import { FileList } from "./FileList.jsx";
-import { isTouch, VALID_FILE_EXTENSION, downloadFileByUrl } from "./helper.js";
+import { isTouch, VALID_FILE_EXTENSION, downloadFileByUrl, isMobileDeviceRegardingToScreenWith } from "./helper.js";
 import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
 import slugify from "slugify";
@@ -101,6 +101,10 @@ export function App({ version, appName } = {}) {
   );
   const [convertPDFToText, setConvertPDFToText] = useState(
     localStorage.getItem("convertPDFToText") === "true"
+  );
+  const [showAdditionalMenuOption, setShowAdditionalMenuOption] = useState(false);
+  const [fullWithEditor, setFullWithEditor] = useState(
+    localStorage.getItem("fullWithEditor") === "true",
   );
 
   const location = useLocation();
@@ -992,7 +996,7 @@ export function App({ version, appName } = {}) {
         while (fileName !== null && fileName?.length === 0) {
           fileName = prompt(
             "Enter file name",
-            (folderPath.length > 1 ? folderPath : "") + newNoteName(),
+            (folderPath.length > 1 ? folderPath.replace(/^\/+/, '') : "") + newNoteName(),
           );
           if (fileName) {
             fileName = slugifyPath(fileName);
@@ -1248,7 +1252,10 @@ export function App({ version, appName } = {}) {
               {showMoreOptions && (
                 <ul
                   className="menu"
-                  onClick={(ev) => setShowMoreOptions(false)}
+                  onClick={(ev) => {
+                    setShowMoreOptions(false);
+                    setShowAdditionalMenuOption(false);
+                  }}
                 >
                   <li
                     className="create-file"
@@ -1263,49 +1270,9 @@ export function App({ version, appName } = {}) {
                   <li
                     onClick={(ev) => {
                       navigate("new-ask-for-filename");
-                      setFolderPath("/");
                     }}
                   >
                     New with specific name
-                  </li>
-                  <li
-                    onClick={() => {
-                      if (colorScheme === "dark") {
-                        setColorScheme("light");
-                      } else if (colorScheme === "light") {
-                        setColorScheme("");
-                      } else {
-                        setColorScheme("dark");
-                      }
-                    }}
-                  >
-                    Color scheme (
-                    {colorScheme ? colorScheme + " → " : "auto → "}
-                    {colorScheme === "dark"
-                      ? "light"
-                      : colorScheme === "light"
-                        ? "auto"
-                        : "dark"}
-                    )
-                  </li>
-                  <li
-                    onClick={() => {
-                      if (fontFamily === "mononoki") {
-                        setFontFamily("");
-                      } else if (fontFamily === "ibm") {
-                        setFontFamily("mononoki");
-                      } else {
-                        setFontFamily("ibm");
-                      }
-                    }}
-                  >
-                    Font ({fontFamily ? fontFamily + " → " : "auto → "}
-                    {fontFamily === "ibm"
-                      ? "mononoki"
-                      : fontFamily === "mononoki"
-                        ? "auto"
-                        : "ibm"}
-                    )
                   </li>
                   <li
                     onClick={() =>
@@ -1316,23 +1283,6 @@ export function App({ version, appName } = {}) {
                   >
                     Guess lists and indents
                   </li>
-                  {!isTouch() && (
-                    <li
-                      onClick={() => {
-                        setScrollWindowToCenterCaret(
-                          !scrollWindowToCenterCaret,
-                        );
-                        localStorage.setItem(
-                          "scrollWindowToCenterCaret",
-                          !scrollWindowToCenterCaret,
-                        );
-                      }}
-                      className={scrollWindowToCenterCaret ? "active" : null}
-                    >
-                      Scroll to center
-                    </li>
-                  )}
-
                   <li
                     onClick={() => setAutoSave(!autoSave)}
                     className={[autoSave ? "active" : null, "border-bottom"]
@@ -1341,6 +1291,146 @@ export function App({ version, appName } = {}) {
                   >
                     Autosave
                   </li>
+                  {!isMobileDeviceRegardingToScreenWith() && (
+                    <li className={["border-bottom"].filter(v => !!v).join(' ')} style={{ position: "relative" }} onMouseEnter={() => setShowAdditionalMenuOption(true)} onMouseLeave={() => setShowAdditionalMenuOption(false)}>
+                      More Options
+                      {showAdditionalMenuOption && (
+                        <div className="more-options">
+                          <ul className="menu">
+                            <li
+                              onClick={() => {
+                                if (colorScheme === "dark") {
+                                  setColorScheme("light");
+                                } else if (colorScheme === "light") {
+                                  setColorScheme("");
+                                } else {
+                                  setColorScheme("dark");
+                                }
+                              }}
+                            >
+                              Color scheme (
+                              {colorScheme ? colorScheme + " → " : "auto → "}
+                              {colorScheme === "dark"
+                                ? "light"
+                                : colorScheme === "light"
+                                  ? "auto"
+                                  : "dark"}
+                              )
+                            </li>
+                            <li
+                              onClick={() => {
+                                if (fontFamily === "mononoki") {
+                                  setFontFamily("");
+                                } else if (fontFamily === "ibm") {
+                                  setFontFamily("mononoki");
+                                } else {
+                                  setFontFamily("ibm");
+                                }
+                              }}
+                            >
+                              Font ({fontFamily ? fontFamily + " → " : "auto → "}
+                              {fontFamily === "ibm"
+                                ? "mononoki"
+                                : fontFamily === "mononoki"
+                                  ? "auto"
+                                  : "ibm"}
+                              )
+                            </li>
+                            {!isTouch() && (
+                              <li
+                                onClick={() => {
+                                  setScrollWindowToCenterCaret(
+                                    !scrollWindowToCenterCaret,
+                                  );
+                                  localStorage.setItem(
+                                    "scrollWindowToCenterCaret",
+                                    !scrollWindowToCenterCaret,
+                                  );
+                                }}
+                                /* NOT WORKING?! TODO: check why not… */
+                                style={{ display: "none" }}
+                                className={scrollWindowToCenterCaret ? "active" : null}
+                              >
+                                Scroll to center
+                              </li>
+                            )}
+                            <li
+                              onClick={toggleFullScreen}
+                              className={document.fullscreenElement ? "active" : null}
+                            >
+                              Fullscreen <span className="shortcut">⌘ + Shift + F</span>
+                            </li>
+                            <li>
+                              <div title="Increase or decrease font size">
+                                <span
+                                  onClick={() => {
+                                    setFontSize(Number(fontSize || 16) + 1);
+                                  }}
+                                >
+                                  Larger font
+                                </span>
+                                <span
+                                  style={{
+                                    transform: "scale(0.75)",
+                                    display: "inline-flex",
+                                    paddingLeft: "0.25rem",
+                                  }}
+                                  onClick={() => {
+                                    setFontSize(Number(fontSize || 16) - 1);
+                                  }}
+                                >
+                                  Smaller Font
+                                </span>
+                              </div>
+                            </li>
+                            <li
+                              onClick={async () => {
+                                let value = !offlineStorageEnabled;
+                                if (value) {
+                                  updateStatusText("Offline Storage enabled");
+                                  setOfflineStorageEnabled(true);
+                                  localStorage.setItem("offlineStorage", "true");
+                                } else {
+                                  setOfflineStorageEnabled(false);
+                                  localStorage.removeItem("offlineStorage");
+                                  await db.clearFiles();
+                                  updateStatusText("Offline Storage disabled + cleared");
+                                }
+                              }}
+                            >
+                              {offlineStorageEnabled
+                                ? "Disable Offline Storage"
+                                : "Enable Offline Storage"}
+                            </li>
+                            <li
+                              onClick={(ev) => {
+                                setConvertPDFToText(!convertPDFToText);
+                                localStorage.setItem(
+                                  "convertPDFToText",
+                                  convertPDFToText ? "false" : "true",
+                                );
+                              }}
+                              className={convertPDFToText ? "active" : null}
+                            >
+                              Extract text from PDF on drop
+                            </li>
+                            <li
+                              onClick={(ev) => {
+                                setFullWithEditor(!fullWithEditor);
+                                localStorage.setItem(
+                                  "fullWithEditor",
+                                  fullWithEditor ? "false" : "true",
+                                );
+                              }}
+                              className={fullWithEditor ? "active" : null}
+                            >
+                              Full width editing
+                            </li>
+                          </ul>
+                        </div>
+                      )}
+                    </li>
+                  )}
                   <li
                     onClick={(ev) => {
                       setShowSideBar(!showSideBar);
@@ -1351,54 +1441,6 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li onClick={displayGoToParagraphDialog}>
                     Jump to paragraph <span className="shortcut">⌘ + G</span>
-                  </li>
-                  <li
-                    onClick={toggleFullScreen}
-                    className={document.fullscreenElement ? "active" : null}
-                  >
-                    Fullscreen <span className="shortcut">⌘ + Shift + F</span>
-                  </li>
-                  <li>
-                    <div title="Increase or decrease font size">
-                      <span
-                        onClick={() => {
-                          setFontSize(Number(fontSize || 16) + 1);
-                        }}
-                      >
-                        ABC
-                      </span>
-                      <span
-                        style={{
-                          transform: "scale(0.75)",
-                          display: "inline-flex",
-                          paddingLeft: "0.25rem",
-                        }}
-                        onClick={() => {
-                          setFontSize(Number(fontSize || 16) - 1);
-                        }}
-                      >
-                        ABC
-                      </span>
-                    </div>
-                  </li>
-                  <li
-                    onClick={async () => {
-                      let value = !offlineStorageEnabled;
-                      if (value) {
-                        updateStatusText("Offline Storage enabled");
-                        setOfflineStorageEnabled(true);
-                        localStorage.setItem("offlineStorage", "true");
-                      } else {
-                        setOfflineStorageEnabled(false);
-                        localStorage.removeItem("offlineStorage");
-                        await db.clearFiles();
-                        updateStatusText("Offline Storage disabled + cleared");
-                      }
-                    }}
-                  >
-                    {offlineStorageEnabled
-                      ? "Disable Offline Storage"
-                      : "Enable Offline Storage"}
                   </li>
                   <li
                     onClick={async () => {
@@ -1423,18 +1465,6 @@ export function App({ version, appName } = {}) {
                     className={previewImages ? "active" : null}
                   >
                     Preview images
-                  </li>
-                  <li
-                    onClick={(ev) => {
-                      setConvertPDFToText(!convertPDFToText);
-                      localStorage.setItem(
-                        "convertPDFToText",
-                        convertPDFToText ? "false" : "true",
-                      );
-                    }}
-                    className={convertPDFToText ? "active" : null}
-                  >
-                    PDF to text
                   </li>
                   <li
                     onClick={(ev) => {
@@ -1464,6 +1494,7 @@ export function App({ version, appName } = {}) {
                   if (ev.isTrusted) {
                     setShowMoreOptions(false);
                     setShowSideBar(false);
+                    setShowAdditionalMenuOption(false);
                   }
                 }}
                 className={[
@@ -1502,6 +1533,7 @@ export function App({ version, appName } = {}) {
                     renderAllContent={renderAllContent}
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}
                     previewImages={previewImages}
+                    fullWithEditor={fullWithEditor}
                   ></EditorWrapper>
                 </div>
               </div>

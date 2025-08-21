@@ -20,6 +20,7 @@ export function EditorWrapper({
   previewImages,
   focusEditor,
   setFocusEditor,
+  fullWithEditor,
 } = {}) {
   let currentFocusEditor = null;
   const refEditor = useRef();
@@ -93,13 +94,13 @@ export function EditorWrapper({
       if (ev.detail.elements) {
         ev.detail.elements.forEach((el) => {
           el.querySelectorAll(
-            `a.link.image[href^="${FEATURE_FLAGS.IMAGE_UPLOAD_PATH.replace(/^\/*/,  '')}"]:not(.aws-url)`,
+            `a.link.image[href^="${FEATURE_FLAGS.IMAGE_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
           ).forEach((a) => {
             a.classList.add("aws-url");
             checkForAwsFile(a);
           });
           el.querySelectorAll(
-            `a.link:not(.image)[href^="${FEATURE_FLAGS.ASSETS_BASE_PATH.replace(/^\/*/,  '')}"]`,
+            `a.link:not(.image)[href^="${FEATURE_FLAGS.ASSETS_BASE_PATH.replace(/^\/*/, "")}"]`,
           ).forEach((a) => {
             a.classList.add("aws-url");
             a.classList.add("prevent-dblclick-visit");
@@ -157,7 +158,9 @@ export function EditorWrapper({
     <focus-editor
       class={[
         indentHeadings ? "indent-headings" : "",
-        focusMode ? "highlight-current-paragraph" : "",]
+        focusMode ? "highlight-current-paragraph" : "",
+        fullWithEditor ? "full-width-editor" : "",
+      ]
         .filter((v) => !!v)
         .join(" ")}
       image-preview={previewImages ? "*" : null}
