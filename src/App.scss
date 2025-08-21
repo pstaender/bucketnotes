@@ -482,7 +482,6 @@ focus-editor [contenteditable] div:last-child {
       }
     }
   }
-
 }
 
 focus-editor .focus-editor {
@@ -495,6 +494,23 @@ focus-editor .focus-editor {
   }
   .link:hover {
     text-decoration: none;
+  }
+  .link {
+    .audio-preview {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      &.visible {
+        opacity: 1;
+        pointer-events: inherit;
+        width: 100%;
+      }
+      audio {
+        margin-top: -1.2rem;
+        padding-top: 1.5rem;
+        display: block;
+      }
+    }
   }
 }
 

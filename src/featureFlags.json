@@ -1,5 +1,6 @@
 {
   "MOVE_FILES_WITH_DRAG_AND_DROP": false,
+  "TRANSFORM_HTTP_URL_TEXT_TO_LINKS": true,
   "ASSETS_BASE_PATH": "/assets",
   "IMAGE_UPLOAD_PATH": "/assets/images",
   "PDF_UPLOAD_PATH": "/assets/pdfs",

@@ -103,7 +103,6 @@ export function EditorWrapper({
             `a.link[href^="${FEATURE_FLAGS.AUDIO_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
           ).forEach((a) => {
             a.classList.add("aws-url");
-            console.log(a.href);
             a.setAttribute('href', "#/" + a.getAttribute("href"));
           });
           el.querySelectorAll(
@@ -131,6 +130,28 @@ export function EditorWrapper({
               });
             },
           );
+          el.querySelectorAll('a.link.aws-url:not(.image)[href^="#/"]').forEach(
+            async (a) => {
+              let url = a.dataset.uswUrl || (await s3.cachedSignedPublicS3Url(a.getAttribute("href").replace(/^#\//, "")));
+              a.addEventListener("mouseenter", (ev) => {
+                if (a.querySelector(".audio-preview")) {
+                  a.querySelector(".audio-preview").classList.add("visible");
+                  return;
+                }
+                let div = document.createElement("div");
+                div.classList.add("audio-preview");
+                div.classList.add("visible");
+                let audio = document.createElement("audio");
+                audio.src = url;
+                audio.controls = true;
+                div.appendChild(audio);
+                a.appendChild(div);
+              });
+              a.addEventListener("mouseleave", (ev) => {
+                a.querySelector(".audio-preview")?.classList?.remove("visible");
+              });
+            },
+          );
         });
       }
     });
@@ -154,6 +175,7 @@ export function EditorWrapper({
     if (initialText) {
       editor.replaceText(initialText, { clearHistory: true });
     }
+    editor.replaceHttpUrlsWithLinks = FEATURE_FLAGS.TRANSFORM_HTTP_URL_TEXT_TO_LINKS;
     editor.tabSize = 2;
     setFocusEditor(editor);
     return () => {
