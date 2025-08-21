@@ -16,12 +16,7 @@ import * as s3 from "./s3.js";
 import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
 import { FileList } from "./FileList.jsx";
-import {
-  isTouch,
-  VALID_FILE_EXTENSION,
-  downloadFileByUrl,
-  isMobileDeviceRegardingToScreenWith,
-} from "./helper.js";
+import { isTouch, VALID_FILE_EXTENSION, downloadFileByUrl } from "./helper.js";
 import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
 import slugify from "slugify";
@@ -45,9 +40,9 @@ function slugifyPath(s) {
 }
 
 export function App({ version, appName } = {}) {
-
   const defaultShowStatusTextInMilliseconds = 3000;
-  const [showStatusTextInMilliseconds, setShowStatusTextInMilliseconds] = useState(defaultShowStatusTextInMilliseconds);
+  const [showStatusTextInMilliseconds, setShowStatusTextInMilliseconds] =
+    useState(defaultShowStatusTextInMilliseconds);
 
   const [credentials, setCredentials] = useState(null);
   const [files, setFiles] = useState(null);
@@ -356,7 +351,10 @@ export function App({ version, appName } = {}) {
     setFileVersions(versions.filter((v) => v.Size > 0));
   }
 
-  function updateStatusText(text, timeout = defaultShowStatusTextInMilliseconds) {
+  function updateStatusText(
+    text,
+    timeout = defaultShowStatusTextInMilliseconds,
+  ) {
     console.debug(text);
     setStatusText(text);
     setShowStatusTextInMilliseconds(timeout);
@@ -1267,7 +1265,10 @@ export function App({ version, appName } = {}) {
           <div
             className="main"
             onClick={(ev) => {
-              if (ev.target.tagName !== "INPUT") {
+              if (
+                !ev.target.dataset.isMoreOptionsItem &&
+                ev.target.tagName !== "INPUT"
+              ) {
                 setShowMoreOptions(false);
               }
             }}
@@ -1285,6 +1286,10 @@ export function App({ version, appName } = {}) {
                 <ul
                   className="menu"
                   onClick={(ev) => {
+                    if (ev.target.dataset.isMoreOptionsItem) {
+                      // don't close menu
+                      return;
+                    }
                     setShowMoreOptions(false);
                     setShowAdditionalMenuOption(false);
                   }}
@@ -1323,9 +1328,10 @@ export function App({ version, appName } = {}) {
                   >
                     Autosave
                   </li>
-                  {!isMobileDeviceRegardingToScreenWith() && (
+                  {true && (
                     <li
                       className={["border-bottom"].filter((v) => !!v).join(" ")}
+                      data-is-more-options-item="true"
                       style={{ position: "relative" }}
                       onMouseEnter={() => setShowAdditionalMenuOption(true)}
                       onMouseLeave={() => setShowAdditionalMenuOption(false)}
@@ -1563,6 +1569,10 @@ export function App({ version, appName } = {}) {
             ) : (
               <div
                 onClick={(ev) => {
+                  if (ev.target.dataset.isMoreOptionsItem) {
+                    // don't close menu
+                    return;
+                  }
                   if (ev.isTrusted) {
                     setShowMoreOptions(false);
                     setShowSideBar(false);

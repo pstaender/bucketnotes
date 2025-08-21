@@ -477,6 +477,9 @@ focus-editor [contenteditable] div:last-child {
       left: -20rem;
       width: 20rem;
       top: 0;
+      @media screen and (max-width: 900px) {
+        left: -5.2rem;
+      }
     }
   }
 
