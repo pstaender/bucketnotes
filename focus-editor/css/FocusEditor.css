@@ -500,7 +500,6 @@ focus-editor:has(.block .table) {
   }
   .table-header-text, .table-header-separator, .table-row {
     white-space: pre;
-    overflow: hidden;
   }
   .table-header-separator {
     position: relative;

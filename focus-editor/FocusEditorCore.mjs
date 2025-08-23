@@ -18,6 +18,7 @@ class FocusEditorCore {
   #target = null;
   #replaceHttpUrlsWithLinks = false;
   #renderMarkdownTables = false;
+  #customPasteText = null;
 
   #keyboardShortcuts = {
     refresh: {
@@ -336,6 +337,10 @@ class FocusEditorCore {
     }
   }
 
+  set customPasteText(text) {
+    this.#customPasteText = text;
+  }
+
   set placeholder(placeholder) {
     this.#placeholder = placeholder;
     this.#checkPlaceholder();
@@ -510,9 +515,17 @@ class FocusEditorCore {
   }
 
   #onPaste(event) {
-    let pasteText = (event.clipboardData || window.clipboardData).getData(
-      "text",
-    );
+    let pasteText = null;
+    /* if customPasteText is set, use this */
+    if (this.#customPasteText !== null) {
+      pasteText = this.#customPasteText;
+      this.#customPasteText = null;
+    }
+    if (pasteText === null) {
+      pasteText = (event.clipboardData || window.clipboardData).getData(
+        "text",
+      );
+    }
 
     const selection = window.getSelection();
     if (!selection.rangeCount) return false;

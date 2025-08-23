@@ -3,7 +3,7 @@ import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as s3 from "./s3";
-import { debounce, downloadFileByUrl } from "./helper";
+import { debounce, downloadFileByUrl, createTurndownService } from "./helper";
 
 const localStorage = window.localStorage;
 
@@ -164,8 +164,18 @@ export function EditorWrapper({
 
     refEditor.current.addEventListener("keyup", handleChangeDebounced);
     refEditor.current.addEventListener("paste", (ev) => {
+      const clipboardData = ev.clipboardData || window.clipboardData;
+      const pastedText = clipboardData.getData('text/plain');
+      const pastedHtml = clipboardData.getData('text/html');
+      if (pastedHtml) {
+        editor.customPasteText = createTurndownService().turndown(pastedHtml);
+      } else {
+        editor.customPasteText = pastedText;
+      }
+
+
       handleChange(ev);
-      refEditor.refresh();
+      editor.refresh();
     });
 
     if (scrollWindowToCenterCaret) {

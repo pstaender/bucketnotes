@@ -3,26 +3,15 @@ import FEATURE_FLAGS from "../featureFlags.json" with { type: "json" };
 import { extractTextFromPDF } from "./pdf";
 import { uploadImage } from "./uploadImage";
 import { uploadFile } from "./uploadFile";
-import TurndownService from "turndown";
-import { gfm } from "@truto/turndown-plugin-gfm";
+
 
 import slugify from "slugify";
-import { unslugify } from "../helper";
+import { unslugify, createTurndownService } from "../helper";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   document.getElementById("pdfjs-worker-url")?.src ||
   document.querySelector(`link[href^="/assets/pdfjs"]`)?.href ||
   "/pdf.worker.mjs";
-
-function createTurndownService() {
-  const turndownService = new TurndownService({
-    headingStyle: "atx",
-    codeBlockStyle: "fenced",
-    hr: "---",
-  });
-  turndownService.use(gfm);
-  return turndownService;
-}
 
 export function handleDrop(
   ev,

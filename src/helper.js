@@ -1,3 +1,6 @@
+import TurndownService from "turndown";
+import { gfm } from "@truto/turndown-plugin-gfm";
+
 export function isTouch() {
   return "ontouchstart" in window;
 }
@@ -65,6 +68,16 @@ export function downloadFileByUrl(url) {
   document.body.removeChild(link);
   // Revoke the object URL to free up memory
   window.URL.revokeObjectURL(url);
+}
+
+export function createTurndownService() {
+  const turndownService = new TurndownService({
+    headingStyle: "atx",
+    codeBlockStyle: "fenced",
+    hr: "---",
+  });
+  turndownService.use(gfm);
+  return turndownService;
 }
 
 export const VALID_FILE_EXTENSION =
