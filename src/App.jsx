@@ -108,6 +108,9 @@ export function App({ version, appName } = {}) {
   const [convertPDFToText, setConvertPDFToText] = useState(
     localStorage.getItem("convertPDFToText") === "true",
   );
+  const [renderMarkdownTables, setRenderMarkdownTables] = useState(
+    localStorage.getItem("renderMarkdownTables") === "true",
+  );
   const [showAdditionalMenuOption, setShowAdditionalMenuOption] =
     useState(false);
   const [fullWithEditor, setFullWithEditor] = useState(
@@ -1470,6 +1473,18 @@ export function App({ version, appName } = {}) {
                             </li>
                             <li
                               onClick={(ev) => {
+                                setRenderMarkdownTables(!renderMarkdownTables);
+                                localStorage.setItem(
+                                  "renderMarkdownTables",
+                                  renderMarkdownTables ? "false" : "true",
+                                );
+                              }}
+                              className={renderMarkdownTables ? "active" : null}
+                            >
+                              Renders tables
+                            </li>
+                            <li
+                              onClick={(ev) => {
                                 setFullWithEditor(!fullWithEditor);
                                 localStorage.setItem(
                                   "fullWithEditor",
@@ -1616,6 +1631,7 @@ export function App({ version, appName } = {}) {
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}
                     previewImages={previewImages}
                     fullWithEditor={fullWithEditor}
+                    renderMarkdownTables={renderMarkdownTables}
                   ></EditorWrapper>
                 </div>
               </div>

@@ -297,7 +297,7 @@ focus-editor.full-width-editor > div {
   max-width: calc(100vw - 6rem - var(--sidebar-width));
 }
 
-focus-editor [contenteditable] div:last-child {
+focus-editor [contenteditable] > div:last-child {
   margin-bottom: 4rem;
   @media screen and (min-width: 900px) {
     margin-bottom: calc(50vh - 5rem);

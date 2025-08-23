@@ -21,6 +21,7 @@ export function EditorWrapper({
   focusEditor,
   setFocusEditor,
   fullWithEditor,
+  renderMarkdownTables,
 } = {}) {
   let currentFocusEditor = null;
   const refEditor = useRef();
@@ -55,7 +56,12 @@ export function EditorWrapper({
     if (isSet(readOnly)) {
       focusEditor.readOnly = readOnly;
     }
-  }, [focusEditor, placeholder, readOnly]);
+    if (isSet(renderMarkdownTables) && focusEditor.renderMarkdownTables !== renderMarkdownTables) {
+      focusEditor.renderMarkdownTables = renderMarkdownTables;
+      focusEditor.refresh();
+    }
+  }, [focusEditor, placeholder, readOnly, renderMarkdownTables]);
+
 
   useEffect(() => {
     if (!refEditor.current) {
@@ -157,7 +163,10 @@ export function EditorWrapper({
     });
 
     refEditor.current.addEventListener("keyup", handleChangeDebounced);
-    refEditor.current.addEventListener("paste", handleChange);
+    refEditor.current.addEventListener("paste", (ev) => {
+      handleChange(ev);
+      refEditor.refresh();
+    });
 
     if (scrollWindowToCenterCaret) {
       refEditor.current.addEventListener("keyup", (ev) => {
@@ -177,6 +186,7 @@ export function EditorWrapper({
     }
     editor.replaceHttpUrlsWithLinks = FEATURE_FLAGS.TRANSFORM_HTTP_URL_TEXT_TO_LINKS;
     editor.tabSize = 2;
+    editor.target.spellcheck = false;
     setFocusEditor(editor);
     return () => {
       if (

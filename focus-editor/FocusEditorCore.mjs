@@ -17,6 +17,7 @@ class FocusEditorCore {
   #scrollIntoViewOptions = { block: "center" };
   #target = null;
   #replaceHttpUrlsWithLinks = false;
+  #renderMarkdownTables = false;
 
   #keyboardShortcuts = {
     refresh: {
@@ -139,7 +140,7 @@ class FocusEditorCore {
    * (Re)renders markdown
    * Can be helpful if not all elements are updated correctly.
    * Triggering refresh may change the caret position as well.
-   * @deprecated use `refresh()` instead.
+   * If possible use `refresh()` instead, it's less disruptive and faster.
    */
   fullRefresh() {
     let cursor = Cursor.getCurrentCursorPosition(this.target);
@@ -162,6 +163,23 @@ class FocusEditorCore {
   }
 
   refresh() {
+    let blockWithCaret = this.target.querySelector(".block.with-caret");
+    if (/\n/g.test(blockWithCaret?.innerText?.trim())) {
+      const lines = blockWithCaret.innerText.split(/\n/g);
+      lines.forEach((text, i) => {
+        if (text.trim() === "") {
+          text = ' ';
+        }
+        let div = document.createElement("div");
+        div.classList.add("block");
+        div.textContent = text;
+        if (i === lines.length - 1) {
+          blockWithCaret.innerText = text;
+        } else {
+          blockWithCaret.before(div);
+        }
+      });
+    }
     this.#updateChildrenElementsWithMarkdownClasses();
   }
 
@@ -208,6 +226,9 @@ class FocusEditorCore {
     }
     if (this.#replaceHttpUrlsWithLinks) {
       helper.replaceHttpUrlsWithLinks(children, document);
+    }
+    if (this.#renderMarkdownTables) {
+      md2html.convertElementsWithMarkdownTablesToVisualTables(children);
     }
     children.forEach((e) =>
       e
@@ -368,6 +389,10 @@ class FocusEditorCore {
     );
   }
 
+  set renderMarkdownTables(value) {
+    this.#renderMarkdownTables = value;
+  }
+
   get target() {
     return this.#target;
   }
@@ -391,6 +416,20 @@ class FocusEditorCore {
     const caretPosition = Cursor.getCurrentCursorPosition(
       helper.currentBlockWithCaret(),
     );
+
+    if (current.textContent.startsWith('|')) {
+      let tabSize = this.#tabSize === "\t" ? 4 : Number(this.#tabSize);
+      if (event.shiftKey) {
+        tabSize *= -1;
+      };
+      let offset = caretPosition % tabSize;
+      if (offset === 0) offset = tabSize;
+      if (caretPosition + offset > current.textContent.length) {
+        current.textContent += [...new Array(offset + 1)].join(" ");
+      }
+      Cursor.setCurrentCursorPosition(caretPosition + offset, current);
+      return;
+    }
 
     if (this.#tabSize === "\t") {
       if (event.shiftKey) {
