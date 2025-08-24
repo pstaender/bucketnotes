@@ -169,7 +169,7 @@ class FocusEditorCore {
       const lines = blockWithCaret.innerText.split(/\n/g);
       lines.forEach((text, i) => {
         if (text.trim() === "") {
-          text = ' ';
+          text = " ";
         }
         let div = document.createElement("div");
         div.classList.add("block");
@@ -416,21 +416,71 @@ class FocusEditorCore {
 
     event.preventDefault();
     const current = helper.currentBlockWithCaret();
+    if (!current?.textContent) {
+      return;
+    }
     this.#storeLastCaretPosition();
 
     const caretPosition = Cursor.getCurrentCursorPosition(
       helper.currentBlockWithCaret(),
     );
 
-    if (current.textContent.startsWith('|')) {
+    if (
+      /*this.#renderMarkdownTables && */
+      current.textContent.startsWith("|")
+    ) {
       let tabSize = this.#tabSize === "\t" ? 4 : Number(this.#tabSize);
       if (event.shiftKey) {
         tabSize *= -1;
-      };
+      }
       let offset = caretPosition % tabSize;
       if (offset === 0) offset = tabSize;
-      if (caretPosition + offset > current.textContent.length) {
-        current.textContent += [...new Array(offset + 1)].join(" ");
+      if (event.altKey) {
+        // tab to next |
+        if (event.shiftKey) {
+          let charOffset = current.textContent
+            .substring(0, caretPosition - 1)
+            .lastIndexOf("|");
+          if (charOffset < 0 && current.previousElementSibling) {
+            // move to previous row
+            Cursor.setCurrentCursorPosition(
+              current.previousElementSibling.textContent.length - 1,
+              current.previousElementSibling,
+            );
+            return;
+          }
+          Cursor.setCurrentCursorPosition(charOffset, current);
+        } else if (current.textContent.substring(caretPosition).includes("|")) {
+          let charOffset = current.textContent
+            .substring(caretPosition)
+            .indexOf("|");
+          Cursor.setCurrentCursorPosition(
+            caretPosition + charOffset + 1,
+            current,
+          );
+        } else if (
+          caretPosition >= current.textContent.length &&
+          current.nextElementSibling
+        ) {
+          // move to next row
+          Cursor.setCurrentCursorPosition(0, current.nextElementSibling);
+        } else if (current.previousElementSibling) {
+        }
+        return;
+      }
+      if (
+        tabSize >= 1 &&
+        caretPosition + offset <= current.textContent.length + 1
+      ) {
+        current.textContent =
+          current.textContent.substring(0, caretPosition) +
+          " ".repeat(offset) +
+          current.textContent.substring(caretPosition);
+      } else if (
+        tabSize >= 1 &&
+        caretPosition + offset > current.textContent.length + 1
+      ) {
+        current.textContent += " ".repeat(offset + 1);
       }
       Cursor.setCurrentCursorPosition(caretPosition + offset, current);
       return;
@@ -522,9 +572,7 @@ class FocusEditorCore {
       this.#customPasteText = null;
     }
     if (pasteText === null) {
-      pasteText = (event.clipboardData || window.clipboardData).getData(
-        "text",
-      );
+      pasteText = (event.clipboardData || window.clipboardData).getData("text");
     }
 
     const selection = window.getSelection();
@@ -774,7 +822,7 @@ class FocusEditorCore {
         This fixes this issue by replacing the <br> with a div.
       */
       if (helper.currentElementWithCaret() === this.target) {
-        let br = this.target.querySelector(':scope > br');
+        let br = this.target.querySelector(":scope > br");
         if (br) {
           let div = document.createElement("div");
           div.classList.add("block");

@@ -504,7 +504,10 @@ focus-editor:has(.block .table) {
   .table-header-separator {
     position: relative;
     display: inline-block;
-    color: color-mix(in srgb, currentColor 20%, transparent);
+    color: color-mix(in srgb, currentColor 40%, transparent);
+    @media print {
+      color: transparent;
+    }
     &:before {
       content: "";
       position: absolute;
@@ -559,7 +562,7 @@ focus-editor:has(.block .table) {
       content: "";
       position: absolute;
       left: var(--table-border-thickness);
-      bottom: calc(-1.49 * var(--table-border-thickness));
+      bottom: calc(-1.7 * var(--table-border-thickness));
       height: calc(1.5 * var(--table-border-thickness));
       width: calc(100% - calc(2 * var(--table-border-thickness)));
       background: var(--color-border);
@@ -568,9 +571,11 @@ focus-editor:has(.block .table) {
   .table-header-text {
     display: inline-block;
     position: relative;
+    /* looks nicer, but the transition from markdown to table is harder :/ */
+    line-height: 1em;
     transform: translateY(
-      0.3em
-    ); /* looks nicer, but the transition from markdown to table is harder */
+      0.7em
+    );
     > span {
       display: inline-block;
     }
