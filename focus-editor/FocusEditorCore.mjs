@@ -971,6 +971,13 @@ class FocusEditorCore {
 
     let matches = previousText.match(lineBeginsWithUnorderedList);
 
+    if (lineBeginsWithUnorderedList.test(previousText) && lineBeginsWithUnorderedList.test(insertedElementText)) {
+      insertedElementText = insertedElementText.replace(lineBeginsWithUnorderedList, "");
+    } else if (lineBeginsWithOrderedList.test(previousText) && lineBeginsWithOrderedList.test(insertedElementText)) {
+      insertedElementText = insertedElementText.replace(lineBeginsWithOrderedList, "");
+    }
+
+
     if (matches && matches[1]) {
       let previousTextTrimmed = insertedElementText
         .replace(lineBeginsWithUnorderedList, "" + (textSplits[1] || ""))
@@ -995,6 +1002,7 @@ class FocusEditorCore {
           (Number(matches[2].trim()) + 1) +
           matches[3] +
           " ";
+
         let previousTextTrimmed = insertedElementText
           .replace(lineBeginsWithOrderedList, "")
           .trim();
