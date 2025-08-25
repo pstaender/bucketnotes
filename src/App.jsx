@@ -89,7 +89,6 @@ export function App({ version, appName } = {}) {
   const [initialCaretPosition, setInitialCaretPosition] = useState(null);
   // TODO: replace location.pathname with folderPath
   const [folderPath, setFolderPath] = useState("");
-  const [renderAllContent, setRenderAllContent] = useState(false);
   const [s3Error, setS3Error] = useState(null);
   const [isPossiblyOffline, setIsPossiblyOffline] = useState(false);
   const [sortFilesByAttribute, setSortFilesByAttribute] = useState(
@@ -98,7 +97,6 @@ export function App({ version, appName } = {}) {
   const [previewImages, setPreviewImages] = useState(
     localStorage.getItem("previewImages") === "true",
   );
-  const [focusEditor, setFocusEditor] = useState(null);
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
   const [playVideoUrl, setPlayVideoUrl] = useState(null);
   const [playAudioUrl, setPlayAudioUrl] = useState(null);
@@ -119,6 +117,8 @@ export function App({ version, appName } = {}) {
   const [rightTrimTextBeforeSave, setRightTrimTextBeforeSave] = useState(
      localStorage.getItem("rightTrimTextBeforeSave") === "true",
   );
+
+  const refEditor = useRef();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -369,12 +369,12 @@ export function App({ version, appName } = {}) {
 
   function displayGoToParagraphDialog() {
     let paragraphNumber = prompt("Go to paragraph number");
-    let target = focusEditor.target.querySelector(
+    let target = refEditor.current.target.querySelector(
       `:scope > .block:nth-child(${Number(paragraphNumber)})`,
     );
     if (Number(paragraphNumber) >= 0) {
       if (!target) {
-        target = focusEditor.target.querySelector(`:scope > .block:last-child`);
+        target = refEditor.current.querySelector(`:scope > .block:last-child`);
       }
       Cursor.setCurrentCursorPosition(0, target);
 
@@ -395,7 +395,7 @@ export function App({ version, appName } = {}) {
   }
 
   const handleBeforePrint = useCallback((ev) => {
-    setRenderAllContent(true);
+    // do nothing
   });
 
   useEffect(() => {
@@ -466,7 +466,13 @@ export function App({ version, appName } = {}) {
 
   async function saveFile(fileKey, text, { autoCreateNewFile, autoSave } = {}) {
     if (rightTrimTextBeforeSave) {
-      text = text.split("\n").map((l) => l.trimEnd()).join("\n").trimEnd() + `\n`;
+      //  rtrim manually + carefullyhtml content
+      refEditor.current.editor.allChildren().forEach((block) => {
+        let html = block.innerHTML.replace(/(\s|&nbsp;)+$/, '');
+        if (html !== block.innerHTML) {
+          block.innerHTML = html;
+        }
+      });
     }
     if (!fileKey || !VALID_FILE_EXTENSION.test(fileKey)) {
       updateStatusText("No file present to save to");
@@ -617,6 +623,9 @@ export function App({ version, appName } = {}) {
 
   function handleOnChangeEditor(text, { caretPosition } = {}) {
     if (text !== undefined) {
+      if (rightTrimTextBeforeSave) {
+        text = text.split("\n").map((l) => l.trimEnd()).join("\n").trimEnd() + `\n`;
+      }
       setText(text);
       if (location?.pathname && VALID_FILE_EXTENSION.test(location?.pathname)) {
         debounced(text, location?.pathname?.replace(/^\//, ""), lastSavedText);
@@ -791,8 +800,8 @@ export function App({ version, appName } = {}) {
   }, [handleUnload]);
 
   useEffect(() => {
-    if (focusEditor) {
-      focusEditor.readonly = readonly;
+    if (refEditor.current?.editor) {
+      refEditor.current.editor.readonly = readonly;
     }
     if (readonly || !s3Client || initialCaretPosition !== null) {
       return;
@@ -805,7 +814,7 @@ export function App({ version, appName } = {}) {
         Number(localStorage.getItem("caretPosition")) || 0,
       );
     }
-  }, [s3Client, location, initialCaretPosition, readonly, focusEditor]);
+  }, [s3Client, location, initialCaretPosition, readonly, refEditor]);
 
   useEffect(() => {
     // return;
@@ -1628,15 +1637,14 @@ export function App({ version, appName } = {}) {
                       setText,
                       updateStatusText,
                       setReadonly,
-                      focusEditor,
+                      focusEditor: refEditor?.current?.editor,
                       convertPDFToText,
                     });
                   }}
                   className="drop-wrapper"
                 >
                   <EditorWrapper
-                    focusEditor={focusEditor}
-                    setFocusEditor={setFocusEditor}
+                    refEditor={refEditor}
                     placeholder={placeholder}
                     indentHeadings={true}
                     initialText={initialText}
@@ -1645,7 +1653,6 @@ export function App({ version, appName } = {}) {
                     focusMode={focusMode}
                     doGuessNextListItemLine={createSmartNewLineContent}
                     initialCaretPosition={initialCaretPosition}
-                    renderAllContent={renderAllContent}
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}
                     previewImages={previewImages}
                     fullWithEditor={fullWithEditor}

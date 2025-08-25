@@ -15,16 +15,12 @@ export function EditorWrapper({
   readOnly,
   focusMode,
   doGuessNextListItemLine,
-  renderAllContent,
   scrollWindowToCenterCaret,
   previewImages,
-  focusEditor,
-  setFocusEditor,
   fullWithEditor,
   renderMarkdownTables,
+  refEditor,
 } = {}) {
-  let currentFocusEditor = null;
-  const refEditor = useRef();
   const navigate = useNavigate();
 
   const handleChange = (event) => {
@@ -38,29 +34,29 @@ export function EditorWrapper({
   };
 
   useEffect(() => {
-    if (initialText !== null && initialText !== undefined && focusEditor) {
-      focusEditor.replaceText(initialText, { clearHistory: true });
+    if (initialText !== null && initialText !== undefined && refEditor.current.editor) {
+      refEditor.current.editor.replaceText(initialText, { clearHistory: true });
     }
-  }, [initialText, focusEditor]);
+  }, [initialText, refEditor]);
 
   useEffect(() => {
-    if (!focusEditor) {
+    if (!refEditor.current?.editor) {
       return;
     }
     function isSet(val) {
       return val !== null && val !== undefined;
     }
     if (isSet(placeholder)) {
-      focusEditor.placeholder = placeholder;
+      refEditor.current.editor.placeholder = placeholder;
     }
     if (isSet(readOnly)) {
-      focusEditor.readOnly = readOnly;
+      refEditor.current.editor.readOnly = readOnly;
     }
-    if (isSet(renderMarkdownTables) && focusEditor.renderMarkdownTables !== renderMarkdownTables) {
-      focusEditor.renderMarkdownTables = renderMarkdownTables;
-      focusEditor.refresh();
+    if (isSet(renderMarkdownTables) && refEditor.current.editor.renderMarkdownTables !== renderMarkdownTables) {
+      refEditor.current.editor.renderMarkdownTables = renderMarkdownTables;
+      refEditor.current.editor.refresh();
     }
-  }, [focusEditor, placeholder, readOnly, renderMarkdownTables]);
+  }, [refEditor, placeholder, readOnly, renderMarkdownTables]);
 
 
   useEffect(() => {
@@ -197,7 +193,6 @@ export function EditorWrapper({
     editor.replaceHttpUrlsWithLinks = FEATURE_FLAGS.TRANSFORM_HTTP_URL_TEXT_TO_LINKS;
     editor.tabSize = 2;
     editor.target.spellcheck = false;
-    setFocusEditor(editor);
     return () => {
       if (
         typeof container !== "undefined" &&
