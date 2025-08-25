@@ -175,7 +175,7 @@ export function EditorWrapper({
 
 
       handleChange(ev);
-      editor.refresh();
+      // editor.refresh();
     });
 
     if (scrollWindowToCenterCaret) {

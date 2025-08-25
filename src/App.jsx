@@ -116,6 +116,9 @@ export function App({ version, appName } = {}) {
   const [fullWithEditor, setFullWithEditor] = useState(
     localStorage.getItem("fullWithEditor") === "true",
   );
+  const [rightTrimTextBeforeSave, setRightTrimTextBeforeSave] = useState(
+     localStorage.getItem("rightTrimTextBeforeSave") === "true",
+  );
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -462,6 +465,9 @@ export function App({ version, appName } = {}) {
   }
 
   async function saveFile(fileKey, text, { autoCreateNewFile, autoSave } = {}) {
+    if (rightTrimTextBeforeSave) {
+      text = text.split("\n").map((l) => l.trimEnd()).join("\n").trimEnd() + `\n`;
+    }
     if (!fileKey || !VALID_FILE_EXTENSION.test(fileKey)) {
       updateStatusText("No file present to save to");
       if (autoCreateNewFile) {
@@ -1470,6 +1476,18 @@ export function App({ version, appName } = {}) {
                               className={convertPDFToText ? "active" : null}
                             >
                               Extract text from PDF on drop
+                            </li>
+                            <li
+                              onClick={(ev) => {
+                                setRightTrimTextBeforeSave(!rightTrimTextBeforeSave);
+                                localStorage.setItem(
+                                  "rightTrimTextBeforeSave",
+                                  rightTrimTextBeforeSave ? "false" : "true",
+                                );
+                              }}
+                              className={rightTrimTextBeforeSave ? "active" : null}
+                            >
+                              Remove trailing spaces on Save
                             </li>
                             <li
                               onClick={(ev) => {
