@@ -34,7 +34,11 @@ export function EditorWrapper({
   };
 
   useEffect(() => {
-    if (initialText !== null && initialText !== undefined && refEditor.current.editor) {
+    if (
+      initialText !== null &&
+      initialText !== undefined &&
+      refEditor.current.editor
+    ) {
       refEditor.current.editor.replaceText(initialText, { clearHistory: true });
     }
   }, [initialText, refEditor]);
@@ -52,12 +56,14 @@ export function EditorWrapper({
     if (isSet(readOnly)) {
       refEditor.current.editor.readOnly = readOnly;
     }
-    if (isSet(renderMarkdownTables) && refEditor.current.editor.renderMarkdownTables !== renderMarkdownTables) {
+    if (
+      isSet(renderMarkdownTables) &&
+      refEditor.current.editor.renderMarkdownTables !== renderMarkdownTables
+    ) {
       refEditor.current.editor.renderMarkdownTables = renderMarkdownTables;
       refEditor.current.editor.refresh();
     }
   }, [refEditor, placeholder, readOnly, renderMarkdownTables]);
-
 
   useEffect(() => {
     if (!refEditor.current) {
@@ -105,14 +111,15 @@ export function EditorWrapper({
             `a.link[href^="${FEATURE_FLAGS.AUDIO_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
           ).forEach((a) => {
             a.classList.add("aws-url");
-            a.setAttribute('href', "#/" + a.getAttribute("href"));
+            a.setAttribute("href", "#/" + a.getAttribute("href"));
           });
           el.querySelectorAll(
             `a.link[href^="${FEATURE_FLAGS.VIDEO_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
           ).forEach((a) => {
             a.classList.add("aws-url");
-            a.setAttribute('href', "#/" + a.getAttribute("href"));
+            a.setAttribute("href", "#/" + a.getAttribute("href"));
           });
+
           el.querySelectorAll(
             `a.link:not(.aws-url)[href^="${FEATURE_FLAGS.ASSETS_BASE_PATH.replace(/^\/*/, "")}"]`,
           ).forEach((a) => {
@@ -132,9 +139,14 @@ export function EditorWrapper({
               });
             },
           );
+
           el.querySelectorAll('a.link.aws-url:not(.image)[href^="#/"]').forEach(
             async (a) => {
-              let url = a.dataset.uswUrl || (await s3.cachedSignedPublicS3Url(a.getAttribute("href").replace(/^#\//, "")));
+              let url =
+                a.dataset.s3Url ||
+                (await s3.cachedSignedPublicS3Url(
+                  a.getAttribute("href").replace(/^#\//, ""),
+                ));
               a.addEventListener("mouseenter", (ev) => {
                 if (a.querySelector(".audio-preview")) {
                   a.querySelector(".audio-preview").classList.add("visible");
@@ -143,6 +155,7 @@ export function EditorWrapper({
                 let div = document.createElement("div");
                 div.classList.add("audio-preview");
                 div.classList.add("visible");
+                div.dataset.s3Url = url;
                 let audio = document.createElement("audio");
                 audio.src = url;
                 audio.controls = true;
@@ -161,14 +174,13 @@ export function EditorWrapper({
     refEditor.current.addEventListener("keyup", handleChangeDebounced);
     refEditor.current.addEventListener("paste", (ev) => {
       const clipboardData = ev.clipboardData || window.clipboardData;
-      const pastedText = clipboardData.getData('text/plain');
-      const pastedHtml = clipboardData.getData('text/html');
+      const pastedText = clipboardData.getData("text/plain");
+      const pastedHtml = clipboardData.getData("text/html");
       if (pastedHtml) {
         editor.customPasteText = createTurndownService().turndown(pastedHtml);
       } else {
         editor.customPasteText = pastedText;
       }
-
 
       handleChange(ev);
       // editor.refresh();
@@ -190,7 +202,8 @@ export function EditorWrapper({
     if (initialText) {
       editor.replaceText(initialText, { clearHistory: true });
     }
-    editor.replaceHttpUrlsWithLinks = FEATURE_FLAGS.TRANSFORM_HTTP_URL_TEXT_TO_LINKS;
+    editor.replaceHttpUrlsWithLinks =
+      FEATURE_FLAGS.TRANSFORM_HTTP_URL_TEXT_TO_LINKS;
     editor.tabSize = 2;
     editor.target.spellcheck = false;
     return () => {
@@ -200,7 +213,7 @@ export function EditorWrapper({
       ) {
         container.removeChild(_editorElement);
       }
-      refEditor.current?.destroy();
+      refEditor.current?.destroy ? refEditor.current.destroy() : null;
     };
   }, []);
 
