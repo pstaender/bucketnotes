@@ -121,13 +121,8 @@ export async function uploadBinaryFile(filename, data, contentType) {
     Body: data,
     ContentType: contentType,
   });
-  try {
-    await s3Client.send(command);
-    return { fileName: filename, error: null };
-  } catch (err) {
-    console.error("Error uploading image file:", err);
-    return { fileName: null, error: err.message };
-  }
+  await s3Client.send(command);
+  return { fileName: filename, error: null };
 }
 
 export async function createFile(fileName, content) {

@@ -512,7 +512,7 @@ focus-editor:has(.block .table) {
       content: "";
       position: absolute;
       left: var(--table-border-thickness);
-      top: calc(50%);
+      top: calc(50% - calc(0.25 * var(--table-border-thickness)));
       height: var(--table-border-thickness);
       width: calc(100% - calc(2 * var(--table-border-thickness)));
       background: var(--color-border);

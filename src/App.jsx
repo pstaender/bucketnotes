@@ -741,11 +741,11 @@ export function App({ version, appName } = {}) {
   useEffect(() => {
     localStorage.setItem("font-family", fontFamily || "");
 
-    document.body.classList.remove("font-family-mononoki");
+    document.body.classList.remove("font-family-firacode");
     document.body.classList.remove("font-family-ibm");
 
-    if (fontFamily === "mononoki") {
-      document.body.classList.add("font-family-mononoki");
+    if (fontFamily === "firacode") {
+      document.body.classList.add("font-family-firacode");
     } else if (fontFamily === "ibm") {
       document.body.classList.add("font-family-ibm");
     }
@@ -1381,10 +1381,10 @@ export function App({ version, appName } = {}) {
                             </li>
                             <li
                               onClick={() => {
-                                if (fontFamily === "mononoki") {
+                                if (fontFamily === "firacode") {
                                   setFontFamily("");
                                 } else if (fontFamily === "ibm") {
-                                  setFontFamily("mononoki");
+                                  setFontFamily("firacode");
                                 } else {
                                   setFontFamily("ibm");
                                 }
@@ -1393,8 +1393,8 @@ export function App({ version, appName } = {}) {
                               Font (
                               {fontFamily ? fontFamily + " → " : "auto → "}
                               {fontFamily === "ibm"
-                                ? "mononoki"
-                                : fontFamily === "mononoki"
+                                ? "fira code"
+                                : fontFamily === "firacode"
                                   ? "auto"
                                   : "ibm"}
                               )

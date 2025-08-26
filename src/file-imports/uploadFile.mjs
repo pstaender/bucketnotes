@@ -26,8 +26,12 @@ export function uploadFile(
     } else {
       filename = `${finalPath.replace(/^\//, "")}_${hash}/${slugify(filename)}`;
     }
-    await s3.uploadBinaryFile(filename, arrayBuffer, transferItem.type);
-    onFinishedCallback({ filename });
+    try {
+      await s3.uploadBinaryFile(filename, arrayBuffer, transferItem.type);
+      onFinishedCallback({ filename, error: null });
+    } catch (error) {
+      onFinishedCallback({ filename, error });
+    }
   };
   reader.readAsArrayBuffer(f);
 }
