@@ -26,6 +26,8 @@ export function uploadFile(
     } else {
       filename = `${finalPath.replace(/^\//, "")}_${hash}/${slugify(filename)}`;
     }
+    // remove leading slashes
+    filename = filename.replace(/^\/+/, "");
     try {
       await s3.uploadBinaryFile(filename, arrayBuffer, transferItem.type);
       onFinishedCallback({ filename, error: null });

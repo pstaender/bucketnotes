@@ -97,6 +97,7 @@ export function App({ version, appName } = {}) {
   const [previewImages, setPreviewImages] = useState(
     localStorage.getItem("previewImages") === "true",
   );
+  const [focusEditor, setFocusEditor] = useState(null);
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
   const [playVideoUrl, setPlayVideoUrl] = useState(null);
   const [playAudioUrl, setPlayAudioUrl] = useState(null);
@@ -105,6 +106,9 @@ export function App({ version, appName } = {}) {
   );
   const [convertPDFToText, setConvertPDFToText] = useState(
     localStorage.getItem("convertPDFToText") === "true",
+  );
+  const [convertHTMLToMarkdown, setConvertHTMLToMarkdown] = useState(
+    localStorage.getItem("convertHTMLToMarkdown") === "true",
   );
   const [renderMarkdownTables, setRenderMarkdownTables] = useState(
     localStorage.getItem("renderMarkdownTables") === "true",
@@ -117,8 +121,6 @@ export function App({ version, appName } = {}) {
   const [rightTrimTextBeforeSave, setRightTrimTextBeforeSave] = useState(
      localStorage.getItem("rightTrimTextBeforeSave") === "true",
   );
-
-  const refEditor = useRef();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -369,12 +371,12 @@ export function App({ version, appName } = {}) {
 
   function displayGoToParagraphDialog() {
     let paragraphNumber = prompt("Go to paragraph number");
-    let target = refEditor.current.target.querySelector(
+    let target = focusEditor.target.querySelector(
       `:scope > .block:nth-child(${Number(paragraphNumber)})`,
     );
     if (Number(paragraphNumber) >= 0) {
       if (!target) {
-        target = refEditor.current.querySelector(`:scope > .block:last-child`);
+        target = focusEditor.target.querySelector(`:scope > .block:last-child`);
       }
       Cursor.setCurrentCursorPosition(0, target);
 
@@ -465,9 +467,9 @@ export function App({ version, appName } = {}) {
   }
 
   async function saveFile(fileKey, text, { autoCreateNewFile, autoSave } = {}) {
-    if (rightTrimTextBeforeSave) {
+    if (rightTrimTextBeforeSave && focusEditor) {
       //  rtrim manually + carefullyhtml content
-      refEditor.current.editor.allChildren().forEach((block) => {
+      focusEditor.allChildren().forEach((block) => {
         let html = block.innerHTML.replace(/(\s|&nbsp;)+$/, '');
         if (html !== block.innerHTML) {
           block.innerHTML = html;
@@ -800,8 +802,8 @@ export function App({ version, appName } = {}) {
   }, [handleUnload]);
 
   useEffect(() => {
-    if (refEditor.current?.editor) {
-      refEditor.current.editor.readonly = readonly;
+    if (focusEditor?.target?.editor) {
+      focusEditor.target.editor.readonly = readonly;
     }
     if (readonly || !s3Client || initialCaretPosition !== null) {
       return;
@@ -814,7 +816,7 @@ export function App({ version, appName } = {}) {
         Number(localStorage.getItem("caretPosition")) || 0,
       );
     }
-  }, [s3Client, location, initialCaretPosition, readonly, refEditor]);
+  }, [s3Client, location, initialCaretPosition, readonly, focusEditor]);
 
   useEffect(() => {
     // return;
@@ -887,7 +889,9 @@ export function App({ version, appName } = {}) {
           await loadS3Files(bucketName);
           setTimeout(async () => {
             // needs to be, AFTER the setS3Client
-            await upsyncFiles();
+            if (offlineStorageEnabled) {
+              await upsyncFiles();
+            }
           }, 10);
         } catch (err) {
           setS3Client(null);
@@ -1043,9 +1047,7 @@ export function App({ version, appName } = {}) {
         while (fileName !== null && fileName?.length === 0) {
           fileName = prompt(
             "Enter file name",
-            folderPath.replace(/\/[^/]+[.]+[^/]+$/, '/') + newNoteName()
-            // (folderPath.length > 1 ? folderPath.replace(/^\/+/, "") : "") +
-            //   newNoteName(),
+            folderPath.replace(/\/[^/]+[.]+[^/]+$/, '/').replace(/\/*$/, '/') + newNoteName()
           );
           if (fileName) {
             fileName = slugifyPath(fileName);
@@ -1057,6 +1059,8 @@ export function App({ version, appName } = {}) {
         if (!VALID_FILE_EXTENSION.test(fileName)) {
           fileName += ".txt";
         }
+        // remove leading slashes
+        fileName = fileName.replace(/^\/+/, "");
         try {
           setS3Error(null);
           await createNewFile(fileName);
@@ -1428,7 +1432,7 @@ export function App({ version, appName } = {}) {
                               Fullscreen{" "}
                               <span className="shortcut">⌘ + Shift + F</span>
                             </li>
-                            <li>
+                            <li className="border-bottom">
                               <div title="Increase or decrease font size">
                                 <span
                                   onClick={() => {
@@ -1452,6 +1456,7 @@ export function App({ version, appName } = {}) {
                               </div>
                             </li>
                             <li
+                              className="border-bottom"
                               onClick={async () => {
                                 let value = !offlineStorageEnabled;
                                 if (value) {
@@ -1489,13 +1494,25 @@ export function App({ version, appName } = {}) {
                             </li>
                             <li
                               onClick={(ev) => {
+                                setConvertHTMLToMarkdown(!convertHTMLToMarkdown);
+                                localStorage.setItem(
+                                  "convertHTMLToMarkdown",
+                                  convertHTMLToMarkdown ? "false" : "true",
+                                );
+                              }}
+                              className={[convertHTMLToMarkdown ? "active" : null, "border-bottom"].filter((v) => !!v).join(" ")}
+                            >
+                              Convert HTML to md on paste
+                            </li>
+                            <li
+                              onClick={(ev) => {
                                 setRightTrimTextBeforeSave(!rightTrimTextBeforeSave);
                                 localStorage.setItem(
                                   "rightTrimTextBeforeSave",
                                   rightTrimTextBeforeSave ? "false" : "true",
                                 );
                               }}
-                              className={rightTrimTextBeforeSave ? "active" : null}
+                              className={[rightTrimTextBeforeSave ? "active" : null, "border-bottom"].filter((v) => !!v).join(" ")}
                             >
                               Remove trailing spaces on Save
                             </li>
@@ -1509,7 +1526,7 @@ export function App({ version, appName } = {}) {
                               }}
                               className={renderMarkdownTables ? "active" : null}
                             >
-                              Renders tables
+                              Render Tables
                             </li>
                             <li
                               onClick={(ev) => {
@@ -1521,7 +1538,7 @@ export function App({ version, appName } = {}) {
                               }}
                               className={fullWithEditor ? "active" : null}
                             >
-                              Full width editing
+                              Full-Width editing
                             </li>
                           </ul>
                         </div>
@@ -1561,7 +1578,7 @@ export function App({ version, appName } = {}) {
                     }}
                     className={previewImages ? "active" : null}
                   >
-                    Preview images
+                    Preview media
                   </li>
                   <li
                     onClick={(ev) => {
@@ -1638,14 +1655,13 @@ export function App({ version, appName } = {}) {
                       setText,
                       updateStatusText,
                       setReadonly,
-                      focusEditor: refEditor?.current?.editor,
+                      focusEditor,
                       convertPDFToText,
                     });
                   }}
                   className="drop-wrapper"
                 >
                   <EditorWrapper
-                    refEditor={refEditor}
                     placeholder={placeholder}
                     indentHeadings={true}
                     initialText={initialText}
@@ -1658,6 +1674,9 @@ export function App({ version, appName } = {}) {
                     previewImages={previewImages}
                     fullWithEditor={fullWithEditor}
                     renderMarkdownTables={renderMarkdownTables}
+                    focusEditor={focusEditor}
+                    setFocusEditor={setFocusEditor}
+                    convertHTMLToMarkdown={convertHTMLToMarkdown}
                   ></EditorWrapper>
                 </div>
               </div>

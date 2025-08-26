@@ -19,12 +19,15 @@ export function EditorWrapper({
   previewImages,
   fullWithEditor,
   renderMarkdownTables,
-  refEditor,
+  focusEditor,
+  setFocusEditor,
+  convertHTMLToMarkdown,
 } = {}) {
   const navigate = useNavigate();
+  const refEditor = useRef();
 
   const handleChange = (event) => {
-    onChange(refEditor.current.editor.getMarkdown(), {});
+    onChange(refEditor.current.editor .getMarkdown(), {});
   };
 
   const handleChangeDebounced = debounce(handleChange, 200);
@@ -37,11 +40,11 @@ export function EditorWrapper({
     if (
       initialText !== null &&
       initialText !== undefined &&
-      refEditor.current.editor
+      focusEditor
     ) {
-      refEditor.current.editor.replaceText(initialText, { clearHistory: true });
+      focusEditor.replaceText(initialText, { clearHistory: true });
     }
-  }, [initialText, refEditor]);
+  }, [initialText, focusEditor]);
 
   useEffect(() => {
     if (!refEditor.current?.editor) {
@@ -51,19 +54,19 @@ export function EditorWrapper({
       return val !== null && val !== undefined;
     }
     if (isSet(placeholder)) {
-      refEditor.current.editor.placeholder = placeholder;
+      focusEditor.placeholder = placeholder;
     }
     if (isSet(readOnly)) {
-      refEditor.current.editor.readOnly = readOnly;
+      focusEditor.readOnly = readOnly;
     }
     if (
       isSet(renderMarkdownTables) &&
-      refEditor.current.editor.renderMarkdownTables !== renderMarkdownTables
+      focusEditor.renderMarkdownTables !== renderMarkdownTables
     ) {
-      refEditor.current.editor.renderMarkdownTables = renderMarkdownTables;
-      refEditor.current.editor.refresh();
+      focusEditor.renderMarkdownTables = renderMarkdownTables;
+      focusEditor.refresh();
     }
-  }, [refEditor, placeholder, readOnly, renderMarkdownTables]);
+  }, [focusEditor, placeholder, readOnly, renderMarkdownTables]);
 
   useEffect(() => {
     if (!refEditor.current) {
@@ -121,6 +124,13 @@ export function EditorWrapper({
           });
 
           el.querySelectorAll(
+            `a.link[href^="${FEATURE_FLAGS.PDF_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
+          ).forEach((a) => {
+            a.classList.add("aws-url");
+            a.setAttribute("href", "#/" + a.getAttribute("href"));
+          });
+
+          el.querySelectorAll(
             `a.link:not(.aws-url)[href^="${FEATURE_FLAGS.ASSETS_BASE_PATH.replace(/^\/*/, "")}"]`,
           ).forEach((a) => {
             a.classList.add("aws-url");
@@ -147,24 +157,29 @@ export function EditorWrapper({
                 (await s3.cachedSignedPublicS3Url(
                   a.getAttribute("href").replace(/^#\//, ""),
                 ));
-              a.addEventListener("mouseenter", (ev) => {
-                if (a.querySelector(".audio-preview")) {
-                  a.querySelector(".audio-preview").classList.add("visible");
-                  return;
-                }
-                let div = document.createElement("div");
-                div.classList.add("audio-preview");
-                div.classList.add("visible");
-                div.dataset.s3Url = url;
-                let audio = document.createElement("audio");
-                audio.src = url;
-                audio.controls = true;
-                div.appendChild(audio);
-                a.appendChild(div);
-              });
-              a.addEventListener("mouseleave", (ev) => {
-                a.querySelector(".audio-preview")?.classList?.remove("visible");
-              });
+              const isAudio = url.match(/\.(mp3|aac|wav|ogg|opus|flac|m4a)(\?|$)/i);
+              console.log({isAudio})
+
+              if (isAudio && previewImages) {
+                a.addEventListener("mouseenter", (ev) => {
+                  if (a.querySelector(".audio-preview")) {
+                    a.querySelector(".audio-preview").classList.add("visible");
+                    return;
+                  }
+                  let div = document.createElement("div");
+                  div.classList.add("audio-preview");
+                  div.classList.add("visible");
+                  div.dataset.s3Url = url;
+                  let audio = document.createElement("audio");
+                  audio.src = url;
+                  audio.controls = true;
+                  div.appendChild(audio);
+                  a.appendChild(div);
+                });
+                a.addEventListener("mouseleave", (ev) => {
+                  a.querySelector(".audio-preview")?.classList?.remove("visible");
+                });
+              };
             },
           );
         });
@@ -176,7 +191,7 @@ export function EditorWrapper({
       const clipboardData = ev.clipboardData || window.clipboardData;
       const pastedText = clipboardData.getData("text/plain");
       const pastedHtml = clipboardData.getData("text/html");
-      if (pastedHtml) {
+      if (pastedHtml && convertHTMLToMarkdown) {
         editor.customPasteText = createTurndownService().turndown(pastedHtml);
       } else {
         editor.customPasteText = pastedText;
@@ -198,6 +213,8 @@ export function EditorWrapper({
 
     const editor = new FocusEditorCore(refEditor.current);
     refEditor.current.editor = editor;
+    setFocusEditor(editor);
+
 
     if (initialText) {
       editor.replaceText(initialText, { clearHistory: true });
