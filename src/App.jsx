@@ -1043,8 +1043,9 @@ export function App({ version, appName } = {}) {
         while (fileName !== null && fileName?.length === 0) {
           fileName = prompt(
             "Enter file name",
-            (folderPath.length > 1 ? folderPath.replace(/^\/+/, "") : "") +
-              newNoteName(),
+            folderPath.replace(/\/[^/]+[.]+[^/]+$/, '/') + newNoteName()
+            // (folderPath.length > 1 ? folderPath.replace(/^\/+/, "") : "") +
+            //   newNoteName(),
           );
           if (fileName) {
             fileName = slugifyPath(fileName);
