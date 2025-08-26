@@ -495,21 +495,31 @@ focus-editor .focus-editor {
   .link:hover {
     text-decoration: none;
   }
-  .link {
-    .audio-preview {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-      &.visible {
-        opacity: 1;
-        pointer-events: inherit;
-      }
-      audio {
-        margin-top: -1.2rem;
-        padding-top: 1.5rem;
-        display: block;
-      }
+}
+
+#audio-preview-container {
+  position: fixed;
+  opacity: 0;
+  pointer-events: none;
+  bottom: 1rem;
+  right: 1rem;
+  .close-button {
+    position: absolute;
+    top: calc(50% - 0.5em);
+    right: -0.8rem;
+    &:hover {
+      cursor: pointer;
     }
+  }
+  &.visible {
+    opacity: 1;
+    pointer-events: inherit;
+    z-index: 10;
+  }
+  audio {
+    margin-top: -1.2rem;
+    padding-top: 1.5rem;
+    display: block;
   }
 }
 

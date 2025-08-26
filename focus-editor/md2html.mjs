@@ -123,7 +123,7 @@ function inlineMarkdown(text) {
       if (matches[1] || matches[3]) {
         return matches[0];
       }
-      return `<strong><em>${matches[2]}</em></strong>`;
+      return `<strong class="underscore"><em>${matches[2]}</em></strong>`;
     });
 
   // find *italic* / _italic_
@@ -138,7 +138,7 @@ function inlineMarkdown(text) {
       if (matches[1] || matches[3]) {
         return matches[0];
       }
-      return `<em>${matches[2]}</em>`;
+      return `<em class="underscore">${matches[2]}</em>`;
     });
 
   // find **bold text** / __bold text__

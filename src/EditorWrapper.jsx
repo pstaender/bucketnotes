@@ -27,7 +27,7 @@ export function EditorWrapper({
   const refEditor = useRef();
 
   const handleChange = (event) => {
-    onChange(refEditor.current.editor .getMarkdown(), {});
+    onChange(refEditor.current.editor.getMarkdown(), {});
   };
 
   const handleChangeDebounced = debounce(handleChange, 200);
@@ -37,11 +37,7 @@ export function EditorWrapper({
   };
 
   useEffect(() => {
-    if (
-      initialText !== null &&
-      initialText !== undefined &&
-      focusEditor
-    ) {
+    if (initialText !== null && initialText !== undefined && focusEditor) {
       focusEditor.replaceText(initialText, { clearHistory: true });
     }
   }, [initialText, focusEditor]);
@@ -150,38 +146,53 @@ export function EditorWrapper({
             },
           );
 
-          el.querySelectorAll('a.link.aws-url:not(.image)[href^="#/"]').forEach(
-            async (a) => {
+          // play audio on click
+          if (previewImages) {
+            el.querySelectorAll(
+              `a.link.aws-url[href^="#/${FEATURE_FLAGS.AUDIO_UPLOAD_PATH.replace(/^\/*/, "")}"]`,
+            ).forEach(async (a) => {
+              a.classList.add("prevent-dblclick-visit");
               let url =
                 a.dataset.s3Url ||
                 (await s3.cachedSignedPublicS3Url(
                   a.getAttribute("href").replace(/^#\//, ""),
                 ));
-              const isAudio = url.match(/\.(mp3|aac|wav|ogg|opus|flac|m4a)(\?|$)/i);
-              console.log({isAudio})
-
-              if (isAudio && previewImages) {
-                a.addEventListener("mouseenter", (ev) => {
-                  if (a.querySelector(".audio-preview")) {
-                    a.querySelector(".audio-preview").classList.add("visible");
+              const id = "audio-preview-container";
+              a.addEventListener("dblclick", (ev) => {
+                let preview = document.getElementById(id);
+                if (preview) {
+                  if (preview.dataset.s3Url === url && preview.querySelector('audio')) {
+                    preview.querySelector('audio').play();
+                    preview.classList.add("visible");
                     return;
                   }
-                  let div = document.createElement("div");
-                  div.classList.add("audio-preview");
-                  div.classList.add("visible");
-                  div.dataset.s3Url = url;
-                  let audio = document.createElement("audio");
-                  audio.src = url;
-                  audio.controls = true;
-                  div.appendChild(audio);
-                  a.appendChild(div);
+                } else {
+                  preview = document.createElement("div");
+                  preview.id = id;
+                  preview.classList.add("audio-preview");
+                  preview.classList.add("visible");
+                }
+                preview.dataset.s3Url = url;
+                preview.querySelector('audio')?.remove();
+                let audio = document.createElement("audio");
+                audio.src = url;
+                audio.controls = true;
+                preview.appendChild(audio);
+                let div = document.createElement("div");
+                div.innerText = 'x';
+                div.classList.add("close-button");
+                div.addEventListener("click", (ev) => {
+                  preview.classList.remove("visible");
+                  setTimeout(() => {
+                    preview.remove();
+                  }, 200);
                 });
-                a.addEventListener("mouseleave", (ev) => {
-                  a.querySelector(".audio-preview")?.classList?.remove("visible");
-                });
-              };
-            },
-          );
+                preview.prepend(div);
+                document.querySelector('.editor-wrapper').appendChild(preview);
+                preview.querySelector('audio').play();
+              });
+            });
+          }
         });
       }
     });
@@ -214,7 +225,6 @@ export function EditorWrapper({
     const editor = new FocusEditorCore(refEditor.current);
     refEditor.current.editor = editor;
     setFocusEditor(editor);
-
 
     if (initialText) {
       editor.replaceText(initialText, { clearHistory: true });
