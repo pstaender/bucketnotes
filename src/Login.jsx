@@ -4,6 +4,7 @@ import LogoDark from "../logo-dark.svg";
 import GitHubLogo from "../src/icons/github.svg";
 import * as encrypt from "./encrypt";
 import { useNavigate } from "react-router-dom";
+import Markdown from 'react-markdown'
 
 export function Login({ setCredentials, errorMessage, setErrorMessage }) {
   const [region, setRegion] = useState(
@@ -180,7 +181,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
             ></img>
           </picture>
         </div>
-        {errorMessage && <div className="error">{errorMessage}</div>}
+        {errorMessage && <div className="error"><Markdown>{errorMessage}</Markdown></div>}
         {showPasswordLogin ? (
           <form onSubmit={handlePasswordOnlySubmit}>
             <div className="input">

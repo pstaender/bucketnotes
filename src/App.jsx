@@ -98,6 +98,7 @@ export function App({ version, appName } = {}) {
     localStorage.getItem("previewImages") === "true",
   );
   const [focusEditor, setFocusEditor] = useState(null);
+  const [jumpToFile, setJumpToFile] = useState(false);
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
   const [playVideoUrl, setPlayVideoUrl] = useState(null);
   const [playAudioUrl, setPlayAudioUrl] = useState(null);
@@ -451,6 +452,11 @@ export function App({ version, appName } = {}) {
       if (ev.key === ".") {
         ev.preventDefault();
         setFocusMode(!focusMode);
+        return;
+      }
+      if (ev.key === "/") {
+        ev.preventDefault();
+        setJumpToFile(!jumpToFile);
         return;
       }
       if (ev.key === "g") {
@@ -912,6 +918,7 @@ export function App({ version, appName } = {}) {
             }
           }
           return;
+          // TODO
         }
         setLoginErrorMessage(null);
       } else {
@@ -1131,6 +1138,10 @@ export function App({ version, appName } = {}) {
     console.groupCollapsed("s3Error");
     console.error(s3Error);
     console.groupEnd("s3Error");
+    if (/SignatureDoesNotMatch/i.test(s3Error)) {
+      logout();
+      setLoginErrorMessage(`Wrong credentials?\n\n${s3Error}`);
+    }
   }, [s3Error]);
 
   useEffect(() => {
@@ -1301,7 +1312,7 @@ export function App({ version, appName } = {}) {
                 <input
                   type="checkbox"
                   checked={showMoreOptions}
-                  onChange={(ev) => setShowMoreOptions(ev.target.checked)}
+                  // onChange={(ev) => setShowMoreOptions(ev.target.checked)}
                 />
                 <img src={moreIcon}></img>
               </div>

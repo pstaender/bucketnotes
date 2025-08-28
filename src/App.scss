@@ -632,6 +632,10 @@ button {
     font-size: 0.85rem;
     margin-left: -0.75rem;
     width: 100%;
+    p {
+      margin: 0;
+      margin-bottom: 0.5rem;
+    }
   }
   .input {
     position: relative;
@@ -832,10 +836,19 @@ button {
   .file-versions-container {
     position: sticky;
     top: 1.75rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    padding-bottom: 1rem;
+    background: var(--background-color);
   }
   font-size: var(--font-size-small);
   ul {
     padding: 0;
+    margin: 0;
     li {
       list-style: none;
       line-height: 1.5em;
