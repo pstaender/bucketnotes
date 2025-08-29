@@ -1506,6 +1506,19 @@ export function App({ version, appName } = {}) {
                             </li>
                             <li
                               data-is-more-options-item="true"
+                              onClick={async () => {
+                                const value =
+                                  sortFilesByAttribute === "LastModified"
+                                    ? "Key"
+                                    : "LastModified";
+                                localStorage.setItem("sortFilesByAttribute", value);
+                                setSortFilesByAttribute(value);
+                              }}
+                            >
+                              Sort files ({sortFilesByAttribute === 'Key' ? 'name' : 'modified'} → {sortFilesByAttribute === "LastModified" ? "name" : "modified"})
+                            </li>
+                            <li
+                              data-is-more-options-item="true"
                               className={['border-bottom', offlineStorageEnabled ? "active" : null].filter((v) => !!v).join(" ")}
                               onClick={async () => {
                                 let value = !offlineStorageEnabled;
@@ -1552,7 +1565,7 @@ export function App({ version, appName } = {}) {
                               }}
                               className={[convertHTMLToMarkdown ? "active" : null, "border-bottom"].filter((v) => !!v).join(" ")}
                             >
-                              Convert HTML to md on paste
+                              Convert HTML to MD on paste
                             </li>
                             <li
                               data-is-more-options-item="true"
@@ -1608,18 +1621,6 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li onClick={displayGoToParagraphDialog}>
                     Jump to paragraph <span className="shortcut">⌘ + G</span>
-                  </li>
-                  <li
-                    onClick={async () => {
-                      const value =
-                        sortFilesByAttribute === "LastModified"
-                          ? "Key"
-                          : "LastModified";
-                      localStorage.setItem("sortFilesByAttribute", value);
-                      setSortFilesByAttribute(value);
-                    }}
-                  >
-                    Sort files by date/name
                   </li>
                   <li
                     onClick={(ev) => {
@@ -1689,6 +1690,7 @@ export function App({ version, appName } = {}) {
                   if (ev.isTrusted) {
                     setShowMoreOptions(false);
                     setShowSideBar(false);
+                    setJumpToFile(false);
                     setShowAdditionalMenuOption(false);
                   }
                 }}

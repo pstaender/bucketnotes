@@ -76,8 +76,8 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
       let result = await s3.listFiles(props);
       // filter files
       let _files = result.files.filter(f => !!f?.Key);
-      if (_files.length > 0) {
-        if (!('/' +_files[1].Key).startsWith(FEATURE_FLAGS.ASSETS_BASE_PATH)) {
+      if (_files && _files.length > 0) {
+        if (!('/' +_files[0].Key).startsWith(FEATURE_FLAGS.ASSETS_BASE_PATH)) {
           _files = _files.filter(f => VALID_FILE_EXTENSION.test(f.Key));
         }
       }
