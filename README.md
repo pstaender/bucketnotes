@@ -175,10 +175,9 @@ Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess i
 
 ## TODOs / Roadmap
 
-* support deeper subfolders
-* listing images in image folder
-* search all files (fuzzy search)
+* support deeper subfolders (this is still a bug in the file tree)
 * import / migrate external images to S3 bucket
+* search all files (fuzzy search) (?)
 * import options (extended markdown, images, remove navigation, etc.) (?)
 * make image folder configurable (?)
 * provide tauri stand alone app (?)

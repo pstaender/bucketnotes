@@ -30,12 +30,6 @@ export function FileList({
 
   const normalizedFolderPath = (/\/[^.]+$/.test(folderPath) ? folderPath : folderPath.split('/').slice(0, -1).join('/')).replace(/\/+/, '/').replace(/[/]*$/, '/');
 
-  const parentFolder = normalizedFolderPath
-    .split("/")
-    .slice(0, -2)
-    .join("/");
-
-
   const subfolders = files.filter(file => file.substring(normalizedFolderPath.length).includes('/')).map(file => file.split('/')[1]).filter((value, index, self) => self.indexOf(value) === index);
 
   useEffect(() => {

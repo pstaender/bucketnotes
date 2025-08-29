@@ -445,7 +445,7 @@ focus-editor[image-preview] {
 
 focus-editor.highlight-current-paragraph .focus-editor {
   .block {
-    opacity: 0.3;
+    opacity: var(--focus-opacity, 0.3);
     transition:
       opacity 0.2s,
       color var(--transition-duration),

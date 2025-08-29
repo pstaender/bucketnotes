@@ -15,33 +15,35 @@ export function FileVersions({
   return (
     <div className="file-versions">
       <div className="file-versions-container">
-        <p>{fileVersions.length} versions available</p>
-        <div className="restore-or-cancel-versioning">
-          <button
-            onClick={() => {
-              setFileVersions([]);
-              setShowSideBar(false);
-              // reload actual file
-              navigate(location.pathname);
-            }}
-          >
-            Close
-          </button>
-          <button
-            onClick={(ev) => {
-              ev.target.disabled = true;
-              if (activeVersion) {
-                handleClickOnRestore(ev, activeVersion);
+        <header>
+          <p>{fileVersions.length} versions available</p>
+          <div className="restore-or-cancel-versioning">
+            <button
+              onClick={() => {
+                setFileVersions([]);
                 setShowSideBar(false);
-              } else {
-                alert("No file selected");
-              }
-              ev.target.disabled = false;
-            }}
-          >
-            Restore
-          </button>
-        </div>
+                // reload actual file
+                navigate(location.pathname);
+              }}
+            >
+              Close
+            </button>
+            <button
+              onClick={(ev) => {
+                ev.target.disabled = true;
+                if (activeVersion) {
+                  handleClickOnRestore(ev, activeVersion);
+                  setShowSideBar(false);
+                } else {
+                  alert("No file selected");
+                }
+                ev.target.disabled = false;
+              }}
+            >
+              Restore
+            </button>
+          </div>
+        </header>
         <ul>
           {fileVersions.map((v, i) => (
             <li

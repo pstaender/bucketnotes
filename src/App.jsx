@@ -10,6 +10,8 @@ import { useDebouncedCallback } from "use-debounce";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { EditorWrapper } from "./EditorWrapper.jsx";
+import { JumpToFileBar } from "./JumpToFileBar.jsx";
+
 import { useLongPress } from "use-long-press";
 
 import * as s3 from "./s3.js";
@@ -98,6 +100,7 @@ export function App({ version, appName } = {}) {
     localStorage.getItem("previewImages") === "true",
   );
   const [focusEditor, setFocusEditor] = useState(null);
+  const [jumpToFile, setJumpToFile] = useState(false);
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
   const [playVideoUrl, setPlayVideoUrl] = useState(null);
   const [playAudioUrl, setPlayAudioUrl] = useState(null);
@@ -121,6 +124,7 @@ export function App({ version, appName } = {}) {
   const [rightTrimTextBeforeSave, setRightTrimTextBeforeSave] = useState(
      localStorage.getItem("rightTrimTextBeforeSave") === "true",
   );
+  const [globalKey, setGlobalKey] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -422,6 +426,34 @@ export function App({ version, appName } = {}) {
     };
   }, [handleBeforePrint]);
 
+  const registerGlobalKeyPress = useCallback((e) => {
+    setGlobalKey(e.key);
+  }, []);
+  const registerGlobalKeyUp = useCallback((e) => {
+    setGlobalKey(null);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", registerGlobalKeyPress);
+    () => window.removeEventListener("keydown", registerGlobalKeyPress);
+  }, [registerGlobalKeyPress]);
+
+  useEffect(() => {
+    window.addEventListener("keyup", registerGlobalKeyUp);
+    () => window.removeEventListener("keydown", registerGlobalKeyUp);
+  }, [registerGlobalKeyUp]);
+
+  useEffect(() => {
+    if (globalKey === 'Escape') {
+      setShowMoreOptions(false);
+      setShowSideBar(false);
+      setJumpToFile(false);
+      focusEditor?.target?.focus();
+      focusEditor?.target?.click();
+      return;
+    }
+  }, [globalKey]);
+
   async function handleKeyDown(ev) {
     if ((ev.metaKey || ev.ctrKey) && ev.key === ";") {
       setShowSideBar(!showSideBar);
@@ -430,6 +462,7 @@ export function App({ version, appName } = {}) {
     }
 
     if (ev.metaKey || ev.ctrKey) {
+
       if (ev.key.toLowerCase() === "s") {
         if (
           (VALID_FILE_EXTENSION.test(location.pathname) &&
@@ -451,6 +484,11 @@ export function App({ version, appName } = {}) {
       if (ev.key === ".") {
         ev.preventDefault();
         setFocusMode(!focusMode);
+        return;
+      }
+      if (ev.key === "/") {
+        ev.preventDefault();
+        setJumpToFile(!jumpToFile);
         return;
       }
       if (ev.key === "g") {
@@ -1131,6 +1169,10 @@ export function App({ version, appName } = {}) {
     console.groupCollapsed("s3Error");
     console.error(s3Error);
     console.groupEnd("s3Error");
+    if (/SignatureDoesNotMatch/i.test(s3Error)) {
+      logout();
+      setLoginErrorMessage(`Wrong credentials?\n\n${s3Error}`);
+    }
   }, [s3Error]);
 
   useEffect(() => {
@@ -1296,6 +1338,9 @@ export function App({ version, appName } = {}) {
               }
             }}
           >
+            {jumpToFile && s3 && (
+              <JumpToFileBar s3={s3} setJumpToFile={setJumpToFile}></JumpToFileBar>
+            )}
             <div className="button-more">
               <div className="icon">
                 <input
@@ -1364,6 +1409,7 @@ export function App({ version, appName } = {}) {
                         <div className="more-options">
                           <ul className="menu">
                             <li
+                              data-is-more-options-item="true"
                               onClick={() => {
                                 if (colorScheme === "dark") {
                                   setColorScheme("light");
@@ -1384,6 +1430,7 @@ export function App({ version, appName } = {}) {
                               )
                             </li>
                             <li
+                              data-is-more-options-item="true"
                               onClick={() => {
                                 if (fontFamily === "firacode") {
                                   setFontFamily("");
@@ -1435,6 +1482,7 @@ export function App({ version, appName } = {}) {
                             <li className="border-bottom">
                               <div title="Increase or decrease font size">
                                 <span
+                                  data-is-more-options-item="true"
                                   onClick={() => {
                                     setFontSize(Number(fontSize || 16) + 1);
                                   }}
@@ -1442,6 +1490,7 @@ export function App({ version, appName } = {}) {
                                   Larger font
                                 </span>
                                 <span
+                                  data-is-more-options-item="true"
                                   style={{
                                     transform: "scale(0.75)",
                                     display: "inline-flex",
@@ -1456,7 +1505,21 @@ export function App({ version, appName } = {}) {
                               </div>
                             </li>
                             <li
-                              className="border-bottom"
+                              data-is-more-options-item="true"
+                              onClick={async () => {
+                                const value =
+                                  sortFilesByAttribute === "LastModified"
+                                    ? "Key"
+                                    : "LastModified";
+                                localStorage.setItem("sortFilesByAttribute", value);
+                                setSortFilesByAttribute(value);
+                              }}
+                            >
+                              Sort files ({sortFilesByAttribute === 'Key' ? 'name' : 'modified'} → {sortFilesByAttribute === "LastModified" ? "name" : "modified"})
+                            </li>
+                            <li
+                              data-is-more-options-item="true"
+                              className={['border-bottom', offlineStorageEnabled ? "active" : null].filter((v) => !!v).join(" ")}
                               onClick={async () => {
                                 let value = !offlineStorageEnabled;
                                 if (value) {
@@ -1476,11 +1539,10 @@ export function App({ version, appName } = {}) {
                                 }
                               }}
                             >
-                              {offlineStorageEnabled
-                                ? "Disable Offline Storage"
-                                : "Enable Offline Storage"}
+                              Offline Storage
                             </li>
                             <li
+                              data-is-more-options-item="true"
                               onClick={(ev) => {
                                 setConvertPDFToText(!convertPDFToText);
                                 localStorage.setItem(
@@ -1493,6 +1555,7 @@ export function App({ version, appName } = {}) {
                               Extract text from PDF on drop
                             </li>
                             <li
+                              data-is-more-options-item="true"
                               onClick={(ev) => {
                                 setConvertHTMLToMarkdown(!convertHTMLToMarkdown);
                                 localStorage.setItem(
@@ -1502,9 +1565,10 @@ export function App({ version, appName } = {}) {
                               }}
                               className={[convertHTMLToMarkdown ? "active" : null, "border-bottom"].filter((v) => !!v).join(" ")}
                             >
-                              Convert HTML to md on paste
+                              Convert HTML to MD on paste
                             </li>
                             <li
+                              data-is-more-options-item="true"
                               onClick={(ev) => {
                                 setRightTrimTextBeforeSave(!rightTrimTextBeforeSave);
                                 localStorage.setItem(
@@ -1517,6 +1581,7 @@ export function App({ version, appName } = {}) {
                               Remove trailing spaces on Save
                             </li>
                             <li
+                              data-is-more-options-item="true"
                               onClick={(ev) => {
                                 setRenderMarkdownTables(!renderMarkdownTables);
                                 localStorage.setItem(
@@ -1529,6 +1594,7 @@ export function App({ version, appName } = {}) {
                               Render Tables
                             </li>
                             <li
+                              data-is-more-options-item="true"
                               onClick={(ev) => {
                                 setFullWithEditor(!fullWithEditor);
                                 localStorage.setItem(
@@ -1555,18 +1621,6 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li onClick={displayGoToParagraphDialog}>
                     Jump to paragraph <span className="shortcut">⌘ + G</span>
-                  </li>
-                  <li
-                    onClick={async () => {
-                      const value =
-                        sortFilesByAttribute === "LastModified"
-                          ? "Key"
-                          : "LastModified";
-                      localStorage.setItem("sortFilesByAttribute", value);
-                      setSortFilesByAttribute(value);
-                    }}
-                  >
-                    Sort files by date/name
                   </li>
                   <li
                     onClick={(ev) => {
@@ -1636,6 +1690,7 @@ export function App({ version, appName } = {}) {
                   if (ev.isTrusted) {
                     setShowMoreOptions(false);
                     setShowSideBar(false);
+                    setJumpToFile(false);
                     setShowAdditionalMenuOption(false);
                   }
                 }}
