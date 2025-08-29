@@ -950,7 +950,6 @@ export function App({ version, appName } = {}) {
             }
           }
           return;
-          // TODO
         }
         setLoginErrorMessage(null);
       } else {

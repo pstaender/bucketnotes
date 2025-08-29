@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import { useDebouncedCallback } from "use-debounce";
 import { useNavigate } from "react-router-dom";
 
@@ -73,7 +74,14 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
         Delimiter: delimiter,
       };
       let result = await s3.listFiles(props);
-      setFiles(result.files);
+      // filter files
+      let _files = result.files.filter(f => !!f?.Key);
+      if (_files.length > 0) {
+        if (!('/' +_files[1].Key).startsWith(FEATURE_FLAGS.ASSETS_BASE_PATH)) {
+          _files = _files.filter(f => VALID_FILE_EXTENSION.test(f.Key));
+        }
+      }
+      setFiles(_files || []);
     },
     // delay in ms
     500,
@@ -83,7 +91,7 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
     <div id="jump-to-file-bar">
       <input
         type="text"
-        placeholder="Jump to file..."
+        placeholder="Open file..."
         id="jump-to-file-bar-input"
         autoFocus
         onInput={(ev) => setSearchQuery(ev.target.value)}
@@ -91,7 +99,7 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
       />
       <div className="file-list">
         {(selectedFile || !selectedFile) && files.length > 0 &&
-          files.filter(f => !!f?.Key).map((f) => (
+          files.map((f) => (
             <div key={"file" + f.ETag} className={["file-item", selectedFile === f.Key ? 'selected' : ''].filter(v => !!v).join(' ')} onClick={() => showFile(f.Key)}>
               {f.Key}
             </div>
