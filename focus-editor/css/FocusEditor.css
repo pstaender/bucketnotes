@@ -108,9 +108,6 @@ focus-editor {
         background-color 0.05s,
         transform var(--transition-duration);
     }
-    /* .block:last-child {
-      padding-bottom: 2rem;
-    } */
 
     .code-block {
       background: var(--color-grey-light);
@@ -312,6 +309,14 @@ focus-editor.textarea {
   }
 }
 
+focus-editor.no-wrap {
+  & .focus-editor {
+    .block:not(.code-block) {
+      white-space: nowrap;
+    }
+  }
+}
+
 focus-editor[focus="paragraph"] {
   .block:not(.with-caret) {
     opacity: 0.15;
@@ -499,7 +504,9 @@ focus-editor:has(.block .table) {
   .table-header-text {
     font-weight: bold;
   }
-  .table-header-text, .table-header-separator, .table-row {
+  .table-header-text,
+  .table-header-separator,
+  .table-row {
     white-space: pre;
   }
   .table-header-separator {
@@ -574,9 +581,7 @@ focus-editor:has(.block .table) {
     position: relative;
     /* looks nicer, but the transition from markdown to table is harder :/ */
     line-height: 1em;
-    transform: translateY(
-      0.7em
-    );
+    transform: translateY(0.7em);
     > span {
       display: inline-block;
     }

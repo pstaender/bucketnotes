@@ -250,6 +250,7 @@ export function EditorWrapper({
         indentHeadings ? "indent-headings" : "",
         focusMode ? "highlight-current-paragraph" : "",
         fullWithEditor ? "full-width-editor" : "",
+        fullWithEditor ? "no-wrap" : "",
       ]
         .filter((v) => !!v)
         .join(" ")}
