@@ -126,14 +126,21 @@ export function unifyMarkdownTableCellWidths(markdownText) {
               if (header) {
                 let text = col.replace(/^(\s)*([:-]+)(\s*)$/, (str) => {
                   let matches = str.match(/^(\s)*([:-]+)(\s*)$/);
+                  let extraSpaceStart = matches[1] || "";
                   let spacer =
                     matches[2].length > 1 ? matches[2][1] : matches[2][0];
                   let padLength =
-                    cellWidths[c] - matches[2].length - matches[3].length - 1;
+                    cellWidths[c] -
+                    matches[2].length -
+                    (matches[3] || "").length -
+                    1;
+                  if (padLength < 0) {
+                    padLength = 0;
+                  }
                   let newText =
-                    col.substr(0, matches[1].length + 1) +
+                    col.substr(0, extraSpaceStart.length + 1) +
                     spacer.repeat(padLength) +
-                    col.substr(matches[1].length + 1, col.length);
+                    col.substr(extraSpaceStart.length + 1, col.length);
                   return newText;
                 });
                 return text;

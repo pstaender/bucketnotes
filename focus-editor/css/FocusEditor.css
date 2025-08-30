@@ -238,7 +238,7 @@ focus-editor {
         display: block;
         height: 3px;
         background: color-mix(in srgb, var(--color-grey) 30%, transparent);
-        top: calc(50% - 0.7px);
+        top: calc(50% - 1.5px);
         position: absolute;
         right: 0;
         width: calc(100% - var(--space-left));

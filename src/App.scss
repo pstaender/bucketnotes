@@ -234,6 +234,9 @@ html {
   padding-right: 0;
   li {
     padding: 0.1rem 1rem;
+    &.no-hover {
+      min-height: 1.9em;
+    }
   }
   @media screen and (max-width: 900px) {
     li:first-child:not(.no-hover) {
