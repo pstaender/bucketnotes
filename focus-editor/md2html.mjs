@@ -317,7 +317,9 @@ export function convertElementsWithMarkdownTablesToVisualTables(elements) {
       } else {
         columns.classList.add("table");
         columns.classList.add("table-row");
-        columns.classList.add(tableRows.length % 2 === 0 ? "table-row-odd" : "table-row-even");
+        columns.classList.add(
+          tableRows.length % 2 === 0 ? "table-row-odd" : "table-row-even",
+        );
         if (
           !elements[i + 1] ||
           !elements[i + 1].textContent.trim().endsWith("|")
@@ -331,6 +333,43 @@ export function convertElementsWithMarkdownTablesToVisualTables(elements) {
       tableRows.push(columns);
     } else {
       tableRows = [];
+    }
+  });
+}
+
+export function unifyTableCells(elements) {
+  let isInsideTable = false;
+  let maxCellWidths = [];
+
+  elements.forEach((e) => {
+    if (e.querySelector(".table-header-text.table")) {
+      isInsideTable = true;
+    }
+    if (!isInsideTable) {
+      return;
+    }
+
+    let text = [...e.querySelectorAll(".table > span")].map((el, i) => {
+      let length = el.textContent.substring(1, el.textContent.length - 1).length;
+      if (maxCellWidths[i] === undefined) {
+        maxCellWidths[i] = 0;
+      }
+      if (maxCellWidths[i] < length) {
+        maxCellWidths[i] = length;
+      }
+    });
+    // collect max text length for each column
+
+    if (e.querySelector(".table.table-row-last")) {
+      isInsideTable = false;
+      let previousElement = e;
+      while (previousElement.querySelector(".table")) {
+        previousElement.querySelectorAll(".table > span").forEach((el, i) => {
+          el.style.setProperty("--max-cell-width", `${maxCellWidths[i]}em`);
+        });
+        previousElement = previousElement.previousElementSibling;
+      }
+
     }
   });
 }

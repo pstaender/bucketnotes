@@ -18,7 +18,12 @@ import * as s3 from "./s3.js";
 import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
 import { FileList } from "./FileList.jsx";
-import { isTouch, VALID_FILE_EXTENSION, downloadFileByUrl } from "./helper.js";
+import {
+  isTouch,
+  VALID_FILE_EXTENSION,
+  downloadFileByUrl,
+  unifyMarkdownTableCellWidths,
+} from "./helper.js";
 import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
 import slugify from "slugify";
@@ -122,7 +127,7 @@ export function App({ version, appName } = {}) {
     localStorage.getItem("fullWithEditor") === "true",
   );
   const [rightTrimTextBeforeSave, setRightTrimTextBeforeSave] = useState(
-     localStorage.getItem("rightTrimTextBeforeSave") === "true",
+    localStorage.getItem("rightTrimTextBeforeSave") === "true",
   );
   const [globalKey, setGlobalKey] = useState(null);
 
@@ -444,7 +449,7 @@ export function App({ version, appName } = {}) {
   }, [registerGlobalKeyUp]);
 
   useEffect(() => {
-    if (globalKey === 'Escape') {
+    if (globalKey === "Escape") {
       setShowMoreOptions(false);
       setShowSideBar(false);
       setJumpToFile(false);
@@ -462,6 +467,14 @@ export function App({ version, appName } = {}) {
     }
 
     if (ev.metaKey || ev.ctrKey) {
+      if (ev.key.toLowerCase() === "t") {
+        let textWithUnifiedTables = unifyMarkdownTableCellWidths(text);
+        if (textWithUnifiedTables !== text) {
+          setInitialText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
+          setText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
+        }
+        return;
+      }
 
       if (ev.key.toLowerCase() === "s") {
         if (
@@ -508,12 +521,13 @@ export function App({ version, appName } = {}) {
     if (rightTrimTextBeforeSave && focusEditor) {
       //  rtrim manually + carefullyhtml content
       focusEditor.allChildren().forEach((block) => {
-        let html = block.innerHTML.replace(/(\s|&nbsp;)+$/, '');
+        let html = block.innerHTML.replace(/(\s|&nbsp;)+$/, "");
         if (html !== block.innerHTML) {
           block.innerHTML = html;
         }
       });
     }
+
     if (!fileKey || !VALID_FILE_EXTENSION.test(fileKey)) {
       updateStatusText("No file present to save to");
       if (autoCreateNewFile) {
@@ -664,7 +678,12 @@ export function App({ version, appName } = {}) {
   function handleOnChangeEditor(text, { caretPosition } = {}) {
     if (text !== undefined) {
       if (rightTrimTextBeforeSave) {
-        text = text.split("\n").map((l) => l.trimEnd()).join("\n").trimEnd() + `\n`;
+        text =
+          text
+            .split("\n")
+            .map((l) => l.trimEnd())
+            .join("\n")
+            .trimEnd() + `\n`;
       }
       setText(text);
       if (location?.pathname && VALID_FILE_EXTENSION.test(location?.pathname)) {
@@ -1085,7 +1104,8 @@ export function App({ version, appName } = {}) {
         while (fileName !== null && fileName?.length === 0) {
           fileName = prompt(
             "Enter file name",
-            folderPath.replace(/\/[^/]+[.]+[^/]+$/, '/').replace(/\/*$/, '/') + newNoteName()
+            folderPath.replace(/\/[^/]+[.]+[^/]+$/, "/").replace(/\/*$/, "/") +
+              newNoteName(),
           );
           if (fileName) {
             fileName = slugifyPath(fileName);
@@ -1339,7 +1359,10 @@ export function App({ version, appName } = {}) {
             }}
           >
             {jumpToFile && s3 && (
-              <JumpToFileBar s3={s3} setJumpToFile={setJumpToFile}></JumpToFileBar>
+              <JumpToFileBar
+                s3={s3}
+                setJumpToFile={setJumpToFile}
+              ></JumpToFileBar>
             )}
             <div className="button-more">
               <div className="icon">
@@ -1511,15 +1534,31 @@ export function App({ version, appName } = {}) {
                                   sortFilesByAttribute === "LastModified"
                                     ? "Key"
                                     : "LastModified";
-                                localStorage.setItem("sortFilesByAttribute", value);
+                                localStorage.setItem(
+                                  "sortFilesByAttribute",
+                                  value,
+                                );
                                 setSortFilesByAttribute(value);
                               }}
                             >
-                              Sort files ({sortFilesByAttribute === 'Key' ? 'name' : 'modified'} → {sortFilesByAttribute === "LastModified" ? "name" : "modified"})
+                              Sort files (
+                              {sortFilesByAttribute === "Key"
+                                ? "name"
+                                : "modified"}{" "}
+                              →{" "}
+                              {sortFilesByAttribute === "LastModified"
+                                ? "name"
+                                : "modified"}
+                              )
                             </li>
                             <li
                               data-is-more-options-item="true"
-                              className={['border-bottom', offlineStorageEnabled ? "active" : null].filter((v) => !!v).join(" ")}
+                              className={[
+                                "border-bottom",
+                                offlineStorageEnabled ? "active" : null,
+                              ]
+                                .filter((v) => !!v)
+                                .join(" ")}
                               onClick={async () => {
                                 let value = !offlineStorageEnabled;
                                 if (value) {
@@ -1557,26 +1596,61 @@ export function App({ version, appName } = {}) {
                             <li
                               data-is-more-options-item="true"
                               onClick={(ev) => {
-                                setConvertHTMLToMarkdown(!convertHTMLToMarkdown);
+                                setConvertHTMLToMarkdown(
+                                  !convertHTMLToMarkdown,
+                                );
                                 localStorage.setItem(
                                   "convertHTMLToMarkdown",
                                   convertHTMLToMarkdown ? "false" : "true",
                                 );
                               }}
-                              className={[convertHTMLToMarkdown ? "active" : null, "border-bottom"].filter((v) => !!v).join(" ")}
+                              className={[
+                                convertHTMLToMarkdown ? "active" : null,
+                                "border-bottom",
+                              ]
+                                .filter((v) => !!v)
+                                .join(" ")}
                             >
                               Convert HTML to MD on paste
                             </li>
                             <li
+                              onClick={() => {
+                                let textWithUnifiedTables =
+                                  unifyMarkdownTableCellWidths(text);
+                                if (textWithUnifiedTables !== text) {
+                                  setInitialText(
+                                    unifyMarkdownTableCellWidths(
+                                      textWithUnifiedTables,
+                                    ),
+                                  );
+                                  setText(
+                                    unifyMarkdownTableCellWidths(
+                                      textWithUnifiedTables,
+                                    ),
+                                  );
+                                }
+                              }}
+                            >
+                              Unify column widths{" "}
+                              <span className="shortcut">Ctrl + ⌘ + T</span>
+                            </li>
+                            <li
                               data-is-more-options-item="true"
                               onClick={(ev) => {
-                                setRightTrimTextBeforeSave(!rightTrimTextBeforeSave);
+                                setRightTrimTextBeforeSave(
+                                  !rightTrimTextBeforeSave,
+                                );
                                 localStorage.setItem(
                                   "rightTrimTextBeforeSave",
                                   rightTrimTextBeforeSave ? "false" : "true",
                                 );
                               }}
-                              className={[rightTrimTextBeforeSave ? "active" : null, "border-bottom"].filter((v) => !!v).join(" ")}
+                              className={[
+                                rightTrimTextBeforeSave ? "active" : null,
+                                "border-bottom",
+                              ]
+                                .filter((v) => !!v)
+                                .join(" ")}
                             >
                               Remove trailing spaces on Save
                             </li>

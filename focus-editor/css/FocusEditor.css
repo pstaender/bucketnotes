@@ -470,6 +470,7 @@ focus-editor:has(.block .table) {
     span {
       position: relative;
       --height-offest: 0.9em;
+      --max-cell-width: inherit;
       &:first-child:before {
         content: "";
         position: absolute;

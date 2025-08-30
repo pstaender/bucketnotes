@@ -3,7 +3,7 @@ import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as s3 from "./s3";
-import { debounce, downloadFileByUrl, createTurndownService } from "./helper";
+import { debounce, downloadFileByUrl, createTurndownService, unifyMarkdownTableCellWidths } from "./helper";
 
 const localStorage = window.localStorage;
 

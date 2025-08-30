@@ -80,5 +80,51 @@ export function createTurndownService() {
   return turndownService;
 }
 
+export function unifyMarkdownTableCellWidths(markdownText) {
+  const lines = markdownText.split("\n");
+  let tableStartsInLine = null;
+  let tableRangesInLines = [];
+
+  lines.forEach((line, i) => {
+    if (
+      tableStartsInLine === null &&
+      line.startsWith("|") &&
+      line.endsWith("|")
+    ) {
+      tableStartsInLine = i;
+    }
+    if (
+      tableStartsInLine !== null &&
+      tableStartsInLine >= 0 &&
+      (lines[i + 1] === undefined ||
+        !lines[i + 1].startsWith("|") ||
+        !lines[i + 1].endsWith("|"))
+    ) {
+
+      tableRangesInLines.push([tableStartsInLine, i]);
+      let cellWidths = [];
+      for (let j = tableStartsInLine; j <= i; j++) {
+        lines[j].split("|").slice(1, -1).forEach((col, c) => {
+          if (cellWidths[c] === undefined) {
+            cellWidths[c] = 0;
+          }
+          if (col.length > cellWidths[c]) {
+            cellWidths[c] = col.length;
+          }
+        });
+      }
+      // rpad table
+      for (let j = tableStartsInLine; j <= i; j++) {
+        lines[j] = '|' + lines[j].split("|").slice(1, -1).map((col, c) => {
+          return col.padEnd(cellWidths[c], " ");
+        }).join("|") + '|';
+      };
+      tableStartsInLine = null;
+
+    }
+  });
+  return lines.join(`\n`);
+}
+
 export const VALID_FILE_EXTENSION =
   /\.(txt|md|markdown|csv|html|html|info|tex|xml|xhtml)$/i;
