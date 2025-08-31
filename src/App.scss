@@ -24,6 +24,7 @@
   --max-content-width: inherit; //50rem;
   --primary-color: #00c7f9;
   --file-list-width: 20rem;
+  --font-size-very-small: 0.6rem;
   --font-size-small: 0.8rem;
   --sidebar-width: 30rem;
   @include css-colors;
@@ -885,18 +886,17 @@ button {
   width: var(--width);
   position: fixed;
   left: calc(50% - (var(--width) / 2) - 1rem);
-  /* height: var(--height); */
   top: calc(35% - (var(--height) / 2));
   background: var(--background-color);
   box-shadow: rgba(50, 50, 50, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px;
   z-index: 999;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0;
   border-radius: 4px;
   max-height: 50vh;
   overflow-y: auto;
   padding-top: 0;
   input {
-    width: 100%;
+    width: calc(100% - 2rem);
     border: 0px;
     outline: none;
     font-size: 1.2rem;
@@ -905,14 +905,15 @@ button {
     font-family: var(--font-family);
     font-size: 1rem;
     padding: 0.75rem 0;
-    position: sticky;
-    top: 0;
     background: var(--background-color);
     margin-top: 0.5rem;
-    /* font-family: var(--font-family-sans); */
+    margin: 0 1rem;
   }
   .file-list {
     min-height: 2rem;
+    overflow-y: auto;
+    max-height: calc(50vh - 4rem);
+    padding: 0 1rem;
     .file-item {
       padding: 0.5rem 0;
       &.selected {
@@ -921,6 +922,14 @@ button {
       &:hover {
         text-decoration: underline;
         cursor: pointer;
+      }
+      &.clear-history {
+        font-size: var(--font-size-very-small);
+        text-align: right;
+        color: var(--grey-color);
+        &:hover {
+          color: currentColor;
+        }
       }
     }
 

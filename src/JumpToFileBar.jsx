@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import { useDebouncedCallback } from "use-debounce";
 import { useNavigate } from "react-router-dom";
@@ -10,9 +10,17 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
+  const fileListRef = useRef(null);
+  const [showClearHistory, setShowClearHistory] = useState(false);
 
   useEffect(() => {
+    setShowClearHistory(!searchQuery);
     if (!searchQuery) {
+      setFiles(localStorage.getItem("latestLoadedFiles") ? JSON.parse(localStorage.getItem("latestLoadedFiles")).map(v => {
+        return {
+          Key: v,
+        };
+      }).reverse() : []);
       return;
     }
     debounced(searchQuery);
@@ -47,6 +55,9 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
             currentIndex = files.length - 1;
           }
         }
+      }
+      if (fileListRef?.current) {
+        fileListRef.current.children[currentIndex].scrollIntoView();
       }
       setSelectedFile(files[currentIndex].Key);
     }
@@ -97,13 +108,21 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
         onInput={(ev) => setSearchQuery(ev.target.value)}
         onKeyDown={handleKeyDown}
       />
-      <div className="file-list">
+      <div className="file-list" ref={fileListRef}>
         {(selectedFile || !selectedFile) && files.length > 0 &&
           files.map((f) => (
-            <div key={"file" + f.ETag} className={["file-item", selectedFile === f.Key ? 'selected' : ''].filter(v => !!v).join(' ')} onClick={() => showFile(f.Key)}>
+            <div key={"file" + (f.ETag || f.Key)} className={["file-item", selectedFile === f.Key ? 'selected' : ''].filter(v => !!v).join(' ')} onClick={() => showFile(f.Key)}>
               {f.Key}
             </div>
           ))}
+          {showClearHistory && files.length > 0 && (
+            <div className="file-item clear-history" onClick={() => {
+              localStorage.removeItem("latestLoadedFiles");
+              setFiles([]);
+            }}>
+              Clear History
+            </div>
+          )}
       </div>
     </div>
   );

@@ -1085,6 +1085,17 @@ export function App({ version, appName } = {}) {
             await loadFile(filename);
             setFolderPath(filename);
             setReadonly(false);
+            try {
+              let filesHistory = localStorage.getItem("latestLoadedFiles") ? JSON.parse(localStorage.getItem("latestLoadedFiles")) : [];
+              filesHistory.push(filename);
+              filesHistory = [...new Set(filesHistory)];
+              localStorage.setItem("latestLoadedFiles", JSON.stringify(filesHistory));
+            } catch (_) {
+              console.error(_);
+              localStorage.setItem("latestLoadedFiles", JSON.stringify([]));
+            }
+            console.log(localStorage.getItem("latestLoadedFiles"));
+
             localStorage.setItem("new-unsaved-text", "");
             // otherwise the Y scroll position is sometimes a bit off
             setTimeout(() => window.scrollTo(null, 0), 100);
