@@ -23,6 +23,7 @@ import {
   VALID_FILE_EXTENSION,
   downloadFileByUrl,
   unifyMarkdownTableCellWidths,
+  sortS3FilesByAttribute
 } from "./helper.js";
 import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
@@ -242,15 +243,7 @@ export function App({ version, appName } = {}) {
       files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
     }
 
-    if (sortFilesByAttribute === "LastModified") {
-      files = files.sort((a, b) => {
-        return new Date(b.LastModified) - new Date(a.LastModified);
-      });
-    } else if (sortFilesByAttribute === "Key") {
-      files = files.sort((a, b) => {
-        return a.Key.localeCompare(b.Key);
-      });
-    }
+    files = sortS3FilesByAttribute(files, sortFilesByAttribute);
 
     let folders =
       commonPrefixes.filter((f) => f?.Prefix).map((f) => f.Prefix) || [];
@@ -1373,6 +1366,7 @@ export function App({ version, appName } = {}) {
               <JumpToFileBar
                 s3={s3}
                 setJumpToFile={setJumpToFile}
+                sortFilesByAttribute={sortFilesByAttribute}
               ></JumpToFileBar>
             )}
             <div className="button-more">

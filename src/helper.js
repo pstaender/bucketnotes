@@ -156,5 +156,19 @@ export function unifyMarkdownTableCellWidths(markdownText) {
   return lines.join(`\n`);
 }
 
+export function sortS3FilesByAttribute(files, attribute) {
+  if (attribute === "LastModified") {
+    files = files.sort((a, b) => {
+      return new Date(b.LastModified) - new Date(a.LastModified);
+    });
+  } else if (attribute === "Key") {
+    files = files.sort((a, b) => {
+      return a.Key.localeCompare(b.Key);
+    });
+  }
+  return files;
+}
+
+
 export const VALID_FILE_EXTENSION =
   /\.(txt|md|markdown|csv|html|html|info|tex|xml|xhtml)$/i;

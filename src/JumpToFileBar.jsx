@@ -3,9 +3,9 @@ import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import { useDebouncedCallback } from "use-debounce";
 import { useNavigate } from "react-router-dom";
 
-import { VALID_FILE_EXTENSION } from "./helper.js";
+import { VALID_FILE_EXTENSION, sortS3FilesByAttribute } from "./helper.js";
 
-export function JumpToFileBar({ s3, setJumpToFile }) {
+export function JumpToFileBar({ s3, setJumpToFile, sortFilesByAttribute }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -16,11 +16,17 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
   useEffect(() => {
     setShowClearHistory(!searchQuery);
     if (!searchQuery) {
-      setFiles(localStorage.getItem("latestLoadedFiles") ? JSON.parse(localStorage.getItem("latestLoadedFiles")).map(v => {
-        return {
-          Key: v,
-        };
-      }).reverse() : []);
+      setFiles(
+        localStorage.getItem("latestLoadedFiles")
+          ? JSON.parse(localStorage.getItem("latestLoadedFiles"))
+              .map((v) => {
+                return {
+                  Key: v,
+                };
+              })
+              .reverse()
+          : [],
+      );
       return;
     }
     debounced(searchQuery);
@@ -31,7 +37,7 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
     setJumpToFile(false);
   }
 
-  const handleKeyDown = function(ev) {
+  const handleKeyDown = function (ev) {
     if (ev.key === "Enter" && selectedFile) {
       showFile(selectedFile);
     }
@@ -61,7 +67,7 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
       }
       setSelectedFile(files[currentIndex].Key);
     }
-  }
+  };
 
   const debounced = useDebouncedCallback(
     async (value) => {
@@ -86,12 +92,13 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
       };
       let result = await s3.listFiles(props);
       // filter files
-      let _files = result.files.filter(f => !!f?.Key);
+      let _files = result.files.filter((f) => !!f?.Key);
       if (_files && _files.length > 0) {
-        if (!('/' +_files[0].Key).startsWith(FEATURE_FLAGS.ASSETS_BASE_PATH)) {
-          _files = _files.filter(f => VALID_FILE_EXTENSION.test(f.Key));
+        if (!("/" + _files[0].Key).startsWith(FEATURE_FLAGS.ASSETS_BASE_PATH)) {
+          _files = _files.filter((f) => VALID_FILE_EXTENSION.test(f.Key));
         }
       }
+      _files = sortS3FilesByAttribute(_files, sortFilesByAttribute);
       setFiles(_files || []);
     },
     // delay in ms
@@ -109,20 +116,30 @@ export function JumpToFileBar({ s3, setJumpToFile }) {
         onKeyDown={handleKeyDown}
       />
       <div className="file-list" ref={fileListRef}>
-        {(selectedFile || !selectedFile) && files.length > 0 &&
+        {(selectedFile || !selectedFile) &&
+          files.length > 0 &&
           files.map((f) => (
-            <div key={"file" + (f.ETag || f.Key)} className={["file-item", selectedFile === f.Key ? 'selected' : ''].filter(v => !!v).join(' ')} onClick={() => showFile(f.Key)}>
+            <div
+              key={"file" + (f.ETag || f.Key)}
+              className={["file-item", selectedFile === f.Key ? "selected" : ""]
+                .filter((v) => !!v)
+                .join(" ")}
+              onClick={() => showFile(f.Key)}
+            >
               {f.Key}
             </div>
           ))}
-          {showClearHistory && files.length > 0 && (
-            <div className="file-item clear-history" onClick={() => {
+        {showClearHistory && files.length > 0 && (
+          <div
+            className="file-item clear-history"
+            onClick={() => {
               localStorage.removeItem("latestLoadedFiles");
               setFiles([]);
-            }}>
-              Clear History
-            </div>
-          )}
+            }}
+          >
+            Clear History
+          </div>
+        )}
       </div>
     </div>
   );
