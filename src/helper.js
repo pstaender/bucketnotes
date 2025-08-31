@@ -40,7 +40,6 @@ export function debounce(func, wait, immediate) {
 
 // from: https://mojoauth.com/hashing/sha-1-in-javascript-in-browser/
 export async function sha1(input) {
-
   if (typeof input === "String") {
     // Encode the input string to a Uint8Array
     const encoder = new TextEncoder();
@@ -60,7 +59,7 @@ export async function sha1(input) {
 }
 
 export function downloadFileByUrl(url) {
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = url.split("/").pop();
   document.body.appendChild(link);
@@ -78,6 +77,83 @@ export function createTurndownService() {
   });
   turndownService.use(gfm);
   return turndownService;
+}
+
+export function unifyMarkdownTableCellWidths(markdownText) {
+  const lines = markdownText.split("\n");
+  let tableStartsInLine = null;
+  let tableRangesInLines = [];
+
+  lines.forEach((line, i) => {
+    if (
+      tableStartsInLine === null &&
+      line.startsWith("|") &&
+      line.endsWith("|")
+    ) {
+      tableStartsInLine = i;
+    }
+    if (
+      tableStartsInLine !== null &&
+      tableStartsInLine >= 0 &&
+      (lines[i + 1] === undefined ||
+        !lines[i + 1].startsWith("|") ||
+        !lines[i + 1].endsWith("|"))
+    ) {
+      tableRangesInLines.push([tableStartsInLine, i]);
+      let cellWidths = [];
+      for (let j = tableStartsInLine; j <= i; j++) {
+        lines[j]
+          .split("|")
+          .slice(1, -1)
+          .forEach((col, c) => {
+            if (cellWidths[c] === undefined) {
+              cellWidths[c] = 0;
+            }
+            if (col.length > cellWidths[c]) {
+              cellWidths[c] = col.length;
+            }
+          });
+      }
+      // rpad table
+      for (let j = tableStartsInLine; j <= i; j++) {
+        lines[j] =
+          "|" +
+          lines[j]
+            .split("|")
+            .slice(1, -1)
+            .map((col, c) => {
+              let header = col.match(/^\s*([:-]+)\s*$/);
+              if (header) {
+                let text = col.replace(/^(\s)*([:-]+)(\s*)$/, (str) => {
+                  let matches = str.match(/^(\s)*([:-]+)(\s*)$/);
+                  let extraSpaceStart = matches[1] || "";
+                  let spacer =
+                    matches[2].length > 1 ? matches[2][1] : matches[2][0];
+                  let padLength =
+                    cellWidths[c] -
+                    matches[2].length -
+                    (matches[3] || "").length -
+                    1;
+                  if (padLength < 0) {
+                    padLength = 0;
+                  }
+                  let newText =
+                    col.substr(0, extraSpaceStart.length + 1) +
+                    spacer.repeat(padLength) +
+                    col.substr(extraSpaceStart.length + 1, col.length);
+                  return newText;
+                });
+                return text;
+              }
+              return col.padEnd(cellWidths[c], " ");
+            })
+            .join("|") +
+          "|";
+      }
+      tableStartsInLine = null;
+    }
+  });
+  return lines.join(`\n`);
 }
 
 export const VALID_FILE_EXTENSION =
