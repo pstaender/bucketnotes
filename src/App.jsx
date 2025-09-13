@@ -595,9 +595,15 @@ export function App({ version, appName } = {}) {
     }
 
     newFileName = slugifyPath(newFileName.trim());
+
+    if (!FEATURE_FLAGS.ASSETS_BASE_PATH.startsWith(newFileName)) {
+      return;
+    }
+
     if (!VALID_FILE_EXTENSION.test(newFileName)) {
       newFileName += ".txt";
     }
+
 
     updateStatusText(`Renaming '${fileKey}' to '${newFileName}'`);
     setReadonly(true);
@@ -1087,7 +1093,6 @@ export function App({ version, appName } = {}) {
               console.error(_);
               localStorage.setItem("latestLoadedFiles", JSON.stringify([]));
             }
-            console.log(localStorage.getItem("latestLoadedFiles"));
 
             localStorage.setItem("new-unsaved-text", "");
             // otherwise the Y scroll position is sometimes a bit off
