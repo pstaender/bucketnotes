@@ -224,6 +224,7 @@ export function addParagraphClasses(elements, document) {
 
     let html = el.innerHTML;
     html = html.replace(/(!)*\[(.+?)\]\((.*)\)/g, (...matches) => {
+
       let classes = ["link", matches[1] ? "image" : ""]
         .filter((v) => !!v)
         .join(" ");
@@ -348,17 +349,6 @@ export function unifyTableCells(elements) {
     if (!isInsideTable) {
       return;
     }
-
-    let text = [...e.querySelectorAll(".table > span")].map((el, i) => {
-      let length = el.textContent.substring(1, el.textContent.length - 1).length;
-      if (maxCellWidths[i] === undefined) {
-        maxCellWidths[i] = 0;
-      }
-      if (maxCellWidths[i] < length) {
-        maxCellWidths[i] = length;
-      }
-    });
-    // collect max text length for each column
 
     if (e.querySelector(".table.table-row-last")) {
       isInsideTable = false;
