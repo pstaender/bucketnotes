@@ -507,11 +507,13 @@ focus-editor .focus-editor {
   opacity: 0;
   pointer-events: none;
   bottom: 1rem;
-  right: 1rem;
+  left: 1.5rem;
   .close-button {
     position: absolute;
     top: calc(50% - 0.5em);
-    right: -0.8rem;
+    right: -1.2rem;
+    z-index: 1;
+    font-weight: bold;
     &:hover {
       cursor: pointer;
     }

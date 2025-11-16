@@ -179,7 +179,7 @@ export function EditorWrapper({
                 audio.controls = true;
                 preview.appendChild(audio);
                 let div = document.createElement("div");
-                div.innerText = 'x';
+                div.innerText = '⨯'; //'❎';//'✗'
                 div.classList.add("close-button");
                 div.addEventListener("click", (ev) => {
                   preview.classList.remove("visible");

@@ -23,7 +23,7 @@ import {
   VALID_FILE_EXTENSION,
   downloadFileByUrl,
   unifyMarkdownTableCellWidths,
-  sortS3FilesByAttribute
+  sortS3FilesByAttribute,
 } from "./helper.js";
 import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
@@ -39,9 +39,12 @@ function slugifyPath(s) {
     .split("/")
     .map((s) => {
       // replace all non-word characters with _, otherwise we get url encoded characters :(
-      return slugify(s, {
+      return slugify(s.trim(), {
         replacement: "_",
-        locale: navigator.language.split("-")[0],
+        trim: false,
+        locale: navigator.language
+          ? navigator.language.split("-")[0]
+          : undefined,
       });
     })
     .join("/");
@@ -590,20 +593,21 @@ export function App({ version, appName } = {}) {
       }
     }
 
+    console.log({ newFileName }, slugifyPath(fileKey));
+
     if (newFileName === null || slugifyPath(fileKey) === newFileName) {
+      updateStatusText(`No change in filename detected… skipping`);
       return;
     }
 
     newFileName = slugifyPath(newFileName.trim());
 
-    if (!FEATURE_FLAGS.ASSETS_BASE_PATH.startsWith(newFileName)) {
-      return;
-    }
-
-    if (!VALID_FILE_EXTENSION.test(newFileName)) {
+    if (
+      !FEATURE_FLAGS.ASSETS_BASE_PATH.startsWith(newFileName) &&
+      !VALID_FILE_EXTENSION.test(newFileName)
+    ) {
       newFileName += ".txt";
     }
-
 
     updateStatusText(`Renaming '${fileKey}' to '${newFileName}'`);
     setReadonly(true);
@@ -1085,10 +1089,15 @@ export function App({ version, appName } = {}) {
             setFolderPath(filename);
             setReadonly(false);
             try {
-              let filesHistory = localStorage.getItem("latestLoadedFiles") ? JSON.parse(localStorage.getItem("latestLoadedFiles")) : [];
+              let filesHistory = localStorage.getItem("latestLoadedFiles")
+                ? JSON.parse(localStorage.getItem("latestLoadedFiles"))
+                : [];
               filesHistory.push(filename);
               filesHistory = [...new Set(filesHistory)];
-              localStorage.setItem("latestLoadedFiles", JSON.stringify(filesHistory));
+              localStorage.setItem(
+                "latestLoadedFiles",
+                JSON.stringify(filesHistory),
+              );
             } catch (_) {
               console.error(_);
               localStorage.setItem("latestLoadedFiles", JSON.stringify([]));
