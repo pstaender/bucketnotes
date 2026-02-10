@@ -4,7 +4,7 @@ import LogoDark from "../logo-dark.svg";
 import GitHubLogo from "../src/icons/github.svg";
 import * as encrypt from "./encrypt";
 import { useNavigate } from "react-router-dom";
-import Markdown from 'react-markdown'
+import Markdown from "react-markdown";
 
 export function Login({ setCredentials, errorMessage, setErrorMessage }) {
   const [region, setRegion] = useState(
@@ -96,7 +96,9 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
       sessionStorage.setItem("tempPassword", randomTempPassword);
       return navigate(0);
     }
-    setErrorMessage('Please check password or `Login with other S3 credentials`');
+    setErrorMessage(
+      "Please check password or `Login with other S3 credentials`",
+    );
   }
 
   function handleClickOnRelogin() {
@@ -110,7 +112,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
       if (rememberLogin) {
         console.debug("Setting credentials encrypted");
         await encrypt.setEncryptionPassword(
-          tempPassword || '',
+          tempPassword || "",
           localStorage,
           sessionStorage,
         );
@@ -181,7 +183,11 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
             ></img>
           </picture>
         </div>
-        {errorMessage && <div className="error"><Markdown>{errorMessage}</Markdown></div>}
+        {errorMessage && (
+          <div className="error">
+            <Markdown>{errorMessage}</Markdown>
+          </div>
+        )}
         {showPasswordLogin ? (
           <form onSubmit={handlePasswordOnlySubmit}>
             <div className="input">
@@ -214,7 +220,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                   id="s3-region"
                   autoCapitalize="off"
                   placeholder="e.g. eu-central-1"
-                  value={region || ''}
+                  value={region || ""}
                   required={true}
                   onChange={(ev) => setRegion(ev.target.value)}
                 />
@@ -229,7 +235,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                   placeholder="mys3bucket"
                   autoFocus={true}
                   required={true}
-                  value={bucketName || ''}
+                  value={bucketName || ""}
                   onChange={(ev) => setBucketName(ev.target.value)}
                 />
               </div>
@@ -243,7 +249,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                 placeholder="AKIAXXXXXXXX…"
                 autoComplete="username"
                 required={true}
-                value={accessKeyId || ''}
+                value={accessKeyId || ""}
                 onChange={(ev) => setAccessKeyId(ev.target.value)}
               />
             </div>
@@ -254,7 +260,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                 id="s3-secret-access-key"
                 required={true}
                 autoComplete="password"
-                value={secretAccessKey || ''}
+                value={secretAccessKey || ""}
                 onChange={(ev) => setSecretAccessKey(ev.target.value)}
               />
             </div>
@@ -316,10 +322,9 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
           target="_blank"
           className="icon"
         >
-          <img src={GitHubLogo} className="icon" alt="GitHub"></img>
+          <img src={GitHubLogo} className="icon" alt="GitHub"></img>v
+          {import.meta.env.PACKAGE_VERSION} by philipp staender
         </a>
-        bucketnotes is crafted with ❤️ by&nbsp;
-        <a href="https://github.com/pstaender">pstaender</a>
       </div>
     </>
   );

@@ -1,10 +1,11 @@
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import react from "@vitejs/plugin-react";
+import version from "vite-plugin-package-version";
 
 import topLevelAwait from "vite-plugin-top-level-await";
 
-let base = '/'
+let base = "/";
 if (process.env.BUILD_BASE_PATH) {
   base = process.env.BUILD_BASE_PATH;
 }
@@ -24,6 +25,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    version(),
     topLevelAwait({
       // The export name of top-level await promise for each chunk module
       promiseExportName: "__tla",

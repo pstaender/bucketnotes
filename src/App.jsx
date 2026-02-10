@@ -3,7 +3,7 @@ import moreIcon from "./icons/more.svg";
 import "./App.scss";
 
 import { S3Client } from "@aws-sdk/client-s3";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Login } from "./Login.jsx";
 import { useDebouncedCallback } from "use-debounce";
 
@@ -79,6 +79,15 @@ export function App({ version, appName } = {}) {
   const [fileVersions, setFileVersions] = useState([]);
   const [errorMessage, setErrorMessage] = useState(null);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [showLastUsedFiles, setShowLastUsedFiles] = useState(false);
+  const [openLastUsedFileOnStartup, setOpenLastUsedFileOnStartup] = useState(
+    localStorage.getItem("openLastUsedFileOnStartup") === "true",
+  );
+  const [lastUsedFiles, setLastUsedFiles] = useState(
+    localStorage.getItem("lastUsedFiles")
+      ? JSON.parse(localStorage.getItem("lastUsedFiles"))
+      : [],
+  );
   const [focusMode, setFocusMode] = useState(
     sessionStorage.getItem("focusMode") === "true",
   );
@@ -454,6 +463,22 @@ export function App({ version, appName } = {}) {
       return;
     }
   }, [globalKey]);
+
+  useMemo(() => {
+    if (openLastUsedFileOnStartup) {
+      localStorage.setItem("openLastUsedFileOnStartup", "true");
+    } else {
+      localStorage.setItem("openLastUsedFileOnStartup", "false");
+      setLastUsedFiles([]);
+    }
+  }, [openLastUsedFileOnStartup]);
+
+  useMemo(() => {
+    localStorage.setItem(
+      "lastUsedFiles",
+      JSON.stringify([...new Set(lastUsedFiles)]),
+    );
+  }, [lastUsedFiles]);
 
   async function handleKeyDown(ev) {
     if ((ev.metaKey || ev.ctrKey) && ev.key === ";") {
@@ -1037,6 +1062,7 @@ export function App({ version, appName } = {}) {
     if (!s3Client || location.pathname === "/") {
       return;
     }
+
     // load a bit later, to prevent to be overwritten by the / path loading
     // this should only be applied on initial page calls
     if (location.pathname.endsWith("/")) {
@@ -1045,6 +1071,11 @@ export function App({ version, appName } = {}) {
         setShowSideBar(true);
         setFolderPath(decodeURI(location.pathname));
       }, 100);
+    } else {
+      let files = [
+        ...new Set([...[location.pathname], ...lastUsedFiles]),
+      ].filter((v) => typeof v === "string");
+      setLastUsedFiles(files.slice(0, 6));
     }
   }, [s3Client, location]);
 
@@ -1070,6 +1101,9 @@ export function App({ version, appName } = {}) {
     (async () => {
       if (location.pathname === "/") {
         loadS3Files();
+        if (openLastUsedFileOnStartup && lastUsedFiles[0]) {
+          navigate(lastUsedFiles[0]);
+        }
         return;
       }
 
@@ -1699,6 +1733,17 @@ export function App({ version, appName } = {}) {
                             >
                               Full-Width editing
                             </li>
+                            <div
+                              style={{
+                                textAlign: "right",
+                                fontSize: "0.8em",
+                                padding: "0.75rem 1rem",
+                                paddingTop: 0,
+                                opacity: 0.3,
+                              }}
+                            >
+                              v{import.meta.env.PACKAGE_VERSION}
+                            </div>
                           </ul>
                         </div>
                       )}
@@ -1736,6 +1781,47 @@ export function App({ version, appName } = {}) {
                   >
                     Focus <span className="shortcut">⌘ + .</span>
                   </li>
+                  {true && (
+                    <li
+                      className={["border-top"].filter((v) => !!v).join(" ")}
+                      data-is-more-options-item="true"
+                      style={{ position: "relative" }}
+                      onMouseEnter={() => setShowLastUsedFiles(true)}
+                      onMouseLeave={() => setShowLastUsedFiles(false)}
+                    >
+                      Last used files
+                      {showLastUsedFiles && (
+                        <div className="more-options">
+                          <ul className="menu">
+                            {lastUsedFiles?.length > 0 &&
+                              lastUsedFiles.map((f) => (
+                                <li
+                                  key={"last-opened-file" + slugify(f)}
+                                  className="filename"
+                                  onClick={() => navigate(f)}
+                                >
+                                  {f.replace(/^\/+/, "")}
+                                </li>
+                              ))}
+                            <li
+                              className={[
+                                openLastUsedFileOnStartup ? "active" : "",
+                                "border-top",
+                              ].join(" ")}
+                              onClick={(ev) => {
+                                setOpenLastUsedFileOnStartup(
+                                  !openLastUsedFileOnStartup,
+                                );
+                                ev.preventDefault();
+                              }}
+                            >
+                              Remember last opened file(s)
+                            </li>
+                          </ul>
+                        </div>
+                      )}
+                    </li>
+                  )}
                   <li onClick={logout} className="border-top border-bottom">
                     Logout
                   </li>
