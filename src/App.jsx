@@ -481,13 +481,13 @@ export function App({ version, appName } = {}) {
   }, [lastUsedFiles]);
 
   async function handleKeyDown(ev) {
-    if ((ev.metaKey || ev.ctrKey) && ev.key === ";") {
+    if ((ev.metaKey || ev.ctrlKey) && ev.key === ";") {
       setShowSideBar(!showSideBar);
       ev.preventDefault();
       return;
     }
 
-    if (ev.metaKey || ev.ctrKey) {
+    if (ev.metaKey || ev.ctrlKey) {
       if (ev.key.toLowerCase() === "t") {
         let textWithUnifiedTables = unifyMarkdownTableCellWidths(text);
         if (textWithUnifiedTables !== text) {
