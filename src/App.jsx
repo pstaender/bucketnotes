@@ -1436,6 +1436,7 @@ export function App({ version, appName } = {}) {
                     }
                     setShowMoreOptions(false);
                     setShowAdditionalMenuOption(false);
+                    setShowLastUsedFiles(false);
                   }}
                 >
                   <li
@@ -1806,8 +1807,10 @@ export function App({ version, appName } = {}) {
                             <li
                               className={[
                                 openLastUsedFileOnStartup ? "active" : "",
-                                "border-top",
-                              ].join(" ")}
+                                lastUsedFiles?.length > 0 ? "border-top" : "",
+                              ]
+                                .filter((v) => !!v)
+                                .join(" ")}
                               onClick={(ev) => {
                                 setOpenLastUsedFileOnStartup(
                                   !openLastUsedFileOnStartup,
@@ -1815,7 +1818,7 @@ export function App({ version, appName } = {}) {
                                 ev.preventDefault();
                               }}
                             >
-                              Remember last opened file(s)
+                              Remember last used file(s)
                             </li>
                           </ul>
                         </div>
