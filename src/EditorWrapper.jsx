@@ -2,6 +2,84 @@ import { Editor as TinyMDE } from "tiny-markdown-editor";
 import { useEffect, useRef } from "react";
 import { debounce, createTurndownService } from "./helper";
 
+// Elements TinyMDE renders as part of a link/image construct. It has no
+// per-token wrapper, so a double click anywhere inside one of these needs to
+// walk to the sibling that actually carries the destination URL.
+const LINK_PART_CLASSES = [
+  "TMLink",
+  "TMImage",
+  "TMLinkDestination",
+  "TMImageDestination",
+  "TMLinkTitle",
+  "TMImageTitle",
+  "TMMark_TMLink",
+  "TMMark_TMImage",
+];
+
+function isLinkPart(el) {
+  return !!el && LINK_PART_CLASSES.some((c) => el.classList.contains(c));
+}
+
+// Resolves the URL/path behind a double-clicked link, image, or autolink
+// span, or null if the click didn't land on one.
+function getLinkUrlFromElement(target) {
+  const autolink = target.closest(".TMAutolink");
+  if (autolink) {
+    const text = autolink.textContent.trim();
+    if (!text) {
+      return null;
+    }
+    if (/^(https?|ftp|mailto|xmpp):/i.test(text)) {
+      return text;
+    }
+    if (/^www\./i.test(text)) {
+      return `http://${text}`;
+    }
+    return text.includes("@") ? `mailto:${text}` : text;
+  }
+
+  const marker = target.closest(LINK_PART_CLASSES.map((c) => `.${c}`).join(", "));
+  if (!marker || !marker.parentElement) {
+    return null;
+  }
+
+  const siblings = Array.from(marker.parentElement.children);
+  const index = siblings.indexOf(marker);
+  let start = index;
+  while (start > 0 && isLinkPart(siblings[start - 1])) {
+    start--;
+  }
+  let end = index;
+  while (end < siblings.length - 1 && isLinkPart(siblings[end + 1])) {
+    end++;
+  }
+  for (let i = start; i <= end; i++) {
+    if (
+      siblings[i].classList.contains("TMLinkDestination") ||
+      siblings[i].classList.contains("TMImageDestination")
+    ) {
+      const text = siblings[i].textContent.trim();
+      return text || null;
+    }
+  }
+  return null;
+}
+
+function openLink(url) {
+  let target;
+  try {
+    target = new URL(url, window.location.href);
+  } catch {
+    return;
+  }
+  const isHttpLike = ["http:", "https:", "ftp:"].includes(target.protocol);
+  if (isHttpLike && target.origin !== window.location.origin) {
+    window.open(target.href, "_blank", "noopener,noreferrer");
+    return;
+  }
+  window.location.href = target.href;
+}
+
 export function EditorWrapper({
   placeholder,
   initialText,
@@ -104,6 +182,17 @@ export function EditorWrapper({
       },
       { capture: true },
     );
+
+    // Double-clicking a link, image destination, or autolink opens it
+    // instead of the browser's default word-selection behavior.
+    refEditor.current.addEventListener("dblclick", (ev) => {
+      const url = getLinkUrlFromElement(ev.target);
+      if (!url) {
+        return;
+      }
+      ev.preventDefault();
+      openLink(url);
+    });
 
     const editor = {
       get target() {

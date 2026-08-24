@@ -184,9 +184,17 @@ focus-editor .TinyMDE .TMCheckbox_checked::after {
 focus-editor .TinyMDE .TMImage,
 focus-editor .TinyMDE .TMLink,
 focus-editor .TinyMDE .TMLinkDestination,
+focus-editor .TinyMDE .TMImageDestination,
 focus-editor .TinyMDE .TMAutolink {
   text-decoration: underline;
   text-decoration-color: var(--primary-color, currentColor);
+  @media (hover) {
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  }
 }
 focus-editor .TinyMDE .TMLinkLabel {
   text-decoration: underline;
