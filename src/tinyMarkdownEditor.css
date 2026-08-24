@@ -13,7 +13,16 @@ focus-editor {
   overflow-y: auto;
   background: none;
   color: var(--text-color, #000);
-  font-family: var(--font-family, ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace);
+  font-family: var(
+    --font-family,
+    ui-monospace,
+    SFMono-Regular,
+    SF Mono,
+    Menlo,
+    Consolas,
+    Liberation Mono,
+    monospace
+  );
   font-size: var(--font-size, 1rem);
 
   --tmde-line-height: 1.75rem;
@@ -65,7 +74,9 @@ focus-editor .TinyMDE.TinyMDE_empty::before {
 focus-editor .TinyMDE > div {
   line-height: var(--tmde-line-height);
   min-height: var(--tmde-line-height);
-  padding-left: calc(var(--tmde-heading-indent-factor) * var(--tmde-space-left));
+  padding-left: calc(
+    var(--tmde-heading-indent-factor) * var(--tmde-space-left)
+  );
   transition: opacity 0.2s;
 }
 
@@ -82,12 +93,36 @@ focus-editor .TinyMDE .TMH5,
 focus-editor .TinyMDE .TMH6 {
   font-weight: bold;
 }
-focus-editor .TinyMDE .TMH1 { text-indent: calc(var(--tmde-heading-indent-factor) * -0.3 * var(--tmde-space-left)); }
-focus-editor .TinyMDE .TMH2 { text-indent: calc(var(--tmde-heading-indent-factor) * -0.45 * var(--tmde-space-left)); }
-focus-editor .TinyMDE .TMH3 { text-indent: calc(var(--tmde-heading-indent-factor) * -0.61 * var(--tmde-space-left)); }
-focus-editor .TinyMDE .TMH4 { text-indent: calc(var(--tmde-heading-indent-factor) * -0.77 * var(--tmde-space-left)); }
-focus-editor .TinyMDE .TMH5 { text-indent: calc(var(--tmde-heading-indent-factor) * -0.91 * var(--tmde-space-left)); }
-focus-editor .TinyMDE .TMH6 { text-indent: calc(var(--tmde-heading-indent-factor) * -0.99 * var(--tmde-space-left)); }
+focus-editor .TinyMDE .TMH1 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.3 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH2 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.45 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH3 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.61 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH4 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.77 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH5 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.91 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH6 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.99 * var(--tmde-space-left)
+  );
+}
 
 /* code */
 focus-editor .TinyMDE .TMMark_TMCode,
@@ -130,7 +165,7 @@ focus-editor .TinyMDE .TMBlockquote {
 
 /* markup characters (#, *, -, >, etc.) - de-emphasized */
 focus-editor .TinyMDE .TMMark {
-  color:  var(--text-color);
+  color: var(--text-color);
 }
 focus-editor .TinyMDE .TMMark_TMH1,
 focus-editor .TinyMDE .TMMark_TMH2,
@@ -188,6 +223,7 @@ focus-editor .TinyMDE .TMImageDestination,
 focus-editor .TinyMDE .TMAutolink {
   text-decoration: underline;
   text-decoration-color: var(--primary-color, currentColor);
+  transition: color 0.3s;
   @media (hover) {
     text-decoration: none;
     &:hover {
@@ -196,6 +232,25 @@ focus-editor .TinyMDE .TMAutolink {
     }
   }
 }
+
+focus-editor .TinyMDE .TMPara:not(.with-caret) .TMLinkDestination,
+focus-editor .TinyMDE .TMPara:not(.with-caret) .TMImageDestination {
+  color: var(--color-grey-lighter);
+
+  &:focus, &:focus-within {
+    color: var(--text-color);
+  }
+  @media (hover) {
+    &:hover {
+      color: var(--text-color);
+    }
+  }
+}
+focus-editor .TinyMDE .TMPara:not(.with-caret) .TMInlineFormatted .TMMark {
+  color: var(--color-grey-lighter);
+}
+focus-editor .TinyMDE .with-caret
+
 focus-editor .TinyMDE .TMLinkLabel {
   text-decoration: underline;
   font-family: var(--font-family, monospace);
