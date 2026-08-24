@@ -25,13 +25,7 @@ An editor which helps you to focus on just writing. Use your own S3 bucket for c
 
 ![Editor](https://github.com/user-attachments/assets/c084ed7b-3083-4dd9-8855-4ebc14eb89bf)
 <br><br>
-![Upload images](https://github.com/user-attachments/assets/1b84d7ff-38a4-49e8-8eba-b28f977f0291)
-<br><br>
 ![Dark Mode](https://github.com/user-attachments/assets/370e6cec-7b17-4a05-a5eb-5a0f45c5b98a)
-
-## Video
-
-https://github.com/user-attachments/assets/ac485c23-20cc-4852-8483-e41a23bc1a11
 
 ## Server requirements
 
@@ -175,7 +169,6 @@ Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess i
 
 ## TODOs / Roadmap
 
-* support deeper subfolders (this is still a bug in the file tree)
 * import / migrate external images to S3 bucket
 * search all files (fuzzy search) (?)
 * import options (extended markdown, images, remove navigation, etc.) (?)
@@ -184,15 +177,15 @@ Depends on your S3 provider, file-sizes and overall usage/traffic. But I guess i
 
 ## Build
 
-Clone the repo, ensure Node v20+ is available, then:
+Clone the repo, ensure Node v26+ is available, then:
 
 ```sh
 $ pnpm install
-$ npm run build
+$ pnpm run build
 ```
 
 ## Development
 
 ```sh
-$ npm run dev
+$ pnpm run dev
 ```
