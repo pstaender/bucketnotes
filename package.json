@@ -48,6 +48,11 @@
         "vite-plugin-top-level-await": "^1.6.0",
         "workbox-window": "^7.4.1"
     },
+    "pnpm": {
+        "overrides": {
+            "@swc/core": "1.12.14"
+        }
+    },
     "scripts": {
         "preview": "VITE_APP_VERSION=$(echo $npm_package_version) vite preview",
         "build": "VITE_APP_VERSION=$(echo $npm_package_version) vite build && cp -r -v public/* dist/",
