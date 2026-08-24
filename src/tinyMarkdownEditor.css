@@ -1,0 +1,296 @@
+/*
+ * Theme for tiny-markdown-editor (TME), replacing focus-editor/css/FocusEditor.css.
+ * Targets TME's own DOM/class names (.TinyMDE, .TMH1..TMH6, .TMUL/.TMOL, .TMBlockquote,
+ * .TMCode/fenced-code classes, .TMMark, link/image marks, .TMCheckbox) and reuses this
+ * app's existing color/font custom properties (defined at :root / body.light-color-scheme /
+ * body.dark-color-scheme in App.scss) so it matches the rest of the app in both color
+ * schemes. TME's own bundled dist/tiny-mde.css is intentionally not imported - its colors
+ * are hardcoded and not theme-aware.
+ */
+
+focus-editor {
+  display: block;
+  overflow-y: auto;
+  background: none;
+  color: var(--text-color, #000);
+  font-family: var(
+    --font-family,
+    ui-monospace,
+    SFMono-Regular,
+    SF Mono,
+    Menlo,
+    Consolas,
+    Liberation Mono,
+    monospace
+  );
+  font-size: var(--font-size, 1rem);
+
+  --tmde-line-height: 1.75rem;
+  --tmde-space: 1rem;
+  --tmde-border-radius: 4px;
+  --tmde-space-left: 0px;
+  --tmde-heading-indent-factor: 0;
+
+  &.indent-headings {
+    --tmde-space-left: 4rem;
+    --tmde-heading-indent-factor: 1;
+    @media only screen and (max-width: 768px) {
+      --tmde-space-left: 0px;
+      --tmde-heading-indent-factor: 0;
+    }
+  }
+}
+
+focus-editor .TinyMDE {
+  min-height: 100%;
+  padding: 0;
+  outline: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  white-space: pre-wrap !important;
+}
+
+focus-editor.no-wrap .TinyMDE {
+  white-space: pre !important;
+}
+
+focus-editor .TinyMDE.TinyMDE_empty {
+  position: relative;
+}
+
+focus-editor .TinyMDE.TinyMDE_empty::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  top: 0;
+  left: calc(var(--tmde-heading-indent-factor) * var(--tmde-space-left));
+  pointer-events: none;
+  color: var(--grey-color, #a0a0a0);
+  font-weight: normal;
+  font-style: normal;
+}
+
+focus-editor .TinyMDE > div {
+  line-height: var(--tmde-line-height);
+  min-height: var(--tmde-line-height);
+  padding-left: calc(
+    var(--tmde-heading-indent-factor) * var(--tmde-space-left)
+  );
+  transition: opacity 0.2s;
+}
+
+focus-editor .TinyMDE .TMBlankLine {
+  height: var(--tmde-line-height);
+}
+
+/* headings */
+focus-editor .TinyMDE .TMH1,
+focus-editor .TinyMDE .TMH2,
+focus-editor .TinyMDE .TMH3,
+focus-editor .TinyMDE .TMH4,
+focus-editor .TinyMDE .TMH5,
+focus-editor .TinyMDE .TMH6 {
+  font-weight: bold;
+}
+focus-editor .TinyMDE .TMH1 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.3 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH2 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.45 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH3 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.61 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH4 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.77 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH5 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.91 * var(--tmde-space-left)
+  );
+}
+focus-editor .TinyMDE .TMH6 {
+  text-indent: calc(
+    var(--tmde-heading-indent-factor) * -0.99 * var(--tmde-space-left)
+  );
+}
+
+/* code */
+focus-editor .TinyMDE .TMMark_TMCode,
+focus-editor .TinyMDE .TMFencedCodeBacktick,
+focus-editor .TinyMDE .TMFencedCodeTilde,
+focus-editor .TinyMDE .TMIndentedCode,
+focus-editor .TinyMDE .TMCode {
+  font-family: var(--font-family, monospace);
+}
+focus-editor .TinyMDE .TMFencedCodeBacktick,
+focus-editor .TinyMDE .TMFencedCodeTilde,
+focus-editor .TinyMDE .TMIndentedCode,
+focus-editor .TinyMDE .TMCode {
+  background-color: var(--background-color-light, #e0e0e0);
+}
+focus-editor .TinyMDE .TMCodeFenceBacktickOpen,
+focus-editor .TinyMDE .TMCodeFenceTildeOpen {
+  border-bottom: 1px solid var(--background-color-lighter, #c0c0c0);
+}
+focus-editor .TinyMDE .TMCodeFenceBacktickClose,
+focus-editor .TinyMDE .TMCodeFenceTildeClose {
+  border-top: 1px solid var(--background-color-lighter, #c0c0c0);
+}
+focus-editor .TinyMDE .TMInfoString {
+  color: var(--primary-color, #0000ff);
+}
+focus-editor .TinyMDE .TMCode,
+focus-editor .TinyMDE .TMMark_TMCode {
+  border-radius: var(--tmde-border-radius);
+  background: var(--color-grey-light);
+  padding: 0.1em 0.15em;
+  margin-left: -0.25em;
+}
+
+/* blockquote */
+focus-editor .TinyMDE .TMBlockquote {
+  font-style: italic;
+  border-left: 2px solid var(--background-color-lighter, #c0c0c0);
+  padding-left: var(--tmde-space);
+  margin-left: calc(var(--tmde-heading-indent-factor) * var(--tmde-space-left));
+}
+
+/* markup characters (#, *, -, >, etc.) - de-emphasized */
+focus-editor .TinyMDE .TMMark {
+  color: var(--text-color);
+}
+focus-editor .TinyMDE .TMMark_TMH1,
+focus-editor .TinyMDE .TMMark_TMH2,
+focus-editor .TinyMDE .TMMark_TMH3,
+focus-editor .TinyMDE .TMMark_TMH4,
+focus-editor .TinyMDE .TMMark_TMH5,
+focus-editor .TinyMDE .TMMark_TMH6,
+focus-editor .TinyMDE .TMMark_TMUL,
+focus-editor .TinyMDE .TMMark_TMOL {
+  color: var(--text-color);
+}
+
+/* task list checkboxes */
+focus-editor .TinyMDE .TMMark_TMTask {
+  color: transparent;
+}
+focus-editor .TinyMDE .TMCheckbox {
+  position: relative;
+  color: transparent;
+  caret-color: var(--text-color, #000);
+  cursor: pointer;
+  font-family: var(--font-family, monospace);
+}
+focus-editor .TinyMDE .TMCheckbox::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.85em;
+  height: 0.85em;
+  border: 1px solid var(--background-color-lighter, #c0c0c0);
+  box-sizing: border-box;
+  border-radius: 2px;
+  pointer-events: none;
+}
+focus-editor .TinyMDE .TMCheckbox_checked::before {
+  border-color: var(--primary-color, #2aa775);
+}
+focus-editor .TinyMDE .TMCheckbox_checked::after {
+  content: "✓";
+  color: var(--primary-color, #2aa775);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* links / images */
+focus-editor .TinyMDE .TMImage,
+focus-editor .TinyMDE .TMLink,
+focus-editor .TinyMDE .TMLinkDestination,
+focus-editor .TinyMDE .TMImageDestination,
+focus-editor .TinyMDE .TMAutolink {
+  text-decoration: underline;
+  text-decoration-color: var(--primary-color, currentColor);
+  transition: color 0.3s;
+  @media (hover) {
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  }
+}
+
+focus-editor .TinyMDE .TMPara:not(.with-caret) {
+  .TMMark_TMImage,
+  .TMMark_TMLink {
+    color: var(--color-grey-lighter);
+    transition: color 0.3s;
+    @media (hover) {
+      &:hover {
+        color: var(--text-color);
+      }
+    }
+  }
+}
+focus-editor
+  .TinyMDE
+  .TMPara:not(.with-caret)
+  .TMInlineFormatted
+  .TMMark:has(.TMLink) {
+  color: var(--color-grey-lighter);
+}
+focus-editor .TinyMDE .with-caret focus-editor .TinyMDE .TMLinkLabel {
+  text-decoration: underline;
+  font-family: var(--font-family, monospace);
+}
+focus-editor .TinyMDE .TMLinkTitle {
+  font-style: italic;
+}
+
+/* horizontal rule: hide the raw --- markup and draw a line instead, except
+   while the caret is on that line (so it stays editable/visible there) */
+focus-editor .TinyMDE .TMHR {
+  position: relative;
+}
+focus-editor .TinyMDE .TMHR:not(.with-caret) .TMMark_TMHR {
+  color: transparent;
+}
+focus-editor .TinyMDE .TMHR:before {
+  content: "";
+  position: absolute;
+  bottom: calc(50% - 1.75px);
+  left: 0;
+  border-bottom: 3px solid var(--background-color-lighter, #808080);
+  width: 100%;
+  z-index: -1;
+}
+
+/* raw HTML */
+focus-editor .TinyMDE .TMHTML,
+focus-editor .TinyMDE .TMHTMLBlock {
+  font-family: var(--font-family, monospace);
+  color: var(--grey-color);
+}
+
+/* focus mode: dim every line except the one the caret is on */
+focus-editor.highlight-current-paragraph .TinyMDE > div {
+  opacity: var(--focus-opacity, 0.3);
+}
+focus-editor.highlight-current-paragraph .TinyMDE > div.with-caret {
+  opacity: 1;
+}
