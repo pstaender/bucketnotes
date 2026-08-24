@@ -1,5 +1,6 @@
 import { Editor as TinyMDE } from "tiny-markdown-editor";
 import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { debounce, createTurndownService } from "./helper";
 
 // Elements TinyMDE renders as part of a link/image construct. It has no
@@ -65,15 +66,36 @@ function getLinkUrlFromElement(target) {
   return null;
 }
 
-function openLink(url) {
-  let target;
-  try {
-    target = new URL(url, window.location.href);
-  } catch {
+// Resolves the URL a link points to. A URL with a scheme (http:, mailto:, ...)
+// is resolved as-is; a fragment stays relative to the current page; anything
+// else is a vault-relative path (e.g. "assets/images/x.png") and is resolved
+// against the origin root, not the current page's path, so it always becomes
+// "/assets/images/x.png" regardless of which note is currently open.
+function resolveLinkTarget(url) {
+  if (/^[a-z][a-z0-9+.-]*:/i.test(url)) {
+    try {
+      return new URL(url);
+    } catch {
+      return null;
+    }
+  }
+  if (url.startsWith("#")) {
+    return new URL(url, window.location.href);
+  }
+  return new URL(url.startsWith("/") ? url : `/${url}`, window.location.origin);
+}
+
+function openLink(url, navigate) {
+  const target = resolveLinkTarget(url);
+  if (!target) {
     return;
   }
   const isHttpLike = ["http:", "https:", "ftp:"].includes(target.protocol);
-  if (isHttpLike && target.origin !== window.location.origin) {
+  if (isHttpLike && target.origin === window.location.origin) {
+    navigate(`${target.pathname}${target.search}${target.hash}`);
+    return;
+  }
+  if (isHttpLike) {
     window.open(target.href, "_blank", "noopener,noreferrer");
     return;
   }
@@ -101,6 +123,7 @@ export function EditorWrapper({
 } = {}) {
   const refEditor = useRef();
   const refTinyMDE = useRef();
+  const navigate = useNavigate();
 
   const handleChange = (content) => {
     onChange(content, {});
@@ -191,7 +214,7 @@ export function EditorWrapper({
         return;
       }
       ev.preventDefault();
-      openLink(url);
+      openLink(url, navigate);
     });
 
     const editor = {
