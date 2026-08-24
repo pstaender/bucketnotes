@@ -36,7 +36,7 @@ function getLinkUrlFromElement(target) {
     if (/^www\./i.test(text)) {
       return `http://${text}`;
     }
-    return text.includes("@") ? `mailto:${text}` : text;
+    return /^[^@]+@[^@]+$/.test(text) ? `mailto:${text}` : text;
   }
 
   const marker = target.closest(LINK_PART_CLASSES.map((c) => `.${c}`).join(", "));
@@ -114,12 +114,6 @@ export function EditorWrapper({
   focusEditor,
   setFocusEditor,
   convertHTMLToMarkdown,
-  // Accepted for backwards compatibility with callers, but currently unused:
-  // tiny-markdown-editor has no per-block table/media rendering to toggle, and
-  // "smart next list item" was already a no-op in the previous implementation.
-  doGuessNextListItemLine,
-  previewImages,
-  renderMarkdownTables,
 } = {}) {
   const refEditor = useRef();
   const refTinyMDE = useRef();

@@ -95,9 +95,6 @@ export function App({ version, appName } = {}) {
       ? false
       : localStorage.getItem("scrollWindowToCenterCaret") === "true",
   );
-  const [createSmartNewLineContent, setCreateSmartNewLineContent] = useState(
-    localStorage.getItem("createSmartNewLineContent") !== "false",
-  );
   const [colorScheme, setColorScheme] = useState(
     localStorage.getItem("color-scheme"),
   );
@@ -113,9 +110,6 @@ export function App({ version, appName } = {}) {
   const [sortFilesByAttribute, setSortFilesByAttribute] = useState(
     localStorage.getItem("sortFilesByAttribute") || "Key",
   );
-  const [previewImages, setPreviewImages] = useState(
-    localStorage.getItem("previewImages") === "true",
-  );
   const [focusEditor, setFocusEditor] = useState(null);
   const [jumpToFile, setJumpToFile] = useState(false);
   const [displayImageUrl, setDisplayImageUrl] = useState(null);
@@ -129,9 +123,6 @@ export function App({ version, appName } = {}) {
   );
   const [convertHTMLToMarkdown, setConvertHTMLToMarkdown] = useState(
     localStorage.getItem("convertHTMLToMarkdown") === "true",
-  );
-  const [renderMarkdownTables, setRenderMarkdownTables] = useState(
-    localStorage.getItem("renderMarkdownTables") === "true",
   );
   const [showAdditionalMenuOption, setShowAdditionalMenuOption] =
     useState(false);
@@ -837,11 +828,7 @@ export function App({ version, appName } = {}) {
 
   useEffect(() => {
     sessionStorage.setItem("focusMode", !!focusMode);
-    localStorage.setItem(
-      "createSmartNewLineContent",
-      !!createSmartNewLineContent,
-    );
-  }, [focusMode, createSmartNewLineContent]);
+  }, [focusMode]);
 
   useEffect(() => {
     if (!s3Client) {
@@ -1451,15 +1438,6 @@ export function App({ version, appName } = {}) {
                     New with specific name
                   </li>
                   <li
-                    onClick={() =>
-                      setCreateSmartNewLineContent(!createSmartNewLineContent)
-                    }
-                    className={createSmartNewLineContent ? "active" : null}
-                    style={{ display: "none" }}
-                  >
-                    Guess lists and indents
-                  </li>
-                  <li
                     onClick={() => setAutoSave(!autoSave)}
                     className={[autoSave ? "active" : null, "border-bottom"]
                       .filter((v) => !!v)
@@ -1705,19 +1683,6 @@ export function App({ version, appName } = {}) {
                             <li
                               data-is-more-options-item="true"
                               onClick={(ev) => {
-                                setRenderMarkdownTables(!renderMarkdownTables);
-                                localStorage.setItem(
-                                  "renderMarkdownTables",
-                                  renderMarkdownTables ? "false" : "true",
-                                );
-                              }}
-                              className={renderMarkdownTables ? "active" : null}
-                            >
-                              Render Tables
-                            </li>
-                            <li
-                              data-is-more-options-item="true"
-                              onClick={(ev) => {
                                 setFullWithEditor(!fullWithEditor);
                                 localStorage.setItem(
                                   "fullWithEditor",
@@ -1754,18 +1719,6 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li onClick={displayGoToParagraphDialog}>
                     Jump to paragraph <span className="shortcut">⌘ + G</span>
-                  </li>
-                  <li
-                    onClick={(ev) => {
-                      setPreviewImages(!previewImages);
-                      localStorage.setItem(
-                        "previewImages",
-                        previewImages ? "false" : "true",
-                      );
-                    }}
-                    className={previewImages ? "active" : null}
-                  >
-                    Preview media
                   </li>
                   <li
                     onClick={(ev) => {
@@ -1899,12 +1852,9 @@ export function App({ version, appName } = {}) {
                     onChange={handleOnChangeEditor}
                     readOnly={readonly}
                     focusMode={focusMode}
-                    doGuessNextListItemLine={createSmartNewLineContent}
                     initialCaretPosition={initialCaretPosition}
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}
-                    previewImages={previewImages}
                     fullWithEditor={fullWithEditor}
-                    renderMarkdownTables={renderMarkdownTables}
                     focusEditor={focusEditor}
                     setFocusEditor={setFocusEditor}
                     convertHTMLToMarkdown={convertHTMLToMarkdown}

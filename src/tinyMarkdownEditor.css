@@ -131,7 +131,6 @@ focus-editor .TinyMDE .TMFencedCodeTilde,
 focus-editor .TinyMDE .TMIndentedCode,
 focus-editor .TinyMDE .TMCode {
   font-family: var(--font-family, monospace);
-  font-size: 0.9em;
 }
 focus-editor .TinyMDE .TMFencedCodeBacktick,
 focus-editor .TinyMDE .TMFencedCodeTilde,
@@ -150,9 +149,12 @@ focus-editor .TinyMDE .TMCodeFenceTildeClose {
 focus-editor .TinyMDE .TMInfoString {
   color: var(--primary-color, #0000ff);
 }
-focus-editor .TinyMDE .TMCode {
-  border: 1px solid var(--background-color-lighter, #c0c0c0);
+focus-editor .TinyMDE .TMCode,
+focus-editor .TinyMDE .TMMark_TMCode {
   border-radius: var(--tmde-border-radius);
+  background: var(--color-grey-light);
+  padding: 0.1em 0.15em;
+  margin-left: -0.25em;
 }
 
 /* blockquote */
@@ -233,34 +235,28 @@ focus-editor .TinyMDE .TMAutolink {
   }
 }
 
-focus-editor .TinyMDE .TMPara:not(.with-caret) .TMLinkDestination,
-focus-editor .TinyMDE .TMPara:not(.with-caret) .TMImageDestination {
-  color: var(--color-grey-lighter);
-
-  &:focus, &:focus-within {
-    color: var(--text-color);
-  }
-  @media (hover) {
-    &:hover {
-      color: var(--text-color);
+focus-editor .TinyMDE .TMPara:not(.with-caret) {
+  .TMMark_TMImage,
+  .TMMark_TMLink {
+    color: var(--color-grey-lighter);
+    transition: color 0.3s;
+    @media (hover) {
+      &:hover {
+        color: var(--text-color);
+      }
     }
   }
 }
-focus-editor .TinyMDE .TMPara:not(.with-caret) .TMInlineFormatted .TMMark {
+focus-editor
+  .TinyMDE
+  .TMPara:not(.with-caret)
+  .TMInlineFormatted
+  .TMMark:has(.TMLink) {
   color: var(--color-grey-lighter);
 }
-focus-editor .TinyMDE .with-caret
-
-focus-editor .TinyMDE .TMLinkLabel {
+focus-editor .TinyMDE .with-caret focus-editor .TinyMDE .TMLinkLabel {
   text-decoration: underline;
   font-family: var(--font-family, monospace);
-}
-focus-editor .TinyMDE .TMLinkLabel_Definition,
-focus-editor .TinyMDE .TMLinkLabel_Valid {
-  color: var(--primary-color, #40c040);
-}
-focus-editor .TinyMDE .TMLinkLabel_Invalid {
-  color: #ff0000;
 }
 focus-editor .TinyMDE .TMLinkTitle {
   font-style: italic;
@@ -277,9 +273,9 @@ focus-editor .TinyMDE .TMHR:not(.with-caret) .TMMark_TMHR {
 focus-editor .TinyMDE .TMHR:before {
   content: "";
   position: absolute;
-  bottom: calc(50% - 1.5px);
+  bottom: calc(50% - 1.75px);
   left: 0;
-  border-bottom: 2px solid var(--background-color-lighter, #808080);
+  border-bottom: 3px solid var(--background-color-lighter, #808080);
   width: 100%;
   z-index: -1;
 }
@@ -288,7 +284,6 @@ focus-editor .TinyMDE .TMHR:before {
 focus-editor .TinyMDE .TMHTML,
 focus-editor .TinyMDE .TMHTMLBlock {
   font-family: var(--font-family, monospace);
-  font-size: 0.9em;
   color: var(--grey-color);
 }
 
