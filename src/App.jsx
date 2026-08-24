@@ -344,7 +344,7 @@ export function App({ version, appName } = {}) {
       }
       return;
     }
-    if (text.trim() !== "" && text !== lastSavedText) {
+    if (text.trim() !== "" && text.trim() !== lastSavedText.trim()) {
       if (!confirm("Are you sure? File not saved!")) {
         return;
       }

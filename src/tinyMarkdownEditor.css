@@ -136,18 +136,17 @@ focus-editor .TinyMDE .TMFencedCodeBacktick,
 focus-editor .TinyMDE .TMFencedCodeTilde,
 focus-editor .TinyMDE .TMIndentedCode,
 focus-editor .TinyMDE .TMCode {
-  background-color: var(--background-color-light, #e0e0e0);
+  background-color: var(--background-color-light);
+
 }
 focus-editor .TinyMDE .TMCodeFenceBacktickOpen,
-focus-editor .TinyMDE .TMCodeFenceTildeOpen {
-  border-bottom: 1px solid var(--background-color-lighter, #c0c0c0);
-}
+focus-editor .TinyMDE .TMCodeFenceTildeOpen,
 focus-editor .TinyMDE .TMCodeFenceBacktickClose,
 focus-editor .TinyMDE .TMCodeFenceTildeClose {
-  border-top: 1px solid var(--background-color-lighter, #c0c0c0);
+  background-color: var(--background-color-light);
 }
-focus-editor .TinyMDE .TMInfoString {
-  color: var(--primary-color, #0000ff);
+focus-editor .TinyMDE .TMCodeFenceBacktickOpen, focus-editor .TinyMDE .TMCodeFenceBacktickClose {
+  border-radius: var(--tmde-border-radius);
 }
 focus-editor .TinyMDE .TMCode,
 focus-editor .TinyMDE .TMMark_TMCode {
@@ -155,6 +154,19 @@ focus-editor .TinyMDE .TMMark_TMCode {
   background: var(--color-grey-light);
   padding: 0.1em 0.15em;
   margin-left: -0.25em;
+}
+focus-editor .TinyMDE .TMCodeFenceBacktickOpen, focus-editor .TinyMDE .TMFencedCodeBacktick, focus-editor .TinyMDE .TMCodeFenceBacktickClose {
+  padding: 0 1rem;
+  margin-left: calc(var(--tmde-heading-indent-factor) * var(--tmde-space-left));
+}
+focus-editor .TinyMDE .TMCodeFenceBacktickOpen .TMInfoString {
+  opacity: 0.3;
+}
+focus-editor .TinyMDE .TMCodeFenceBacktickOpen {
+  padding-top: .5rem;
+}
+focus-editor .TinyMDE .TMCodeFenceBacktickClose  {
+  padding-bottom: .5rem;
 }
 
 /* blockquote */
