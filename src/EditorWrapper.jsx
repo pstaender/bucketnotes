@@ -85,6 +85,90 @@ function resolveLinkTarget(url) {
   return new URL(url.startsWith("/") ? url : `/${url}`, window.location.origin);
 }
 
+// Removes up to `tabSize` characters of leading indentation from `line`: a
+// single leading tab, or else as many leading spaces as are present (capped
+// at `tabSize`). Returns the dedented line and how many characters were cut,
+// so callers can shift the caret/selection by the same amount.
+function dedentLine(line, tabSize) {
+  if (line.startsWith("\t")) {
+    return { line: line.slice(1), removed: 1 };
+  }
+  let removed = 0;
+  while (removed < tabSize && line[removed] === " ") {
+    removed++;
+  }
+  return { line: line.slice(removed), removed };
+}
+
+// Implements Tab/Shift+Tab for the editor: with an active selection, indents
+// or dedents every line it touches (like a code editor); with just a caret,
+// Tab inserts `tabSize` spaces and Shift+Tab dedents the current line.
+function indentSelection(tinyMDE, tabSize, dedent) {
+  const focus = tinyMDE.getSelection(false);
+  if (!focus) {
+    return;
+  }
+  const anchor = tinyMDE.getSelection(true) || focus;
+  const collapsed = anchor.row === focus.row && anchor.col === focus.col;
+
+  if (!tinyMDE.isRestoringHistory) {
+    tinyMDE.pushHistory();
+  }
+  tinyMDE.clearDirtyFlag();
+
+  if (collapsed && !dedent) {
+    const { row, col } = focus;
+    const spaces = " ".repeat(tabSize);
+    tinyMDE.lines[row] =
+      tinyMDE.lines[row].slice(0, col) + spaces + tinyMDE.lines[row].slice(col);
+    tinyMDE.lineDirty[row] = true;
+    tinyMDE.updateFormatting();
+    tinyMDE.setSelection({ row, col: col + tabSize });
+    tinyMDE.fireChange();
+    return;
+  }
+
+  const anchorFirst =
+    anchor.row < focus.row || (anchor.row === focus.row && anchor.col <= focus.col);
+  const startRow = anchorFirst ? anchor.row : focus.row;
+  let endRow = anchorFirst ? focus.row : anchor.row;
+  const endCol = anchorFirst ? focus.col : anchor.col;
+  // A selection ending exactly at column 0 of a line didn't meaningfully
+  // select that line, so leave it out (mirrors TinyMDE's own line commands).
+  if (endRow > startRow && endCol === 0) {
+    endRow--;
+  }
+
+  const newAnchor = { ...anchor };
+  const newFocus = { ...focus };
+
+  for (let row = startRow; row <= endRow; row++) {
+    if (dedent) {
+      const { line, removed } = dedentLine(tinyMDE.lines[row], tabSize);
+      tinyMDE.lines[row] = line;
+      if (newAnchor.row === row) {
+        newAnchor.col = Math.max(0, newAnchor.col - removed);
+      }
+      if (newFocus.row === row) {
+        newFocus.col = Math.max(0, newFocus.col - removed);
+      }
+    } else {
+      tinyMDE.lines[row] = " ".repeat(tabSize) + tinyMDE.lines[row];
+      if (newAnchor.row === row) {
+        newAnchor.col += tabSize;
+      }
+      if (newFocus.row === row) {
+        newFocus.col += tabSize;
+      }
+    }
+    tinyMDE.lineDirty[row] = true;
+  }
+
+  tinyMDE.updateFormatting();
+  tinyMDE.setSelection(newFocus, newAnchor);
+  tinyMDE.fireChange();
+}
+
 function openLink(url, navigate) {
   const target = resolveLinkTarget(url);
   if (!target) {
@@ -114,10 +198,16 @@ export function EditorWrapper({
   focusEditor,
   setFocusEditor,
   convertHTMLToMarkdown,
+  tabSize = 2,
 } = {}) {
   const refEditor = useRef();
   const refTinyMDE = useRef();
+  const refTabSize = useRef(tabSize);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    refTabSize.current = tabSize;
+  }, [tabSize]);
 
   const handleChange = (content) => {
     onChange(content, {});
@@ -199,6 +289,19 @@ export function EditorWrapper({
       },
       { capture: true },
     );
+
+    // Tab indents (inserts spaces at the caret, or shifts selected lines
+    // right); Shift+Tab shifts the current/selected lines left.
+    refEditor.current.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Tab" || ev.ctrlKey || ev.metaKey || ev.altKey) {
+        return;
+      }
+      if (!tinyMDE.e.isContentEditable) {
+        return;
+      }
+      ev.preventDefault();
+      indentSelection(tinyMDE, refTabSize.current, ev.shiftKey);
+    });
 
     // Double-clicking a link, image destination, or autolink opens it
     // instead of the browser's default word-selection behavior.
