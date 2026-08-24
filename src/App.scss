@@ -2,8 +2,9 @@
   --text-color: #000;
   --grey-color: #aaa;
   --background-color: #f7f7f7;
-  --background-color-light: #eee;
-  --background-color-lighter: #ddd;
+  --background-color-very-light: #eee;
+  --background-color-light: #ddd;
+  --background-color-lighter: #ccc;
   --color-white-responsive: #fff;
   --color-black-responsive: #000;
   --invert-img-filter: invert(0);
@@ -12,8 +13,9 @@
 @mixin css-colors-dark {
   --text-color: #fff;
   --background-color: #222;
-  --background-color-light: #333;
-  --background-color-lighter: #444;
+  --background-color-very-light: #333;
+  --background-color-light: #444;
+  --background-color-lighter: #555;
   --grey-color: #777;
   --color-white-responsive: #000;
   --color-black-responsive: #fff;
@@ -146,7 +148,7 @@ html {
 
     @media (hover) {
       &:not(.no-hover):hover {
-        background: var(--background-color-light);
+        background: var(--background-color-very-light);
       }
     }
     .icon {
@@ -177,7 +179,6 @@ html {
       .icon {
         opacity: 1;
       }
-      // text-decoration: underline;
     }
   }
   li.active {
@@ -187,7 +188,6 @@ html {
 
 .side {
   position: relative;
-  // overflow-x: hidden;
   .files {
     position: sticky;
     top: 0;
@@ -204,8 +204,6 @@ html {
   }
   li {
     list-style: none;
-    // margin-bottom: 0.5rem;
-    // line-height: 1.5em;
     display: flex;
     gap: 0.75rem;
     justify-content: space-between;
@@ -217,12 +215,13 @@ html {
     top: 0;
     right: 0;
     bottom: 0;
-    width: 1rem;
+    width: 0.75rem;
     height: 100%;
-    background: var(--background-color-light);
+    background: var(--background-color-very-light);
+    transition: background 0.2s;
     @media (hover) {
       &:hover {
-        background: var(--background-color-lighter);
+        background: var(--background-color-light);
         cursor: pointer;
       }
     }
@@ -437,7 +436,7 @@ focus-editor [contenteditable] > div:last-child {
   ul.menu {
     margin-top: 2rem;
     padding: 0;
-    background: var(--background-color-light);
+    background: var(--background-color-very-light);
     border-radius: 4px;
     box-shadow:
       rgba(0, 0, 0, 0.2) 0px 12px 28px 0px,
@@ -459,7 +458,7 @@ focus-editor [contenteditable] > div:last-child {
       }
       @media (hover) {
         &:hover {
-          background: var(--background-color-lighter);
+          background: var(--background-color-light);
           cursor: pointer;
         }
       }
@@ -477,10 +476,10 @@ focus-editor [contenteditable] > div:last-child {
         }
       }
       &.border-top {
-        border-top: 2px solid var(--background-color-lighter);
+        border-top: 2px solid var(--background-color-light);
       }
       &.border-bottom {
-        border-bottom: 2px solid var(--background-color-lighter);
+        border-bottom: 2px solid var(--background-color-light);
       }
     }
     ul.menu {
@@ -876,7 +875,7 @@ button {
       @media (hover) {
         &:hover {
           cursor: pointer;
-          background: var(--background-color-light);
+          background: var(--background-color-very-light);
         }
       }
       &.hide {

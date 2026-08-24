@@ -124,16 +124,22 @@ focus-editor .TinyMDE .TMCode {
 }
 focus-editor .TinyMDE .TMFencedCodeBacktick,
 focus-editor .TinyMDE .TMFencedCodeTilde,
-focus-editor .TinyMDE .TMIndentedCode,
 focus-editor .TinyMDE .TMCode {
-  background-color: var(--background-color-light);
+  background-color: var(--background-color-very-light);
 
+}
+focus-editor .TinyMDE .TMIndentedCode {
+   border-left: 4px solid var(--background-color-lighter);
+   margin-left: calc(
+       var(--tmde-heading-indent-factor) * var(--tmde-space-left)
+     );
+     padding-left: 0;
 }
 focus-editor .TinyMDE .TMCodeFenceBacktickOpen,
 focus-editor .TinyMDE .TMCodeFenceTildeOpen,
 focus-editor .TinyMDE .TMCodeFenceBacktickClose,
 focus-editor .TinyMDE .TMCodeFenceTildeClose {
-  background-color: var(--background-color-light);
+  background-color: var(--background-color-very-light);
 }
 focus-editor .TinyMDE .TMCodeFenceBacktickOpen, focus-editor .TinyMDE .TMCodeFenceBacktickClose {
   border-radius: var(--tmde-border-radius);
@@ -141,7 +147,7 @@ focus-editor .TinyMDE .TMCodeFenceBacktickOpen, focus-editor .TinyMDE .TMCodeFen
 focus-editor .TinyMDE .TMCode,
 focus-editor .TinyMDE .TMMark_TMCode {
   border-radius: var(--tmde-border-radius);
-  background: var(--color-grey-light);
+  background: var(--background-color-very-light);
   padding: 0.1em 0.15em;
   margin-left: -0.25em;
 }
@@ -161,10 +167,21 @@ focus-editor .TinyMDE .TMCodeFenceBacktickClose  {
 
 /* blockquote */
 focus-editor .TinyMDE .TMBlockquote {
-  font-style: italic;
-  border-left: 2px solid var(--background-color-lighter, #c0c0c0);
+  background: var(--background-color-very-light);
   padding-left: var(--tmde-space);
+  padding-bottom: 0;
+  padding-top: 0;
   margin-left: calc(var(--tmde-heading-indent-factor) * var(--tmde-space-left));
+}
+
+focus-editor .TinyMDE .TMBlockquote:not(.TMBlockquote + .TMBlockquote) {
+  padding-top: 1rem;
+  border-radius: var(--tmde-border-radius) 0 0 var(--tmde-border-radius);
+}
+
+focus-editor .TinyMDE .TMBlockquote:not(:has(+ .TMBlockquote)) {
+  padding-bottom: 1rem;
+  border-radius: 0 var(--tmde-border-radius) var(--tmde-border-radius) 0;
 }
 
 /* markup characters (#, *, -, >, etc.) - de-emphasized */
@@ -227,7 +244,6 @@ focus-editor .TinyMDE .TMImageDestination,
 focus-editor .TinyMDE .TMAutolink {
   text-decoration: underline;
   text-decoration-color: var(--primary-color, currentColor);
-  transition: color var(--transition-duration);
   @media (hover) {
     text-decoration: none;
     &:hover {
@@ -237,12 +253,21 @@ focus-editor .TinyMDE .TMAutolink {
   }
 }
 
+focus-editor .TinyMDE .TMImage,
+focus-editor .TinyMDE .TMLink,
+focus-editor .TinyMDE .TMLinkDestination,
+focus-editor .TinyMDE .TMImageDestination,
+focus-editor .TinyMDE .TMAutolink,
+focus-editor .TinyMDE .TMMark {
+  transition: color var(--transition-duration);
+
+}
+
 focus-editor .TinyMDE .TMPara:not(.with-caret) {
   .TMLinkDestination ,
   .TMMark_TMImage,
   .TMMark_TMLink {
     color: var(--color-grey-lighter);
-    transition: color var(--transition-duration);
     @media (hover) {
       &:hover {
         color: var(--text-color);
@@ -253,7 +278,6 @@ focus-editor .TinyMDE .TMPara:not(.with-caret) {
 focus-editor
   .TinyMDE
   .TMPara:not(.with-caret)
-  .TMInlineFormatted
   .TMMark:has(.TMLink) {
   color: var(--color-grey-lighter);
 }
