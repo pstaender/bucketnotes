@@ -150,8 +150,19 @@ export function FileList({
 
 
   const normalizedFolderPath = (/\/[^.]+$/.test(folderPath) ? folderPath : folderPath.split('/').slice(0, -1).join('/')).replace(/\/+/, '/').replace(/[/]*$/, '/');
+  // S3 object keys in `files` never have a leading slash (unlike folderPath,
+  // which mirrors the router pathname), so strip it before slicing into them
+  // - otherwise every substring below is off by one character.
+  const normalizedFolderPathKey = normalizedFolderPath.replace(/^\//, '');
 
-  const subfolders = files.filter(file => file.substring(normalizedFolderPath.length).includes('/')).map(file => file.split('/')[1]).filter((value, index, self) => self.indexOf(value) === index);
+  const subfolders = files
+    .filter(file => file.substring(normalizedFolderPathKey.length).includes('/'))
+    // Take the path segment right after the current folder, whatever depth
+    // we're at - not a hardcoded index, which previously always grabbed
+    // segment 1 (e.g. always "test1" for "einkaufen/test1/test2/x.txt"
+    // regardless of the folder actually being browsed).
+    .map(file => file.substring(normalizedFolderPathKey.length).split('/')[0])
+    .filter((value, index, self) => self.indexOf(value) === index);
 
   useEffect(() => {
     setAllowFileDragAndDrop(FEATURE_FLAGS.MOVE_FILES_WITH_DRAG_AND_DROP && (key === "Meta" || key === "Control"));
@@ -195,7 +206,7 @@ export function FileList({
     await moveFileToFolder(active.id, destination.replace(/\/*$/, '/'));
   }
 
-  files = files.filter(f => f.substring(normalizedFolderPath.length).includes('.') && !f.substring(normalizedFolderPath.length).includes('/'));
+  files = files.filter(f => f.substring(normalizedFolderPathKey.length).includes('.') && !f.substring(normalizedFolderPathKey.length).includes('/'));
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
