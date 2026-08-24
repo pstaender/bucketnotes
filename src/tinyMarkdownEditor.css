@@ -130,7 +130,7 @@ focus-editor .TinyMDE .TMBlockquote {
 
 /* markup characters (#, *, -, >, etc.) - de-emphasized */
 focus-editor .TinyMDE .TMMark {
-  color: var(--grey-color, #a0a0a0);
+  color:  var(--text-color);
 }
 focus-editor .TinyMDE .TMMark_TMH1,
 focus-editor .TinyMDE .TMMark_TMH2,
@@ -140,7 +140,7 @@ focus-editor .TinyMDE .TMMark_TMH5,
 focus-editor .TinyMDE .TMMark_TMH6,
 focus-editor .TinyMDE .TMMark_TMUL,
 focus-editor .TinyMDE .TMMark_TMOL {
-  color: var(--primary-color, #ff8080);
+  color: var(--text-color);
 }
 
 /* task list checkboxes */
@@ -214,11 +214,11 @@ focus-editor .TinyMDE .TMHR:not(.with-caret) .TMMark_TMHR {
 focus-editor .TinyMDE .TMHR:before {
   content: "";
   position: absolute;
-  bottom: 50%;
+  bottom: calc(50% - 1.5px);
   left: 0;
   border-bottom: 2px solid var(--background-color-lighter, #808080);
   width: 100%;
-  z-index: 0;
+  z-index: -1;
 }
 
 /* raw HTML */
