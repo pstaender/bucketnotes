@@ -1,13 +1,3 @@
-/*
- * Theme for tiny-markdown-editor (TME), replacing focus-editor/css/FocusEditor.css.
- * Targets TME's own DOM/class names (.TinyMDE, .TMH1..TMH6, .TMUL/.TMOL, .TMBlockquote,
- * .TMCode/fenced-code classes, .TMMark, link/image marks, .TMCheckbox) and reuses this
- * app's existing color/font custom properties (defined at :root / body.light-color-scheme /
- * body.dark-color-scheme in App.scss) so it matches the rest of the app in both color
- * schemes. TME's own bundled dist/tiny-mde.css is intentionally not imported - its colors
- * are hardcoded and not theme-aware.
- */
-
 focus-editor {
   display: block;
   overflow-y: auto;
@@ -237,7 +227,7 @@ focus-editor .TinyMDE .TMImageDestination,
 focus-editor .TinyMDE .TMAutolink {
   text-decoration: underline;
   text-decoration-color: var(--primary-color, currentColor);
-  transition: color 0.3s;
+  transition: color var(--transition-duration);
   @media (hover) {
     text-decoration: none;
     &:hover {
@@ -248,10 +238,11 @@ focus-editor .TinyMDE .TMAutolink {
 }
 
 focus-editor .TinyMDE .TMPara:not(.with-caret) {
+  .TMLinkDestination ,
   .TMMark_TMImage,
   .TMMark_TMLink {
     color: var(--color-grey-lighter);
-    transition: color 0.3s;
+    transition: color var(--transition-duration);
     @media (hover) {
       &:hover {
         color: var(--text-color);
@@ -279,13 +270,16 @@ focus-editor .TinyMDE .TMLinkTitle {
 focus-editor .TinyMDE .TMHR {
   position: relative;
 }
+focus-editor .TinyMDE .TMMark_TMHR {
+  transition: color var(--transition-duration);
+}
 focus-editor .TinyMDE .TMHR:not(.with-caret) .TMMark_TMHR {
   color: transparent;
 }
 focus-editor .TinyMDE .TMHR:before {
   content: "";
   position: absolute;
-  bottom: calc(50% - 1.75px);
+  bottom: calc(50% - 2.4px);
   left: 0;
   border-bottom: 3px solid var(--background-color-lighter, #808080);
   width: 100%;
