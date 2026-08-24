@@ -1,11 +1,6 @@
-import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
-import FocusEditorCore from "../focus-editor/FocusEditorCore.mjs";
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import * as s3 from "./s3";
-import { debounce, downloadFileByUrl, createTurndownService, unifyMarkdownTableCellWidths } from "./helper";
-
-const localStorage = window.localStorage;
+import { Editor as TinyMDE } from "tiny-markdown-editor";
+import { useEffect, useRef } from "react";
+import { debounce, createTurndownService } from "./helper";
 
 export function EditorWrapper({
   placeholder,
@@ -14,27 +9,26 @@ export function EditorWrapper({
   onChange,
   readOnly,
   focusMode,
-  doGuessNextListItemLine,
   scrollWindowToCenterCaret,
-  previewImages,
   fullWithEditor,
-  renderMarkdownTables,
   focusEditor,
   setFocusEditor,
   convertHTMLToMarkdown,
+  // Accepted for backwards compatibility with callers, but currently unused:
+  // tiny-markdown-editor has no per-block table/media rendering to toggle, and
+  // "smart next list item" was already a no-op in the previous implementation.
+  doGuessNextListItemLine,
+  previewImages,
+  renderMarkdownTables,
 } = {}) {
-  const navigate = useNavigate();
   const refEditor = useRef();
+  const refTinyMDE = useRef();
 
-  const handleChange = (event) => {
-    onChange(refEditor.current.editor.getMarkdown(), {});
+  const handleChange = (content) => {
+    onChange(content, {});
   };
 
   const handleChangeDebounced = debounce(handleChange, 200);
-
-  const handleInput = (event) => {
-    handleChangeDebounced(event);
-  };
 
   useEffect(() => {
     if (initialText !== null && initialText !== undefined && focusEditor) {
@@ -43,7 +37,7 @@ export function EditorWrapper({
   }, [initialText, focusEditor]);
 
   useEffect(() => {
-    if (!refEditor.current?.editor) {
+    if (!focusEditor) {
       return;
     }
     function isSet(val) {
@@ -55,193 +49,100 @@ export function EditorWrapper({
     if (isSet(readOnly)) {
       focusEditor.readOnly = readOnly;
     }
-    if (
-      isSet(renderMarkdownTables) &&
-      focusEditor.renderMarkdownTables !== renderMarkdownTables
-    ) {
-      focusEditor.renderMarkdownTables = renderMarkdownTables;
-      focusEditor.refresh();
-    }
-  }, [focusEditor, placeholder, readOnly, renderMarkdownTables]);
+  }, [focusEditor, placeholder, readOnly]);
 
   useEffect(() => {
     if (!refEditor.current) {
       return;
     }
 
-    async function checkForAwsFile(a) {
-      const expiresIn = 3600;
-      if (!a.getAttribute("href")) {
+    const tinyMDE = new TinyMDE({
+      element: refEditor.current,
+      content: initialText || "",
+    });
+    refTinyMDE.current = tinyMDE;
+    tinyMDE.e.contentEditable = !readOnly;
+    if (placeholder) {
+      tinyMDE.placeholder = placeholder;
+      tinyMDE.e.setAttribute("data-placeholder", placeholder);
+      tinyMDE.updatePlaceholder();
+    }
+
+    // Move a "with-caret" class to the line the caret is currently on, so CSS
+    // can dim every other line (focus mode) and/or keep the caret centered.
+    let currentCaretLine = null;
+    tinyMDE.addEventListener("selection", (ev) => {
+      const line = tinyMDE.lineElements[ev.focus.row];
+      if (!line || line === currentCaretLine) {
         return;
       }
-      const url = a.getAttribute("href");
-      const cacheKey = `s3_signed_url:${url}`;
-      if (localStorage.getItem(cacheKey)) {
-        const data = JSON.parse(localStorage.getItem(cacheKey));
-        if (data.validUntil > new Date().getTime()) {
-          a.href = "#/" + a.getAttribute("href");
-          a.style.setProperty("--url", `url(${data.url})`);
-          return;
+      currentCaretLine?.classList.remove("with-caret");
+      line.classList.add("with-caret");
+      currentCaretLine = line;
+      if (scrollWindowToCenterCaret) {
+        line.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+
+    tinyMDE.addEventListener("change", (ev) =>
+      handleChangeDebounced(ev.content),
+    );
+
+    // TinyMDE attaches its own native paste handler on `tinyMDE.e`. Intercept
+    // the paste first (capture phase runs before that bubble-phase handler),
+    // and hand it converted Markdown instead of raw HTML when requested.
+    refEditor.current.addEventListener(
+      "paste",
+      (ev) => {
+        const clipboardData = ev.clipboardData || window.clipboardData;
+        const pastedHtml = clipboardData?.getData("text/html");
+        if (pastedHtml && convertHTMLToMarkdown) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          tinyMDE.paste(createTurndownService().turndown(pastedHtml));
         }
-      }
-      const imageUrl = await s3.getPublicUrl(url, expiresIn);
-      localStorage.setItem(
-        cacheKey,
-        JSON.stringify({
-          validUntil: new Date().getTime() + expiresIn * 1000,
-          url: imageUrl,
-        }),
-      );
-      a.href = "#/" + a.getAttribute("href");
-      a.style.setProperty("--url", `url(${imageUrl})`);
-      return a;
-    }
+      },
+      { capture: true },
+    );
 
-    refEditor.current.addEventListener("renderParagraphBlocks", (ev) => {
-      if (ev.detail.elements) {
-        ev.detail.elements.forEach((el) => {
-          el.querySelectorAll(
-            `a.link.image[href^="${FEATURE_FLAGS.IMAGE_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
-          ).forEach((a) => {
-            a.classList.add("aws-url");
-            checkForAwsFile(a);
-          });
-          el.querySelectorAll(
-            `a.link[href^="${FEATURE_FLAGS.AUDIO_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
-          ).forEach((a) => {
-            a.classList.add("aws-url");
-            a.setAttribute("href", "#/" + a.getAttribute("href"));
-          });
-          el.querySelectorAll(
-            `a.link[href^="${FEATURE_FLAGS.VIDEO_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
-          ).forEach((a) => {
-            a.classList.add("aws-url");
-            a.setAttribute("href", "#/" + a.getAttribute("href"));
-          });
-
-          el.querySelectorAll(
-            `a.link[href^="${FEATURE_FLAGS.PDF_UPLOAD_PATH.replace(/^\/*/, "")}"]:not(.aws-url)`,
-          ).forEach((a) => {
-            a.classList.add("aws-url");
-            a.setAttribute("href", "#/" + a.getAttribute("href"));
-          });
-
-          el.querySelectorAll(
-            `a.link:not(.aws-url)[href^="${FEATURE_FLAGS.ASSETS_BASE_PATH.replace(/^\/*/, "")}"]`,
-          ).forEach((a) => {
-            a.classList.add("aws-url");
-            a.classList.add("prevent-dblclick-visit");
-            a.addEventListener("dblclick", (ev) => {
-              ev.preventDefault();
-              downloadFileByUrl(a.getAttribute("href"));
-            });
-          });
-          el.querySelectorAll('a.link:not(.aws-url)[href^="/"]').forEach(
-            (a) => {
-              a.classList.add("prevent-dblclick-visit");
-              a.addEventListener("dblick", (ev) => {
-                ev.preventDefault();
-                navigate(a.getAttribute("href"));
-              });
-            },
-          );
-
-          // play audio on click
-          if (previewImages) {
-            el.querySelectorAll(
-              `a.link.aws-url[href^="#/${FEATURE_FLAGS.AUDIO_UPLOAD_PATH.replace(/^\/*/, "")}"]`,
-            ).forEach(async (a) => {
-              a.classList.add("prevent-dblclick-visit");
-              let url =
-                a.dataset.s3Url ||
-                (await s3.cachedSignedPublicS3Url(
-                  a.getAttribute("href").replace(/^#\//, ""),
-                ));
-              const id = "audio-preview-container";
-              a.addEventListener("dblclick", (ev) => {
-                let preview = document.getElementById(id);
-                if (preview) {
-                  if (preview.dataset.s3Url === url && preview.querySelector('audio')) {
-                    preview.querySelector('audio').play();
-                    preview.classList.add("visible");
-                    return;
-                  }
-                } else {
-                  preview = document.createElement("div");
-                  preview.id = id;
-                  preview.classList.add("audio-preview");
-                  preview.classList.add("visible");
-                }
-                preview.dataset.s3Url = url;
-                preview.querySelector('audio')?.remove();
-                let audio = document.createElement("audio");
-                audio.src = url;
-                audio.controls = true;
-                preview.appendChild(audio);
-                let div = document.createElement("div");
-                div.innerText = '⨯'; //'❎';//'✗'
-                div.classList.add("close-button");
-                div.addEventListener("click", (ev) => {
-                  preview.classList.remove("visible");
-                  setTimeout(() => {
-                    preview.remove();
-                  }, 200);
-                });
-                preview.prepend(div);
-                document.querySelector('.editor-wrapper').appendChild(preview);
-                preview.querySelector('audio').play();
-              });
-            });
-          }
-        });
-      }
-    });
-
-    refEditor.current.addEventListener("keyup", handleChangeDebounced);
-    refEditor.current.addEventListener("paste", (ev) => {
-      const clipboardData = ev.clipboardData || window.clipboardData;
-      const pastedText = clipboardData.getData("text/plain");
-      const pastedHtml = clipboardData.getData("text/html");
-      if (pastedHtml && convertHTMLToMarkdown) {
-        editor.customPasteText = createTurndownService().turndown(pastedHtml);
-      } else {
-        editor.customPasteText = pastedText;
-      }
-
-      handleChange(ev);
-      // editor.refresh();
-    });
-
-    if (scrollWindowToCenterCaret) {
-      refEditor.current.addEventListener("keyup", (ev) => {
-        refEditor.current.querySelector(".block.with-caret")?.scrollIntoView({
-          behaviour: "smooth",
-          container: "nearest",
-          block: "center",
-        });
-      });
-    }
-
-    const editor = new FocusEditorCore(refEditor.current);
-    refEditor.current.editor = editor;
-    setFocusEditor(editor);
-
-    if (initialText) {
-      editor.replaceText(initialText, { clearHistory: true });
-    }
-    editor.replaceHttpUrlsWithLinks =
-      FEATURE_FLAGS.TRANSFORM_HTTP_URL_TEXT_TO_LINKS;
-    editor.tabSize = 2;
-    editor.target.spellcheck = false;
-    return () => {
-      if (
-        typeof container !== "undefined" &&
-        container.contains(_editorElement)
-      ) {
-        container.removeChild(_editorElement);
-      }
-      refEditor.current?.destroy ? refEditor.current.destroy() : null;
+    const editor = {
+      get target() {
+        return tinyMDE.e;
+      },
+      getMarkdown() {
+        return tinyMDE.getContent();
+      },
+      getSelection(getAnchor) {
+        return tinyMDE.getSelection(getAnchor);
+      },
+      setSelection(focus, anchor) {
+        return tinyMDE.setSelection(focus, anchor);
+      },
+      replaceText(text, { clearHistory = false } = {}) {
+        if (clearHistory) {
+          // Drop old undo/redo history *before* setting content, so the
+          // freshly loaded content becomes the sole baseline to undo back to.
+          tinyMDE.undoStack = [];
+          tinyMDE.redoStack = [];
+        }
+        tinyMDE.setContent(text ?? "");
+      },
+      set placeholder(value) {
+        tinyMDE.placeholder = value;
+        tinyMDE.e.setAttribute("data-placeholder", value || "");
+        tinyMDE.updatePlaceholder();
+      },
+      set readOnly(value) {
+        tinyMDE.e.contentEditable = !value;
+      },
+      // TinyMDE re-renders reactively on every content change, so there is
+      // nothing to force here. Kept as no-ops so existing callers that used
+      // to trigger a re-render after DOM-level edits keep working unchanged.
+      refresh() {},
+      fullRefresh() {},
     };
+
+    setFocusEditor(editor);
   }, []);
 
   return (
@@ -254,9 +155,8 @@ export function EditorWrapper({
       ]
         .filter((v) => !!v)
         .join(" ")}
-      image-preview={previewImages ? "*" : null}
     >
-      <div ref={refEditor} onInput={handleInput}></div>
+      <div ref={refEditor}></div>
     </focus-editor>
   );
 }

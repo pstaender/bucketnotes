@@ -28,16 +28,16 @@ export function handleDrop(
       document.execCommand("insertText", false, text);
     } else {
       let active =
-        ev.target.closest(".main").querySelector(".block.with-caret") ||
-        ev.target.closest(".main").querySelector(".block:last-child");
+        ev.target.closest(".main").querySelector(".TinyMDE > div.with-caret") ||
+        ev.target.closest(".main").querySelector(".TinyMDE > div:last-child");
       active.textContent = (active.textContent + " " + text).trim();
     }
   }
 
   function applyText(newText) {
     let active =
-      ev.target.closest(".main")?.querySelector(".block.with-caret") ||
-      ev.target.closest(".main")?.querySelector(".block:last-child");
+      ev.target.closest(".main")?.querySelector(".TinyMDE > div.with-caret") ||
+      ev.target.closest(".main")?.querySelector(".TinyMDE > div:last-child");
     if (active) {
       active.textContent = (active.textContent + "\n" + newText).trim();
       setText(active.textContent);

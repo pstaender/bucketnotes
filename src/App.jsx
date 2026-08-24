@@ -25,7 +25,6 @@ import {
   unifyMarkdownTableCellWidths,
   sortS3FilesByAttribute,
 } from "./helper.js";
-import Cursor from "../focus-editor/Cursor.mjs";
 import * as db from "./db.js";
 import slugify from "slugify";
 import * as encrypt from "./encrypt.js";
@@ -384,17 +383,18 @@ export function App({ version, appName } = {}) {
   }
 
   function displayGoToParagraphDialog() {
-    let paragraphNumber = prompt("Go to paragraph number");
-    let target = focusEditor.target.querySelector(
-      `:scope > .block:nth-child(${Number(paragraphNumber)})`,
-    );
-    if (Number(paragraphNumber) >= 0) {
-      if (!target) {
-        target = focusEditor.target.querySelector(`:scope > .block:last-child`);
-      }
-      Cursor.setCurrentCursorPosition(0, target);
-
-      target.scrollIntoView({ block: "center", behavior: "instant" });
+    let lineNumber = prompt("Go to line number");
+    let n = Number(lineNumber);
+    if (n >= 0) {
+      let row = Math.min(
+        Math.max(n - 1, 0),
+        focusEditor.target.childElementCount - 1,
+      );
+      focusEditor.setSelection({ row, col: 0 });
+      focusEditor.target.children[row]?.scrollIntoView({
+        block: "center",
+        behavior: "instant",
+      });
     }
   }
 
@@ -539,14 +539,11 @@ export function App({ version, appName } = {}) {
   }
 
   async function saveFile(fileKey, text, { autoCreateNewFile, autoSave } = {}) {
-    if (rightTrimTextBeforeSave && focusEditor) {
-      //  rtrim manually + carefullyhtml content
-      focusEditor.allChildren().forEach((block) => {
-        let html = block.innerHTML.replace(/(\s|&nbsp;)+$/, "");
-        if (html !== block.innerHTML) {
-          block.innerHTML = html;
-        }
-      });
+    if (rightTrimTextBeforeSave) {
+      text = text
+        .split("\n")
+        .map((line) => line.replace(/\s+$/, ""))
+        .join("\n");
     }
 
     if (!fileKey || !VALID_FILE_EXTENSION.test(fileKey)) {
@@ -887,9 +884,6 @@ export function App({ version, appName } = {}) {
   }, [handleUnload]);
 
   useEffect(() => {
-    if (focusEditor?.target?.editor) {
-      focusEditor.target.editor.readonly = readonly;
-    }
     if (readonly || !s3Client || initialCaretPosition !== null) {
       return;
     }

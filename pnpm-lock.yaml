@@ -59,6 +59,9 @@ importers:
       slugify:
         specifier: ^1.6.6
         version: 1.6.6
+      tiny-markdown-editor:
+        specifier: ^0.2.32
+        version: 0.2.32
       turndown:
         specifier: ^7.2.1
         version: 7.2.1
@@ -2242,6 +2245,9 @@ packages:
   core-js@1.2.7:
     resolution: {integrity: sha512-ZiPp9pZlgxpWRu0M+YWbm6+aQ84XEfH1JRXvfOc/fILWI0VKhLC2LX13X1NYq4fULzLMq7Hfh43CSo2/aIaUPA==}
     deprecated: core-js@<3.23.3 is no longer maintained and not recommended for usage due to the number of issues. Because of the V8 engine whims, feature detection in old core-js versions could cause a slowdown up to 100x even if nothing is polyfilled. Some versions have web compatibility issues. Please, upgrade your dependencies to the actual version of core-js.
+
+  core-js@3.50.0:
+    resolution: {integrity: sha512-BRWgOLKkFeCgRudR6zrs8p9XJZcE14grzKMMssoYrk6krtuEZ7MTKPIY5RzOnqsEKIR9kst7wNzphttraT+Yqw==}
 
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
@@ -4447,6 +4453,9 @@ packages:
 
   timezones.json@1.7.2:
     resolution: {integrity: sha512-+5rRB7XCNeQ1ShJIIY+xrsupjWNHXGdraXE4ji6MDZjuzbm+Mt8n791PHeo1k0dndVG5Fp+qeOhgboSZN+zPgA==}
+
+  tiny-markdown-editor@0.2.32:
+    resolution: {integrity: sha512-8AZAZ0pLWgtuSX5/kWju6P+0LAi0XXhQO433HL3MBBHcSnnKTX/BslduOoPz1rUP5HoNmJm+KfuyAqDb7sjHuw==}
 
   tinyglobby@0.2.14:
     resolution: {integrity: sha512-tX5e7OM1HnYr2+a2C/4V0htOcSQcoSTH9KgJnVvNm5zm/cyEWKJ7j7YutsH9CxMdtOkkLFy2AHrMci9IM8IPZQ==}
@@ -7490,6 +7499,8 @@ snapshots:
 
   core-js@1.2.7: {}
 
+  core-js@3.50.0: {}
+
   core-util-is@1.0.3: {}
 
   cors@2.8.5:
@@ -10064,6 +10075,10 @@ snapshots:
   timed-out@2.0.0: {}
 
   timezones.json@1.7.2: {}
+
+  tiny-markdown-editor@0.2.32:
+    dependencies:
+      core-js: 3.50.0
 
   tinyglobby@0.2.14:
     dependencies:
