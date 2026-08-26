@@ -62,7 +62,8 @@ export function App({ version, appName } = {}) {
   const [statusText, setStatusText] = useState("");
   const [statusUpdatedAt, setStatusUpdatedAt] = useState(null);
   const [showSideBar, setShowSideBar] = useState(
-    localStorage.getItem("hideSideBar") !== "true",
+    !localStorage.getItem("hideSideBar") ||
+      localStorage.getItem("hideSideBar") !== "true",
   );
   const [bucketName, setBucketName] = useState("");
   const [text, setText] = useState("");
@@ -1223,11 +1224,16 @@ export function App({ version, appName } = {}) {
       return;
     }
     console.groupCollapsed("s3Error");
-    console.error(s3Error);
+    console.log(s3Error.message);
     console.groupEnd("s3Error");
     if (/SignatureDoesNotMatch/i.test(s3Error)) {
       logout();
       setLoginErrorMessage(`Wrong credentials?\n\n${s3Error}`);
+    }
+    if (/NetworkError/i.test(s3Error)) {
+      setErrorMessage(
+        "This happens, if the bucket name is misspelled and the S3 client is trying to reach a non-existing bucket.\nPlease logout and check your bucket name.",
+      );
     }
   }, [s3Error]);
 
@@ -1877,19 +1883,29 @@ export function App({ version, appName } = {}) {
       )}
       {errorMessage && (
         <div className="global-error-message">
-          {s3Error ? (
-            <div>Problem on loading: {s3Error.message}</div>
-          ) : (
-            errorMessage
-          )}
           <div>
-            <a
-              onClick={() => {
-                logout();
-              }}
-            >
-              Logout
-            </a>
+            {s3Error ? (
+              <>
+                <div className="s3-error-message">
+                  Problem on loading: {s3Error.message}
+                </div>
+                {errorMessage.split(`\n`).map((v) => (
+                  <p>{v}</p>
+                ))}
+              </>
+            ) : (
+              errorMessage.split(`\n`).map((v) => <p>{v}</p>)
+            )}
+            <div>
+              <a
+                className="logout"
+                onClick={() => {
+                  logout();
+                }}
+              >
+                Logout
+              </a>
+            </div>
           </div>
         </div>
       )}

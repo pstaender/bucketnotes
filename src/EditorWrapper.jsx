@@ -257,6 +257,9 @@ export function EditorWrapper({
     // can dim every other line (focus mode) and/or keep the caret centered.
     let currentCaretLine = null;
     tinyMDE.addEventListener("selection", (ev) => {
+      if (!ev.focus) {
+        return;
+      }
       const line = tinyMDE.lineElements[ev.focus.row];
       if (!line || line === currentCaretLine) {
         return;
