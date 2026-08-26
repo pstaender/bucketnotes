@@ -836,7 +836,6 @@ button {
     top: 0;
     z-index: 1000;
     background: var(--background-color);
-    --height-toggle-bar: 9px;
     --color-toggle-bar: var(--primary-color);
     .files ul li.no-hover {
       min-height: 0;
@@ -844,13 +843,8 @@ button {
       margin-top: 0;
     }
     .toggle-bar {
-      width: 100%;
-      position: absolute;
-      top: 0;
-      bottom: unset;
-      right: 0;
-      height: var(--height-toggle-bar);
       background: var(--color-toggle-bar);
+      width: 10px;
       transition:
         opacity 0.2s,
         filter 0.2s;
@@ -874,7 +868,7 @@ button {
     .toggle-bar {
       position: fixed;
       top: 0px;
-      opacity: 0.3;
+      opacity: 0.1;
       filter: saturate(0);
     }
   }
