@@ -1120,7 +1120,10 @@ export function App({ version, appName } = {}) {
 
             localStorage.setItem("new-unsaved-text", "");
             // otherwise the Y scroll position is sometimes a bit off
-            setTimeout(() => window.scrollTo(null, 0), 100);
+            setTimeout(() => {
+              window.scrollTo(null, 0);
+              focusEditor?.target?.focus();
+            }, 100);
           } catch (err) {
             console.error(err);
             updateStatusText(
