@@ -11,6 +11,7 @@ export function JumpToFileBar({ s3, setJumpToFile, sortFilesByAttribute }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
   const fileListRef = useRef(null);
+  const searchInputRef = useRef(null);
   const [showClearHistory, setShowClearHistory] = useState(false);
 
   useEffect(() => {
@@ -38,6 +39,23 @@ export function JumpToFileBar({ s3, setJumpToFile, sortFilesByAttribute }) {
   }
 
   const handleKeyDown = function (ev) {
+    if (ev.key === "Tab") {
+      ev.preventDefault();
+      let newValue = "/" + files[0].Key;
+      if (
+        files[0] &&
+        files[0].Key.split("/").length >= searchQuery.split("/").length
+      ) {
+        console.log("ok");
+        newValue = "/" + files[0].Key.split("/").slice(0, -1).join("/") + "/";
+      }
+
+      if (newValue !== null) {
+        searchInputRef.current.value = newValue;
+        setSearchQuery(newValue);
+      }
+      return;
+    }
     if (ev.key === "Enter" && selectedFile) {
       showFile(selectedFile);
     }
@@ -111,6 +129,7 @@ export function JumpToFileBar({ s3, setJumpToFile, sortFilesByAttribute }) {
         type="text"
         placeholder="Open file..."
         id="jump-to-file-bar-input"
+        ref={searchInputRef}
         autoFocus
         onInput={(ev) => setSearchQuery(ev.target.value)}
         onKeyDown={handleKeyDown}

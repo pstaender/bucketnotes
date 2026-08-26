@@ -215,7 +215,7 @@ html {
     top: 0;
     right: 0;
     bottom: 0;
-    width: 0.75rem;
+    width: 1rem;
     height: 100%;
     background: var(--background-color-very-light);
     transition: background 0.2s;
@@ -949,6 +949,24 @@ button {
         }
       }
     }
+    &:not(:has(.file-item)) {
+      display: flex;
+      align-items: center;
+      &:before {
+        content: 'No matching files found';
+        color: var(--grey-color);
+        padding: 0.5rem 0;
+      }
+    }
+  }
+}
+.editor-wrapper {
+  transition: filter 0.5s;
+}
+
+.main:has(#jump-to-file-bar) {
+  > .editor-wrapper {
+    filter: blur(15px) contrast(0.2) brightness(1.2);
   }
 }
 
