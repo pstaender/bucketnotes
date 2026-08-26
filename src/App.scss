@@ -799,6 +799,7 @@ button {
 
 @media screen and (max-width: 900px) {
   .app-window {
+    --sidebar-width: 20px;
     display: block;
     &.sidebar-expanded:not(.not-logged-in) {
       display: block;
@@ -837,14 +838,18 @@ button {
     z-index: 1000;
     background: var(--background-color);
     --color-toggle-bar: var(--primary-color);
-    .files ul li.no-hover {
-      min-height: 0;
-      padding: 0;
-      margin-top: 0;
+    .files ul {
+      padding-left: var(--sidebar-width);
+      li.no-hover {
+        min-height: 0;
+        padding: 0;
+        margin-top: 0;
+      }
     }
     .toggle-bar {
       background: var(--color-toggle-bar);
-      width: 17px;
+      width: var(--sidebar-width);
+      left: 0px;
       transition:
         opacity 0.2s,
         filter 0.2s;
@@ -873,7 +878,7 @@ button {
     }
   }
   .main {
-    padding-left: 0;
+    padding-left: var(--sidebar-width);
     padding-top: 0;
   }
 }
