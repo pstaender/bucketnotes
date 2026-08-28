@@ -53,12 +53,20 @@ focus-editor .TinyMDE.TinyMDE_empty {
 focus-editor .TinyMDE.TinyMDE_empty::before {
   content: attr(data-placeholder);
   position: absolute;
-  top: 0;
+  top: 0.3em;
   left: calc(var(--tmde-heading-indent-factor) * var(--tmde-space-left));
   pointer-events: none;
   color: var(--grey-color, #a0a0a0);
   font-weight: normal;
   font-style: normal;
+  transition: opacity 0.1s;
+  opacity: 1;
+}
+
+@starting-style {
+  focus-editor .TinyMDE.TinyMDE_empty::before {
+    opacity: 0;
+  }
 }
 
 focus-editor .TinyMDE > div {
