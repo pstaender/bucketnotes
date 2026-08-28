@@ -4,7 +4,7 @@ import { VALID_FILE_EXTENSION, isTouchDevice } from "./helper.js";
 
 import { useNavigate } from "react-router-dom";
 
-import DeleteIcon from "./icons/delete.svg";
+import DeleteIcon from "./icons/trash.svg";
 import HistoryIcon from "./icons/history.svg";
 import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";

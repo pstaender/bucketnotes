@@ -117,7 +117,8 @@ html {
     display: flex;
     flex-grow: 0;
     flex-shrink: 1;
-    gap: 0.5rem;
+    gap: 0.25rem;
+    padding-right: 0.25rem;
     .history {
       filter: var(--invert-img-filter);
     }
@@ -990,13 +991,46 @@ button {
       }
     }
   }
+  .file-item.close {
+    padding-right: 1rem;
+    font-size: var(--font-size-very-small);
+    text-align: right;
+    color: var(--grey-color);
+    @media (hover) {
+      &:hover {
+        color: currentColor;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+    }
+  }
+  @media screen and (max-width: 900px) {
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    max-height: inherit;
+    .file-list {
+      max-height: inherit;
+    }
+    .file-item.close {
+      display: block;
+
+      position: fixed;
+
+      bottom: 1rem;
+    }
+  }
 }
 .editor-wrapper {
   transition: filter 0.5s;
 }
 
-.main:has(#jump-to-file-bar) {
-  > .editor-wrapper {
+#app:has(#jump-to-file-bar) {
+  .toggle-bar {
+    display: none;
+  }
+  main .editor-wrapper {
     filter: blur(15px) contrast(0.2) brightness(1.2);
   }
 }
