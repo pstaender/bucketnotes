@@ -81,7 +81,7 @@ export function App({ version, appName } = {}) {
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showLastUsedFiles, setShowLastUsedFiles] = useState(false);
   const [openLastUsedFileOnStartup, setOpenLastUsedFileOnStartup] = useState(
-    localStorage.getItem("openLastUsedFileOnStartup") === "true",
+    localStorage.getItem("openLastUsedFileOnStartup") !== "false",
   );
   const [lastUsedFiles, setLastUsedFiles] = useState(
     localStorage.getItem("lastUsedFiles")
@@ -123,7 +123,7 @@ export function App({ version, appName } = {}) {
     localStorage.getItem("convertPDFToText") === "true",
   );
   const [convertHTMLToMarkdown, setConvertHTMLToMarkdown] = useState(
-    localStorage.getItem("convertHTMLToMarkdown") === "true",
+    localStorage.getItem("convertHTMLToMarkdown") !== "false",
   );
   const [showAdditionalMenuOption, setShowAdditionalMenuOption] =
     useState(false);
