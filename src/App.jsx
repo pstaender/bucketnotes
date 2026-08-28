@@ -512,7 +512,9 @@ export function App({ version, appName } = {}) {
         setFocusMode(!focusMode);
         return;
       }
-      if (ev.key === "/") {
+      if (ev.key === "/" || ev.key === "?") {
+        // "?" covers Shift+/ (the "/" key produces "?" once shifted on most
+        // layouts), so Cmd/Ctrl+/ and Cmd/Ctrl+Shift+/ both jump to files.
         ev.preventDefault();
         setJumpToFile(!jumpToFile);
         return;
@@ -1702,6 +1704,10 @@ export function App({ version, appName } = {}) {
                               className={fullWithEditor ? "active" : null}
                             >
                               Full-Width editing
+                            </li>
+                            <li onClick={() => setJumpToFile(true)}>
+                              Jump to file{" "}
+                              <span className="shortcut">⌘ + /</span>
                             </li>
                             <div
                               style={{
