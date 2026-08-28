@@ -1690,7 +1690,7 @@ export function App({ version, appName } = {}) {
                                 .filter((v) => !!v)
                                 .join(" ")}
                             >
-                              Remove trailing spaces on Save
+                              Remove trailing spaces on save
                             </li>
                             <li
                               data-is-more-options-item="true"
@@ -1703,7 +1703,7 @@ export function App({ version, appName } = {}) {
                               }}
                               className={fullWithEditor ? "active" : null}
                             >
-                              Full-Width editing
+                              Full-Width-Editing
                             </li>
                             <li onClick={() => setJumpToFile(true)}>
                               Jump to file{" "}
@@ -1734,7 +1734,7 @@ export function App({ version, appName } = {}) {
                     <span className="shortcut">⌘ + ;</span>
                   </li>
                   <li onClick={displayGoToParagraphDialog}>
-                    Jump to paragraph <span className="shortcut">⌘ + G</span>
+                    Jump to line <span className="shortcut">⌘ + G</span>
                   </li>
                   <li
                     onClick={(ev) => {
@@ -1753,7 +1753,7 @@ export function App({ version, appName } = {}) {
                       onMouseEnter={() => setShowLastUsedFiles(true)}
                       onMouseLeave={() => setShowLastUsedFiles(false)}
                     >
-                      Last used files
+                      Last files
                       {showLastUsedFiles && (
                         <div className="more-options">
                           <ul className="menu">
