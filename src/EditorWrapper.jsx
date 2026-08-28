@@ -333,21 +333,27 @@ export function EditorWrapper({
 
     // Move a "with-caret" class to the line the caret is currently on, so CSS
     // can dim every other line (focus mode) and/or keep the caret centered.
+    // Re-applied unconditionally below (not just when the line changes)
+    // because TinyMDE re-renders a line's DOM node in place (resetting its
+    // className) whenever its content is edited, which would otherwise wipe
+    // the class right back off while the caret stays put and typing continues.
     let currentCaretLine = null;
     tinyMDE.addEventListener("selection", (ev) => {
       if (!ev.focus) {
         return;
       }
       const line = tinyMDE.lineElements[ev.focus.row];
-      if (!line || line === currentCaretLine) {
+      if (!line) {
         return;
       }
-      currentCaretLine?.classList.remove("with-caret");
-      line.classList.add("with-caret");
-      currentCaretLine = line;
-      if (scrollWindowToCenterCaret) {
-        line.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (line !== currentCaretLine) {
+        currentCaretLine?.classList.remove("with-caret");
+        currentCaretLine = line;
+        if (scrollWindowToCenterCaret) {
+          line.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       }
+      line.classList.add("with-caret");
     });
 
     tinyMDE.addEventListener("change", (ev) =>
