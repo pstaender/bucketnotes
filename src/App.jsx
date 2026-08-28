@@ -709,7 +709,7 @@ export function App({ version, appName } = {}) {
         localStorage.setItem("new-unsaved-text", text);
       }
     }
-    if (caretPosition) {
+    if (caretPosition !== null && caretPosition !== undefined) {
       localStorage.setItem("caretPosition", caretPosition);
     }
   }

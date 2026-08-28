@@ -169,6 +169,36 @@ function indentSelection(tinyMDE, tabSize, dedent) {
   tinyMDE.fireChange();
 }
 
+// Converts a {row, col} selection into a single character offset into
+// `content`, so the caret position can be persisted (e.g. across a page
+// reload) as one plain number.
+function offsetFromPosition(content, pos) {
+  if (!pos) {
+    return null;
+  }
+  const lines = content.split(/\r\n|\r|\n/);
+  let offset = 0;
+  for (let i = 0; i < pos.row; i++) {
+    offset += (lines[i]?.length ?? 0) + 1;
+  }
+  return offset + pos.col;
+}
+
+// Inverse of offsetFromPosition: resolves a character offset back into a
+// {row, col} selection against `content`, clamped to its bounds.
+function positionFromOffset(content, offset) {
+  const lines = content.split(/\r\n|\r|\n/);
+  let remaining = offset;
+  for (let row = 0; row < lines.length; row++) {
+    if (remaining <= lines[row].length) {
+      return { row, col: Math.max(0, remaining) };
+    }
+    remaining -= lines[row].length + 1;
+  }
+  const lastRow = lines.length - 1;
+  return { row: lastRow, col: lines[lastRow]?.length ?? 0 };
+}
+
 function openLink(url, navigate) {
   const target = resolveLinkTarget(url);
   if (!target) {
@@ -199,10 +229,12 @@ export function EditorWrapper({
   setFocusEditor,
   convertHTMLToMarkdown,
   tabSize = 2,
+  initialCaretPosition,
 } = {}) {
   const refEditor = useRef();
   const refTinyMDE = useRef();
   const refTabSize = useRef(tabSize);
+  const refCaretRestored = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -210,16 +242,62 @@ export function EditorWrapper({
   }, [tabSize]);
 
   const handleChange = (content) => {
-    onChange(content, {});
+    const focusPos = refTinyMDE.current?.getSelection?.(false);
+    onChange(content, { caretPosition: offsetFromPosition(content, focusPos) });
   };
 
   const handleChangeDebounced = debounce(handleChange, 200);
 
+  // Syncs external content changes (e.g. a file (re)load) into the editor.
+  // This can fire while the user is actively editing (a redundant reload of
+  // content that's already on screen, or a race between two loads), so it
+  // must not blow away focus/caret unless the content genuinely changed.
   useEffect(() => {
-    if (initialText !== null && initialText !== undefined && focusEditor) {
-      focusEditor.replaceText(initialText, { clearHistory: true });
+    if (initialText === null || initialText === undefined || !focusEditor) {
+      return;
+    }
+    if (focusEditor.getMarkdown() === initialText) {
+      return;
+    }
+
+    const hadFocus = document.activeElement === focusEditor.target;
+    const focusPos = hadFocus ? focusEditor.getSelection(false) : null;
+    const anchorPos = hadFocus ? focusEditor.getSelection(true) : null;
+
+    focusEditor.replaceText(initialText, { clearHistory: true });
+
+    if (hadFocus) {
+      focusEditor.target.focus();
+      const lines = initialText.split(/\r\n|\r|\n/);
+      const clamp = (pos) => {
+        if (!pos) {
+          return pos;
+        }
+        const row = Math.min(Math.max(pos.row, 0), lines.length - 1);
+        const col = Math.min(Math.max(pos.col, 0), lines[row].length);
+        return { row, col };
+      };
+      focusEditor.setSelection(clamp(focusPos), clamp(anchorPos));
     }
   }, [initialText, focusEditor]);
+
+  // One-time restore of the caret position persisted by handleChange (e.g.
+  // across a browser/PWA reload of the same file), once the editor exists
+  // and its content has been loaded.
+  useEffect(() => {
+    if (
+      refCaretRestored.current ||
+      !focusEditor ||
+      initialCaretPosition === null ||
+      initialCaretPosition === undefined
+    ) {
+      return;
+    }
+    refCaretRestored.current = true;
+    const pos = positionFromOffset(focusEditor.getMarkdown(), initialCaretPosition);
+    focusEditor.setSelection(pos);
+    focusEditor.target.focus();
+  }, [focusEditor, initialCaretPosition]);
 
   useEffect(() => {
     if (!focusEditor) {
