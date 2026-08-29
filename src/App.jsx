@@ -512,9 +512,7 @@ export function App({ version, appName } = {}) {
         setFocusMode(!focusMode);
         return;
       }
-      if (ev.key === "/" || ev.key === "?") {
-        // "?" covers Shift+/ (the "/" key produces "?" once shifted on most
-        // layouts), so Cmd/Ctrl+/ and Cmd/Ctrl+Shift+/ both jump to files.
+      if (ev.key === "/") {
         ev.preventDefault();
         setJumpToFile(!jumpToFile);
         return;
@@ -522,11 +520,6 @@ export function App({ version, appName } = {}) {
       if (ev.key === "g") {
         ev.preventDefault();
         displayGoToParagraphDialog();
-        return;
-      }
-      if (ev.key === "f" && ev.shiftKey) {
-        ev.preventDefault();
-        toggleFullScreen();
         return;
       }
     }
@@ -1538,7 +1531,6 @@ export function App({ version, appName } = {}) {
                               }
                             >
                               Fullscreen{" "}
-                              <span className="shortcut">⌘ + Shift + F</span>
                             </li>
                             <li className="border-bottom">
                               <div title="Increase or decrease font size">
@@ -1705,10 +1697,6 @@ export function App({ version, appName } = {}) {
                             >
                               Full-Width-Editing
                             </li>
-                            <li onClick={() => setJumpToFile(true)}>
-                              Jump to file{" "}
-                              <span className="shortcut">⌘ + /</span>
-                            </li>
                             <div
                               style={{
                                 textAlign: "right",
@@ -1734,7 +1722,11 @@ export function App({ version, appName } = {}) {
                     <span className="shortcut">⌘ + ;</span>
                   </li>
                   <li onClick={displayGoToParagraphDialog}>
-                    Jump to line <span className="shortcut">⌘ + G</span>
+                    Go to line <span className="shortcut">⌘ + G</span>
+                  </li>
+                  <li onClick={() => setJumpToFile(true)}>
+                    Jump to file
+                    <span className="shortcut">⌘ + /</span>
                   </li>
                   <li
                     onClick={(ev) => {
