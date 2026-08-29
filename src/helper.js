@@ -58,10 +58,10 @@ export async function sha1(input) {
   return hashHex; // Return the SHA-1 hash as a hex string
 }
 
-export function downloadFileByUrl(url) {
+export function downloadFileByUrl(url, filename = null) {
   const link = document.createElement("a");
   link.href = url;
-  link.download = url.split("/").pop();
+  link.download = filename || url.split("/").pop();
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

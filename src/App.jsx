@@ -237,12 +237,9 @@ export function App({ version, appName } = {}) {
     }
 
     if (
-      FEATURE_FLAGS.IMAGE_UPLOAD_PATH.includes(folderPath) ||
-      FEATURE_FLAGS.VIDEO_UPLOAD_PATH.includes(folderPath) ||
-      FEATURE_FLAGS.AUDIO_UPLOAD_PATH.includes(folderPath) ||
-      FEATURE_FLAGS.ARCHIVE_UPLOAD_PATH.includes(folderPath)
+      folderPath.startsWith(FEATURE_FLAGS.ASSETS_BASE_PATH)
     ) {
-      /* SHOW ALL FILES AND FOLDER */
+      /* SHOW ALL FILES AND FOLDER IN ASSETS FODLER */
     } else {
       files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
     }
@@ -989,13 +986,25 @@ export function App({ version, appName } = {}) {
     loadS3Files();
   }, [folderPath, sortFilesByAttribute]);
 
+  async function downloadAssetFile(url) {
+    const filename = url.split('/').at(-1);
+    const publicUrl = await s3.getPublicUrl(url.replace(/^\//, ""), 60);
+    // download file in the browser
+    fetch(publicUrl)
+      .then((response) => response.blob())
+      .then((blob) => {
+        // Create a Blob URL
+        const url = window.URL.createObjectURL(blob);
+        downloadFileByUrl(url, filename);
+        updateStatusText(`Downloading file '${url}'`);
+      })
+      .catch((error) => console.error("Error downloading file:", error));
+  }
+
   useEffect(() => {
     if (location.pathname === "/logout") {
       return logout();
     }
-    setDisplayImageUrl(null);
-    setPlayAudioUrl(false);
-    setPlayVideoUrl(false);
     if (location.pathname.startsWith(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`)) {
       (async () => {
         const url = location.pathname.replace(/^\//, "");
@@ -1004,7 +1013,12 @@ export function App({ version, appName } = {}) {
       })();
       return;
     }
-    if (location.pathname.startsWith(`${FEATURE_FLAGS.VIDEO_UPLOAD_PATH}/`)) {
+    else if (location.pathname.startsWith(`${FEATURE_FLAGS.ASSETS_BASE_PATH}/`)) {
+      // download file
+      downloadAssetFile(location.pathname.replace(/^\//, ""));
+      return;
+    }
+    else if (location.pathname.startsWith(`${FEATURE_FLAGS.VIDEO_UPLOAD_PATH}/`)) {
       (async () => {
         const url = location.pathname.replace(/^\//, "");
         const publicUrl = await s3.cachedSignedPublicS3Url(url);
@@ -1012,7 +1026,7 @@ export function App({ version, appName } = {}) {
       })();
       return;
     }
-    if (location.pathname.startsWith(`${FEATURE_FLAGS.AUDIO_UPLOAD_PATH}/`)) {
+    else if (location.pathname.startsWith(`${FEATURE_FLAGS.AUDIO_UPLOAD_PATH}/`)) {
       (async () => {
         const url = location.pathname.replace(/^\//, "");
         const publicUrl = await s3.cachedSignedPublicS3Url(url);
@@ -1020,23 +1034,12 @@ export function App({ version, appName } = {}) {
       })();
       return;
     }
-    if (location.pathname.startsWith(`${FEATURE_FLAGS.ASSETS_BASE_PATH}/`)) {
-      // download file
-      (async () => {
-        const url = location.pathname.replace(/^\//, "");
-        const publicUrl = await s3.getPublicUrl(url, 60);
-        // download file in the browser
-        fetch(publicUrl)
-          .then((response) => response.blob())
-          .then((blob) => {
-            // Create a Blob URL
-            const url = window.URL.createObjectURL(blob);
-            downloadFileByUrl(url);
-            updateStatusText(`Downloading file '${url}'`);
-          })
-          .catch((error) => console.error("Error downloading file:", error));
-      })();
-    }
+    setDisplayImageUrl(null);
+    setPlayAudioUrl(false);
+    setPlayVideoUrl(false);
+
+
+
     if (!s3Client || location.pathname === "/") {
       return;
     }
@@ -1877,6 +1880,7 @@ export function App({ version, appName } = {}) {
                     focusEditor={focusEditor}
                     setFocusEditor={setFocusEditor}
                     convertHTMLToMarkdown={convertHTMLToMarkdown}
+                    downloadAssetFile={downloadAssetFile}
                   ></EditorWrapper>
                 </div>
               </div>

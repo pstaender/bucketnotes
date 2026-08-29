@@ -1,3 +1,4 @@
+import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import { Editor as TinyMDE } from "tiny-markdown-editor";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -199,14 +200,18 @@ function positionFromOffset(content, offset) {
   return { row: lastRow, col: lines[lastRow]?.length ?? 0 };
 }
 
-function openLink(url, navigate) {
+function openLink(url, downloadAssetFile, navigate) {
   const target = resolveLinkTarget(url);
   if (!target) {
     return;
   }
   const isHttpLike = ["http:", "https:", "ftp:"].includes(target.protocol);
   if (isHttpLike && target.origin === window.location.origin) {
-    navigate(`${target.pathname}${target.search}${target.hash}`);
+    if (target.pathname.startsWith(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`)) {
+      navigate(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}${target.pathname.slice(FEATURE_FLAGS.IMAGE_UPLOAD_PATH.length)}`);
+      return;
+    }
+    downloadAssetFile(`${target.pathname}${target.search}${target.hash}`);
     return;
   }
   if (isHttpLike) {
@@ -230,6 +235,7 @@ export function EditorWrapper({
   convertHTMLToMarkdown,
   tabSize = 2,
   initialCaretPosition,
+  downloadAssetFile,
 } = {}) {
   const refEditor = useRef();
   const refTinyMDE = useRef();
@@ -398,7 +404,7 @@ export function EditorWrapper({
         return;
       }
       ev.preventDefault();
-      openLink(url, navigate);
+      openLink(url, downloadAssetFile, navigate);
     });
 
     const editor = {
