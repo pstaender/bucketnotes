@@ -1014,11 +1014,11 @@ button {
       max-height: inherit;
     }
     .file-item.close {
+      padding: 0;
       display: block;
-
       position: fixed;
-
       bottom: 1rem;
+      right: 1rem;
     }
   }
 }
