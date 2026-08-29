@@ -414,6 +414,22 @@ export function EditorWrapper({
       setSelection(focus, anchor) {
         return tinyMDE.setSelection(focus, anchor);
       },
+      // Inserts `text` at the current caret position (replacing any selection).
+      // When focus has moved elsewhere (e.g. a menu was clicked) the DOM
+      // selection is gone, so fall back to the end of the line that last held
+      // the caret before letting TinyMDE append at the document end.
+      insertText(text) {
+        if (!tinyMDE.getSelection(false)) {
+          const caretLine = tinyMDE.e.querySelector("div.with-caret");
+          const row = caretLine
+            ? Array.from(tinyMDE.e.children).indexOf(caretLine)
+            : -1;
+          if (row >= 0) {
+            tinyMDE.setSelection({ row, col: tinyMDE.lines[row].length });
+          }
+        }
+        tinyMDE.paste(text);
+      },
       replaceText(text, { clearHistory = false } = {}) {
         if (clearHistory) {
           // Drop old undo/redo history *before* setting content, so the

@@ -17,6 +17,7 @@ import { useLongPress } from "use-long-press";
 import * as s3 from "./s3.js";
 import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
+import { pickAndInsertMediaFile } from "./file-imports/insertMediaFile.jsx";
 import { FileList } from "./FileList.jsx";
 import {
   isTouch,
@@ -1609,6 +1610,16 @@ export function App({ version, appName } = {}) {
                               }}
                             >
                               Offline Storage
+                            </li>
+                            <li
+                              onClick={() => {
+                                pickAndInsertMediaFile({
+                                  updateStatusText,
+                                  focusEditor,
+                                });
+                              }}
+                            >
+                              Insert media file
                             </li>
                             <li
                               data-is-more-options-item="true"
