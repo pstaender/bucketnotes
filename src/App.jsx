@@ -72,8 +72,7 @@ export function App({ version, appName } = {}) {
   const [s3Client, setS3Client] = useState(null);
   const [loginErrorMessage, setLoginErrorMessage] = useState("");
   const [autoSave, setAutoSave] = useState(
-    //localStorage.getItem("autoSave") === "true",
-    false,
+    localStorage.getItem("autoSave") === "true",
   );
   const [lastSavedText, setLastSavedText] = useState(null);
   const [lastEditedFile, setLastEditedFile] = useState(null);
@@ -848,9 +847,10 @@ export function App({ version, appName } = {}) {
     }
     s3.isBucketVersioningEnabled()
       .then((isEnabled) => {
-        setAutoSave(isEnabled);
+        isEnabled && updateStatusText('File versioning is enabled');
       })
       .catch((err) => setS3Error(err));
+
   }, [files, credentials, s3Client]);
 
   useEffect(() => {
@@ -1208,9 +1208,9 @@ export function App({ version, appName } = {}) {
 
   useEffect(() => {
     if (autoSave) {
-      localStorage.setItem("autoSave", "false");
-    } else {
       localStorage.setItem("autoSave", "true");
+    } else {
+      localStorage.setItem("autoSave", "false");
     }
   }, [autoSave]);
 
