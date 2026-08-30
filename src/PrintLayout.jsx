@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 import closeIcon from "./icons/close.svg";
 import "./PrintLayout.css";
@@ -6,13 +6,51 @@ import "./PrintLayout.css";
 const MINIMAX_STYLESHEETS = [
   "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax.css",
   "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-din-a4.css",
-  // "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-serif.css",
-  // "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-alternate-fonts.css",
-  // "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-monospace.css",
-  // "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-tufte.css",
 ];
 
+const MINIMAX_VARIANTS = [
+  { label: "Default", href: null },
+  {
+    label: "Serif",
+    hrefs: ["https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-serif.css"],
+  },
+  {
+    label: "Alternate fonts",
+    hrefs: [
+      "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-alternate-fonts.css",
+    ],
+  },
+  {
+    label: "Monospace",
+    hrefs: [
+      "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-monospace.css",
+    ],
+  },
+  {
+    label: "Tufte",
+    hrefs: [
+      "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-serif.css",
+      "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-tufte.css",
+    ],
+  },
+];
+
+const MINIMAX_LANDSCAPE =
+  "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-page-landscape.css";
+
+function appendPrintStylesheet(href) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  link.dataset.printLayout = "true";
+  document.head.appendChild(link);
+  return link;
+}
+
 export function PrintLayout({ text, filename, onClose } = {}) {
+  const [variant, setVariant] = useState("Default");
+  const [landscape, setLandscape] = useState(false);
+
   const html = useMemo(
     () => marked.parse(text || "", { gfm: true, breaks: false }),
     [text],
@@ -21,25 +59,14 @@ export function PrintLayout({ text, filename, onClose } = {}) {
   useEffect(() => {
     const metaColorScheme = document.querySelector(`meta[name="color-scheme"]`);
     const previousColorSchemeContent = metaColorScheme.content;
-    // temporarily load the minimax print stylesheets while the layout is open
-    const links = MINIMAX_STYLESHEETS.map((href) => {
-      document
-        .querySelectorAll('head link[rel="stylesheet"]')
-        .forEach((link) => {
-          if (link.dataset.printLayout) {
-            return;
-          }
-          link.disabled = true;
-        });
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = href;
-      link.dataset.printLayout = "true";
-      document.head.appendChild(link);
-      return link;
+    document.querySelectorAll('head link[rel="stylesheet"]').forEach((link) => {
+      if (link.dataset.printLayout) {
+        return;
+      }
+      link.disabled = true;
     });
-    metaColorScheme.content = '';
-    window.print();
+    const links = MINIMAX_STYLESHEETS.map(appendPrintStylesheet);
+    metaColorScheme.content = "";
     return () => {
       links.forEach((link) => link.remove());
       metaColorScheme.content = previousColorSchemeContent;
@@ -48,6 +75,23 @@ export function PrintLayout({ text, filename, onClose } = {}) {
         .forEach((link) => (link.disabled = false));
     };
   }, []);
+
+  useEffect(() => {
+    const hrefs = MINIMAX_VARIANTS.find((v) => v.label === variant)?.hrefs;
+    if (!hrefs) {
+      return;
+    }
+    const links = hrefs.map((href) => appendPrintStylesheet(href));
+    return () => links.forEach((link) => link.remove());
+  }, [variant]);
+
+  useEffect(() => {
+    if (!landscape) {
+      return;
+    }
+    const link = appendPrintStylesheet(MINIMAX_LANDSCAPE);
+    return () => link.remove();
+  }, [landscape]);
 
   useEffect(() => {
     const onKeyDown = (ev) => {
@@ -62,10 +106,32 @@ export function PrintLayout({ text, filename, onClose } = {}) {
   const title = (filename || "").replace(/^\/+/, "");
 
   return (
-    <div className="print-layout">
+    <div
+      className={["print-layout", landscape ? "landscape" : null]
+        .filter((v) => !!v)
+        .join(" ")}
+    >
       <div className="print-layout-toolbar">
         <span className="print-layout-title">{title}</span>
         <div className="print-layout-actions">
+          <label className="print-layout-landscape">
+            <input
+              type="checkbox"
+              checked={landscape}
+              onChange={(ev) => setLandscape(ev.target.checked)}
+            />
+            Landscape
+          </label>
+          <select
+            value={variant}
+            onChange={(ev) => setVariant(ev.target.value)}
+          >
+            {MINIMAX_VARIANTS.map((v) => (
+              <option key={v.label} value={v.label}>
+                {v.label}
+              </option>
+            ))}
+          </select>
           <button onClick={() => window.print()}>Print</button>
           <button onClick={() => onClose?.()}>
             <img src={closeIcon} alt="Close" />

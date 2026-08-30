@@ -31,7 +31,20 @@
 
   .print-layout .print-layout-actions {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
+  }
+
+  .print-layout .print-layout-landscape {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--font-size-small, 0.85rem);
+    white-space: nowrap;
+  }
+
+  .print-layout .print-layout-actions select {
+    margin: 0;
   }
 
   .print-layout .print-layout-actions button {
@@ -59,7 +72,11 @@
     box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
     padding: 2.5rem 3rem;
     border-radius: 5px;
-    max-width: 51rem;
+    max-width: 58rem;
+  }
+
+  .print-layout.landscape .print-layout-page article {
+    max-width: 90rem;
   }
 }
 
