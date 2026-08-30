@@ -103,4 +103,12 @@
   .app-window:has(.print-layout) > *:not(.print-layout) {
     display: none !important;
   }
+  .minimax {
+    a {
+      color: currentColor;
+      text-decoration: underline;
+      font-weight: normal;
+    }
+  }
+
 }

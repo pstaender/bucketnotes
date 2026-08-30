@@ -2,7 +2,7 @@ import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import { Editor as TinyMDE } from "tiny-markdown-editor";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { debounce, createTurndownService } from "./helper";
+import { debounce, createTurndownService, VALID_FILE_EXTENSION } from "./helper";
 
 // Elements TinyMDE renders as part of a link/image construct. It has no
 // per-token wrapper, so a double click anywhere inside one of these needs to
@@ -40,7 +40,9 @@ function getLinkUrlFromElement(target) {
     return /^[^@]+@[^@]+$/.test(text) ? `mailto:${text}` : text;
   }
 
-  const marker = target.closest(LINK_PART_CLASSES.map((c) => `.${c}`).join(", "));
+  const marker = target.closest(
+    LINK_PART_CLASSES.map((c) => `.${c}`).join(", "),
+  );
   if (!marker || !marker.parentElement) {
     return null;
   }
@@ -130,7 +132,8 @@ function indentSelection(tinyMDE, tabSize, dedent) {
   }
 
   const anchorFirst =
-    anchor.row < focus.row || (anchor.row === focus.row && anchor.col <= focus.col);
+    anchor.row < focus.row ||
+    (anchor.row === focus.row && anchor.col <= focus.col);
   const startRow = anchorFirst ? anchor.row : focus.row;
   let endRow = anchorFirst ? focus.row : anchor.row;
   const endCol = anchorFirst ? focus.col : anchor.col;
@@ -208,8 +211,13 @@ function openLink(url, downloadAssetFile, navigate) {
   const isHttpLike = ["http:", "https:", "ftp:"].includes(target.protocol);
   if (isHttpLike && target.origin === window.location.origin) {
     if (target.pathname.startsWith(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`)) {
-      navigate(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}${target.pathname.slice(FEATURE_FLAGS.IMAGE_UPLOAD_PATH.length)}`);
+      navigate(
+        `${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}${target.pathname.slice(FEATURE_FLAGS.IMAGE_UPLOAD_PATH.length)}`,
+      );
       return;
+    }
+    if (VALID_FILE_EXTENSION.test(String(target))) {
+      return navigate(String(target).split('#')[1]);
     }
     downloadAssetFile(`${target.pathname}${target.search}${target.hash}`);
     return;
@@ -300,7 +308,10 @@ export function EditorWrapper({
       return;
     }
     refCaretRestored.current = true;
-    const pos = positionFromOffset(focusEditor.getMarkdown(), initialCaretPosition);
+    const pos = positionFromOffset(
+      focusEditor.getMarkdown(),
+      initialCaretPosition,
+    );
     focusEditor.setSelection(pos);
     focusEditor.target.focus();
   }, [focusEditor, initialCaretPosition]);
