@@ -61,6 +61,7 @@ export function App({ version, appName } = {}) {
 
   const [initialText, setInitialText] = useState("");
   const [statusText, setStatusText] = useState("");
+  const [statusTextCssClass, setStatusTextCssClass] = useState("");
   const [statusUpdatedAt, setStatusUpdatedAt] = useState(null);
   const [showSideBar, setShowSideBar] = useState(
     !localStorage.getItem("hideSideBar") ||
@@ -71,7 +72,8 @@ export function App({ version, appName } = {}) {
   const [s3Client, setS3Client] = useState(null);
   const [loginErrorMessage, setLoginErrorMessage] = useState("");
   const [autoSave, setAutoSave] = useState(
-    localStorage.getItem("autoSave") !== "false",
+    //localStorage.getItem("autoSave") === "true",
+    false,
   );
   const [lastSavedText, setLastSavedText] = useState(null);
   const [lastEditedFile, setLastEditedFile] = useState(null);
@@ -236,9 +238,7 @@ export function App({ version, appName } = {}) {
       }
     }
 
-    if (
-      folderPath.startsWith(FEATURE_FLAGS.ASSETS_BASE_PATH)
-    ) {
+    if (folderPath.startsWith(FEATURE_FLAGS.ASSETS_BASE_PATH)) {
       /* SHOW ALL FILES AND FOLDER IN ASSETS FODLER */
     } else {
       files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
@@ -362,12 +362,15 @@ export function App({ version, appName } = {}) {
     setFileVersions(versions.filter((v) => v.Size > 0));
   }
 
-  function updateStatusText(
-    text,
-    timeout = defaultShowStatusTextInMilliseconds,
-  ) {
+  function updateStatusText(text, { timeout, type } = {}) {
+    if (timeout === undefined) {
+      timeout = defaultShowStatusTextInMilliseconds;
+    }
     console.debug(text);
     setStatusText(text);
+    if (type) {
+      setStatusTextCssClass(type);
+    }
     setShowStatusTextInMilliseconds(timeout);
     setStatusUpdatedAt(new Date().getTime());
   }
@@ -553,11 +556,22 @@ export function App({ version, appName } = {}) {
       }
       return;
     }
+
+    if (fileKey !== location.pathname.replace(/^\//, "")) {
+      updateStatusText(
+        `Could not save file, because location url (${location.pathname.replace(/^\//, "")}) differs from fileKey ${fileKey}`,
+        { type: "error" },
+      );
+      return;
+    }
+
+    console.log({ fileKey }, location.pathname);
+
     let previousContent = null;
     try {
       previousContent = (await s3.getFile(fileKey)).content;
       if (previousContent === text) {
-        setStatusText("No changes to save");
+        updateStatusText("No changes to save");
         return;
       }
     } catch (e) {
@@ -670,7 +684,7 @@ export function App({ version, appName } = {}) {
       }
       if (count > maxCount) {
         clearInterval(intervalID);
-        updateStatusText("New file could not be loaded…");
+        updateStatusText("New file could not be loaded…", { type: "error" });
         if (cb) {
           cb(null);
         }
@@ -853,6 +867,7 @@ export function App({ version, appName } = {}) {
           // remove status text
           setStatusUpdatedAt(0);
           setStatusText(null);
+          setStatusTextCssClass("");
         }
       }, showStatusTextInMilliseconds);
     }
@@ -987,7 +1002,7 @@ export function App({ version, appName } = {}) {
   }, [folderPath, sortFilesByAttribute]);
 
   async function downloadAssetFile(url) {
-    const filename = url.split('/').at(-1);
+    const filename = url.split("/").at(-1);
     const publicUrl = await s3.getPublicUrl(url.replace(/^\//, ""), 60);
     // download file in the browser
     fetch(publicUrl)
@@ -1012,33 +1027,34 @@ export function App({ version, appName } = {}) {
         setDisplayImageUrl(publicUrl);
       })();
       return;
-    }
-    else if (location.pathname.startsWith(`${FEATURE_FLAGS.ASSETS_BASE_PATH}/`)) {
-      // download file
-      downloadAssetFile(location.pathname.replace(/^\//, ""));
-      return;
-    }
-    else if (location.pathname.startsWith(`${FEATURE_FLAGS.VIDEO_UPLOAD_PATH}/`)) {
+    } else if (
+      location.pathname.startsWith(`${FEATURE_FLAGS.VIDEO_UPLOAD_PATH}/`)
+    ) {
       (async () => {
         const url = location.pathname.replace(/^\//, "");
         const publicUrl = await s3.cachedSignedPublicS3Url(url);
         setPlayVideoUrl(publicUrl);
       })();
       return;
-    }
-    else if (location.pathname.startsWith(`${FEATURE_FLAGS.AUDIO_UPLOAD_PATH}/`)) {
+    } else if (
+      location.pathname.startsWith(`${FEATURE_FLAGS.AUDIO_UPLOAD_PATH}/`)
+    ) {
       (async () => {
         const url = location.pathname.replace(/^\//, "");
         const publicUrl = await s3.cachedSignedPublicS3Url(url);
         setPlayAudioUrl(publicUrl);
       })();
       return;
+    } else if (
+      location.pathname.startsWith(`${FEATURE_FLAGS.ASSETS_BASE_PATH}/`)
+    ) {
+      // download file
+      downloadAssetFile(location.pathname.replace(/^\//, ""));
+      return;
     }
     setDisplayImageUrl(null);
     setPlayAudioUrl(false);
     setPlayVideoUrl(false);
-
-
 
     if (!s3Client || location.pathname === "/") {
       return;
@@ -1192,7 +1208,7 @@ export function App({ version, appName } = {}) {
 
   useEffect(() => {
     if (autoSave) {
-      localStorage.setItem("autoSave", "");
+      localStorage.setItem("autoSave", "false");
     } else {
       localStorage.setItem("autoSave", "true");
     }
@@ -1924,7 +1940,12 @@ export function App({ version, appName } = {}) {
         </div>
       )}
       {statusText && (
-        <div className="status-bar" onClick={() => setStatusText("")}>
+        <div
+          className={["status-bar", statusTextCssClass]
+            .filter((v) => !!v)
+            .join(" ")}
+          onClick={() => setStatusText("")}
+        >
           {statusText}
         </div>
       )}

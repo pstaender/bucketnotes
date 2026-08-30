@@ -39,11 +39,13 @@ focus-editor .TinyMDE {
   color: inherit;
   font-family: inherit;
   font-size: inherit;
-  white-space: pre-wrap !important;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 focus-editor.no-wrap .TinyMDE {
-  white-space: pre !important;
+  white-space: pre;
+  word-break: inherit;
 }
 
 focus-editor .TinyMDE.TinyMDE_empty {
@@ -207,10 +209,13 @@ focus-editor .TinyMDE .TMMark_TMH2,
 focus-editor .TinyMDE .TMMark_TMH3,
 focus-editor .TinyMDE .TMMark_TMH4,
 focus-editor .TinyMDE .TMMark_TMH5,
-focus-editor .TinyMDE .TMMark_TMH6,
+focus-editor .TinyMDE .TMMark_TMH6 {
+  color: var(--text-color);
+}
+
 focus-editor .TinyMDE .TMMark_TMUL,
 focus-editor .TinyMDE .TMMark_TMOL {
-  color: var(--text-color);
+  color: var(--grey-color);
 }
 
 /* task list checkboxes */

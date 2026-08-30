@@ -1,6 +1,7 @@
 @mixin css-colors {
   --text-color: #000;
   --grey-color: #aaa;
+  --red-color: rgb(239,135,142);
   --background-color: #f7f7f7;
   --background-color-very-light: #eee;
   --background-color-light: #ddd;
@@ -101,12 +102,15 @@ html {
 .status-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
+  right: 0.5rem;
   padding: 1rem;
   background: var(--background-color);
   width: calc(100% - 2rem);
   color: var(--grey-color);
   text-align: right;
+  &.error {
+    color: var(--red-color);
+  }
   @media (hover) {
     background: color-mix(in srgb, var(--background-color) 25%, transparent);
   }
