@@ -1,6 +1,5 @@
 import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import moreIcon from "./icons/more.svg";
-// import "./App.scss";
 
 import { S3Client } from "@aws-sdk/client-s3";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -492,6 +491,9 @@ export function App({ version, appName } = {}) {
       }
 
       if (ev.key.toLowerCase() === "p" && ev.shiftKey) {
+        if (showPrintLayout) {
+          window.print();
+        }
         setShowPrintLayout(true);
         return;
       }

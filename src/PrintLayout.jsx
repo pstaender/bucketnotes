@@ -9,16 +9,25 @@ const MINIMAX_STYLESHEETS = [
 ];
 
 const MINIMAX_VARIANTS = [
-  { label: "Default", href: null },
+  { label: "Default", hrefs: [
+    "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-alternate-fonts.css",
+  ] },
   {
-    label: "Serif",
-    hrefs: ["https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-serif.css"],
-  },
-  {
-    label: "Alternate fonts",
+    label: "Sans Serif",
     hrefs: [
       "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-alternate-fonts.css",
+      "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-serif.css",
     ],
+  },
+  {
+    label: "Browser Serif",
+    hrefs: [
+      "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-serif.css",
+    ],
+  },
+  {
+    label: "Browser Sans Serif",
+    hrefs: [],
   },
   {
     label: "Monospace",
@@ -59,20 +68,11 @@ export function PrintLayout({ text, filename, onClose } = {}) {
   useEffect(() => {
     const metaColorScheme = document.querySelector(`meta[name="color-scheme"]`);
     const previousColorSchemeContent = metaColorScheme.content;
-    document.querySelectorAll('head link[rel="stylesheet"]').forEach((link) => {
-      if (link.dataset.printLayout) {
-        return;
-      }
-      link.disabled = true;
-    });
     const links = MINIMAX_STYLESHEETS.map(appendPrintStylesheet);
     metaColorScheme.content = "";
     return () => {
       links.forEach((link) => link.remove());
       metaColorScheme.content = previousColorSchemeContent;
-      document
-        .querySelectorAll('head link[rel="stylesheet"]')
-        .forEach((link) => (link.disabled = false));
     };
   }, []);
 

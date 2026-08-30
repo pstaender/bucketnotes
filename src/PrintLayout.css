@@ -51,6 +51,7 @@
     margin: 0;
     display: flex;
     align-items: center;
+    color: currentColor;
   }
 
   .print-layout .print-layout-actions button img {
@@ -60,24 +61,22 @@
 
   .print-layout .print-layout-page {
     flex: 1 1 auto;
-    /*overflow: auto;*/
-    padding: 2rem 1rem;
     display: flex;
     justify-content: center;
+    padding: 2rem 1rem;
   }
 
   .print-layout .print-layout-page article {
     background: #fff;
     color: #000;
-    box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
-    padding: 2.5rem 3rem;
-    border-radius: 5px;
+    padding: 3rem 2rem;
     max-width: 58rem;
   }
 
   .print-layout.landscape .print-layout-page article {
     max-width: 90rem;
   }
+
 }
 
 @media print {
