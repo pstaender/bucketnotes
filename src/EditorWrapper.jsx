@@ -1,3 +1,4 @@
+import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import { Editor as TinyMDE } from "tiny-markdown-editor";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -169,14 +170,48 @@ function indentSelection(tinyMDE, tabSize, dedent) {
   tinyMDE.fireChange();
 }
 
-function openLink(url, navigate) {
+// Converts a {row, col} selection into a single character offset into
+// `content`, so the caret position can be persisted (e.g. across a page
+// reload) as one plain number.
+function offsetFromPosition(content, pos) {
+  if (!pos) {
+    return null;
+  }
+  const lines = content.split(/\r\n|\r|\n/);
+  let offset = 0;
+  for (let i = 0; i < pos.row; i++) {
+    offset += (lines[i]?.length ?? 0) + 1;
+  }
+  return offset + pos.col;
+}
+
+// Inverse of offsetFromPosition: resolves a character offset back into a
+// {row, col} selection against `content`, clamped to its bounds.
+function positionFromOffset(content, offset) {
+  const lines = content.split(/\r\n|\r|\n/);
+  let remaining = offset;
+  for (let row = 0; row < lines.length; row++) {
+    if (remaining <= lines[row].length) {
+      return { row, col: Math.max(0, remaining) };
+    }
+    remaining -= lines[row].length + 1;
+  }
+  const lastRow = lines.length - 1;
+  return { row: lastRow, col: lines[lastRow]?.length ?? 0 };
+}
+
+function openLink(url, downloadAssetFile, navigate) {
   const target = resolveLinkTarget(url);
   if (!target) {
     return;
   }
   const isHttpLike = ["http:", "https:", "ftp:"].includes(target.protocol);
   if (isHttpLike && target.origin === window.location.origin) {
-    navigate(`${target.pathname}${target.search}${target.hash}`);
+    if (target.pathname.startsWith(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`)) {
+      navigate(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}${target.pathname.slice(FEATURE_FLAGS.IMAGE_UPLOAD_PATH.length)}`);
+      return;
+    }
+    downloadAssetFile(`${target.pathname}${target.search}${target.hash}`);
     return;
   }
   if (isHttpLike) {
@@ -199,10 +234,13 @@ export function EditorWrapper({
   setFocusEditor,
   convertHTMLToMarkdown,
   tabSize = 2,
+  initialCaretPosition,
+  downloadAssetFile,
 } = {}) {
   const refEditor = useRef();
   const refTinyMDE = useRef();
   const refTabSize = useRef(tabSize);
+  const refCaretRestored = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -210,16 +248,62 @@ export function EditorWrapper({
   }, [tabSize]);
 
   const handleChange = (content) => {
-    onChange(content, {});
+    const focusPos = refTinyMDE.current?.getSelection?.(false);
+    onChange(content, { caretPosition: offsetFromPosition(content, focusPos) });
   };
 
   const handleChangeDebounced = debounce(handleChange, 200);
 
+  // Syncs external content changes (e.g. a file (re)load) into the editor.
+  // This can fire while the user is actively editing (a redundant reload of
+  // content that's already on screen, or a race between two loads), so it
+  // must not blow away focus/caret unless the content genuinely changed.
   useEffect(() => {
-    if (initialText !== null && initialText !== undefined && focusEditor) {
-      focusEditor.replaceText(initialText, { clearHistory: true });
+    if (initialText === null || initialText === undefined || !focusEditor) {
+      return;
+    }
+    if (focusEditor.getMarkdown() === initialText) {
+      return;
+    }
+
+    const hadFocus = document.activeElement === focusEditor.target;
+    const focusPos = hadFocus ? focusEditor.getSelection(false) : null;
+    const anchorPos = hadFocus ? focusEditor.getSelection(true) : null;
+
+    focusEditor.replaceText(initialText, { clearHistory: true });
+
+    if (hadFocus) {
+      focusEditor.target.focus();
+      const lines = initialText.split(/\r\n|\r|\n/);
+      const clamp = (pos) => {
+        if (!pos) {
+          return pos;
+        }
+        const row = Math.min(Math.max(pos.row, 0), lines.length - 1);
+        const col = Math.min(Math.max(pos.col, 0), lines[row].length);
+        return { row, col };
+      };
+      focusEditor.setSelection(clamp(focusPos), clamp(anchorPos));
     }
   }, [initialText, focusEditor]);
+
+  // One-time restore of the caret position persisted by handleChange (e.g.
+  // across a browser/PWA reload of the same file), once the editor exists
+  // and its content has been loaded.
+  useEffect(() => {
+    if (
+      refCaretRestored.current ||
+      !focusEditor ||
+      initialCaretPosition === null ||
+      initialCaretPosition === undefined
+    ) {
+      return;
+    }
+    refCaretRestored.current = true;
+    const pos = positionFromOffset(focusEditor.getMarkdown(), initialCaretPosition);
+    focusEditor.setSelection(pos);
+    focusEditor.target.focus();
+  }, [focusEditor, initialCaretPosition]);
 
   useEffect(() => {
     if (!focusEditor) {
@@ -255,21 +339,27 @@ export function EditorWrapper({
 
     // Move a "with-caret" class to the line the caret is currently on, so CSS
     // can dim every other line (focus mode) and/or keep the caret centered.
+    // Re-applied unconditionally below (not just when the line changes)
+    // because TinyMDE re-renders a line's DOM node in place (resetting its
+    // className) whenever its content is edited, which would otherwise wipe
+    // the class right back off while the caret stays put and typing continues.
     let currentCaretLine = null;
     tinyMDE.addEventListener("selection", (ev) => {
       if (!ev.focus) {
         return;
       }
       const line = tinyMDE.lineElements[ev.focus.row];
-      if (!line || line === currentCaretLine) {
+      if (!line) {
         return;
       }
-      currentCaretLine?.classList.remove("with-caret");
-      line.classList.add("with-caret");
-      currentCaretLine = line;
-      if (scrollWindowToCenterCaret) {
-        line.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (line !== currentCaretLine) {
+        currentCaretLine?.classList.remove("with-caret");
+        currentCaretLine = line;
+        if (scrollWindowToCenterCaret) {
+          line.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       }
+      line.classList.add("with-caret");
     });
 
     tinyMDE.addEventListener("change", (ev) =>
@@ -314,7 +404,7 @@ export function EditorWrapper({
         return;
       }
       ev.preventDefault();
-      openLink(url, navigate);
+      openLink(url, downloadAssetFile, navigate);
     });
 
     const editor = {
@@ -329,6 +419,22 @@ export function EditorWrapper({
       },
       setSelection(focus, anchor) {
         return tinyMDE.setSelection(focus, anchor);
+      },
+      // Inserts `text` at the current caret position (replacing any selection).
+      // When focus has moved elsewhere (e.g. a menu was clicked) the DOM
+      // selection is gone, so fall back to the end of the line that last held
+      // the caret before letting TinyMDE append at the document end.
+      insertText(text) {
+        if (!tinyMDE.getSelection(false)) {
+          const caretLine = tinyMDE.e.querySelector("div.with-caret");
+          const row = caretLine
+            ? Array.from(tinyMDE.e.children).indexOf(caretLine)
+            : -1;
+          if (row >= 0) {
+            tinyMDE.setSelection({ row, col: tinyMDE.lines[row].length });
+          }
+        }
+        tinyMDE.paste(text);
       },
       replaceText(text, { clearHistory = false } = {}) {
         if (clearHistory) {

@@ -6,5 +6,6 @@
   "PDF_UPLOAD_PATH": "/assets/pdfs",
   "AUDIO_UPLOAD_PATH": "/assets/audio",
   "VIDEO_UPLOAD_PATH": "/assets/videos",
-  "ARCHIVE_UPLOAD_PATH": "/assets/archives"
+  "ARCHIVE_UPLOAD_PATH": "/assets/archives",
+  "DOCUMENT_UPLOAD_PATH": "/assets/documents"
 }

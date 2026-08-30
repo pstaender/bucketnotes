@@ -17,6 +17,7 @@ import { useLongPress } from "use-long-press";
 import * as s3 from "./s3.js";
 import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
+import { pickAndInsertMediaFile } from "./file-imports/insertMediaFile.jsx";
 import { FileList } from "./FileList.jsx";
 import {
   isTouch,
@@ -60,6 +61,7 @@ export function App({ version, appName } = {}) {
 
   const [initialText, setInitialText] = useState("");
   const [statusText, setStatusText] = useState("");
+  const [statusTextCssClass, setStatusTextCssClass] = useState("");
   const [statusUpdatedAt, setStatusUpdatedAt] = useState(null);
   const [showSideBar, setShowSideBar] = useState(
     !localStorage.getItem("hideSideBar") ||
@@ -70,7 +72,8 @@ export function App({ version, appName } = {}) {
   const [s3Client, setS3Client] = useState(null);
   const [loginErrorMessage, setLoginErrorMessage] = useState("");
   const [autoSave, setAutoSave] = useState(
-    localStorage.getItem("autoSave") !== "false",
+    //localStorage.getItem("autoSave") === "true",
+    false,
   );
   const [lastSavedText, setLastSavedText] = useState(null);
   const [lastEditedFile, setLastEditedFile] = useState(null);
@@ -81,7 +84,7 @@ export function App({ version, appName } = {}) {
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showLastUsedFiles, setShowLastUsedFiles] = useState(false);
   const [openLastUsedFileOnStartup, setOpenLastUsedFileOnStartup] = useState(
-    localStorage.getItem("openLastUsedFileOnStartup") === "true",
+    localStorage.getItem("openLastUsedFileOnStartup") !== "false",
   );
   const [lastUsedFiles, setLastUsedFiles] = useState(
     localStorage.getItem("lastUsedFiles")
@@ -123,7 +126,7 @@ export function App({ version, appName } = {}) {
     localStorage.getItem("convertPDFToText") === "true",
   );
   const [convertHTMLToMarkdown, setConvertHTMLToMarkdown] = useState(
-    localStorage.getItem("convertHTMLToMarkdown") === "true",
+    localStorage.getItem("convertHTMLToMarkdown") !== "false",
   );
   const [showAdditionalMenuOption, setShowAdditionalMenuOption] =
     useState(false);
@@ -235,13 +238,8 @@ export function App({ version, appName } = {}) {
       }
     }
 
-    if (
-      FEATURE_FLAGS.IMAGE_UPLOAD_PATH.includes(folderPath) ||
-      FEATURE_FLAGS.VIDEO_UPLOAD_PATH.includes(folderPath) ||
-      FEATURE_FLAGS.AUDIO_UPLOAD_PATH.includes(folderPath) ||
-      FEATURE_FLAGS.ARCHIVE_UPLOAD_PATH.includes(folderPath)
-    ) {
-      /* SHOW ALL FILES AND FOLDER */
+    if (folderPath.startsWith(FEATURE_FLAGS.ASSETS_BASE_PATH)) {
+      /* SHOW ALL FILES AND FOLDER IN ASSETS FODLER */
     } else {
       files = files.filter((c) => VALID_FILE_EXTENSION.test(c?.Key));
     }
@@ -364,12 +362,15 @@ export function App({ version, appName } = {}) {
     setFileVersions(versions.filter((v) => v.Size > 0));
   }
 
-  function updateStatusText(
-    text,
-    timeout = defaultShowStatusTextInMilliseconds,
-  ) {
+  function updateStatusText(text, { timeout, type } = {}) {
+    if (timeout === undefined) {
+      timeout = defaultShowStatusTextInMilliseconds;
+    }
     console.debug(text);
     setStatusText(text);
+    if (type) {
+      setStatusTextCssClass(type);
+    }
     setShowStatusTextInMilliseconds(timeout);
     setStatusUpdatedAt(new Date().getTime());
   }
@@ -522,11 +523,6 @@ export function App({ version, appName } = {}) {
         displayGoToParagraphDialog();
         return;
       }
-      if (ev.key === "f" && ev.shiftKey) {
-        ev.preventDefault();
-        toggleFullScreen();
-        return;
-      }
     }
   }
 
@@ -560,11 +556,22 @@ export function App({ version, appName } = {}) {
       }
       return;
     }
+
+    if (fileKey !== location.pathname.replace(/^\//, "")) {
+      updateStatusText(
+        `Could not save file, because location url (${location.pathname.replace(/^\//, "")}) differs from fileKey ${fileKey}`,
+        { type: "error" },
+      );
+      return;
+    }
+
+    console.log({ fileKey }, location.pathname);
+
     let previousContent = null;
     try {
       previousContent = (await s3.getFile(fileKey)).content;
       if (previousContent === text) {
-        setStatusText("No changes to save");
+        updateStatusText("No changes to save");
         return;
       }
     } catch (e) {
@@ -677,7 +684,7 @@ export function App({ version, appName } = {}) {
       }
       if (count > maxCount) {
         clearInterval(intervalID);
-        updateStatusText("New file could not be loaded…");
+        updateStatusText("New file could not be loaded…", { type: "error" });
         if (cb) {
           cb(null);
         }
@@ -709,7 +716,7 @@ export function App({ version, appName } = {}) {
         localStorage.setItem("new-unsaved-text", text);
       }
     }
-    if (caretPosition) {
+    if (caretPosition !== null && caretPosition !== undefined) {
       localStorage.setItem("caretPosition", caretPosition);
     }
   }
@@ -860,6 +867,7 @@ export function App({ version, appName } = {}) {
           // remove status text
           setStatusUpdatedAt(0);
           setStatusText(null);
+          setStatusTextCssClass("");
         }
       }, showStatusTextInMilliseconds);
     }
@@ -993,13 +1001,25 @@ export function App({ version, appName } = {}) {
     loadS3Files();
   }, [folderPath, sortFilesByAttribute]);
 
+  async function downloadAssetFile(url) {
+    const filename = url.split("/").at(-1);
+    const publicUrl = await s3.getPublicUrl(url.replace(/^\//, ""), 60);
+    // download file in the browser
+    fetch(publicUrl)
+      .then((response) => response.blob())
+      .then((blob) => {
+        // Create a Blob URL
+        const url = window.URL.createObjectURL(blob);
+        downloadFileByUrl(url, filename);
+        updateStatusText(`Downloading file '${url}'`);
+      })
+      .catch((error) => console.error("Error downloading file:", error));
+  }
+
   useEffect(() => {
     if (location.pathname === "/logout") {
       return logout();
     }
-    setDisplayImageUrl(null);
-    setPlayAudioUrl(false);
-    setPlayVideoUrl(false);
     if (location.pathname.startsWith(`${FEATURE_FLAGS.IMAGE_UPLOAD_PATH}/`)) {
       (async () => {
         const url = location.pathname.replace(/^\//, "");
@@ -1007,40 +1027,35 @@ export function App({ version, appName } = {}) {
         setDisplayImageUrl(publicUrl);
       })();
       return;
-    }
-    if (location.pathname.startsWith(`${FEATURE_FLAGS.VIDEO_UPLOAD_PATH}/`)) {
+    } else if (
+      location.pathname.startsWith(`${FEATURE_FLAGS.VIDEO_UPLOAD_PATH}/`)
+    ) {
       (async () => {
         const url = location.pathname.replace(/^\//, "");
         const publicUrl = await s3.cachedSignedPublicS3Url(url);
         setPlayVideoUrl(publicUrl);
       })();
       return;
-    }
-    if (location.pathname.startsWith(`${FEATURE_FLAGS.AUDIO_UPLOAD_PATH}/`)) {
+    } else if (
+      location.pathname.startsWith(`${FEATURE_FLAGS.AUDIO_UPLOAD_PATH}/`)
+    ) {
       (async () => {
         const url = location.pathname.replace(/^\//, "");
         const publicUrl = await s3.cachedSignedPublicS3Url(url);
         setPlayAudioUrl(publicUrl);
       })();
       return;
-    }
-    if (location.pathname.startsWith(`${FEATURE_FLAGS.ASSETS_BASE_PATH}/`)) {
+    } else if (
+      location.pathname.startsWith(`${FEATURE_FLAGS.ASSETS_BASE_PATH}/`)
+    ) {
       // download file
-      (async () => {
-        const url = location.pathname.replace(/^\//, "");
-        const publicUrl = await s3.getPublicUrl(url, 60);
-        // download file in the browser
-        fetch(publicUrl)
-          .then((response) => response.blob())
-          .then((blob) => {
-            // Create a Blob URL
-            const url = window.URL.createObjectURL(blob);
-            downloadFileByUrl(url);
-            updateStatusText(`Downloading file '${url}'`);
-          })
-          .catch((error) => console.error("Error downloading file:", error));
-      })();
+      downloadAssetFile(location.pathname.replace(/^\//, ""));
+      return;
     }
+    setDisplayImageUrl(null);
+    setPlayAudioUrl(false);
+    setPlayVideoUrl(false);
+
     if (!s3Client || location.pathname === "/") {
       return;
     }
@@ -1193,7 +1208,7 @@ export function App({ version, appName } = {}) {
 
   useEffect(() => {
     if (autoSave) {
-      localStorage.setItem("autoSave", "");
+      localStorage.setItem("autoSave", "false");
     } else {
       localStorage.setItem("autoSave", "true");
     }
@@ -1536,7 +1551,6 @@ export function App({ version, appName } = {}) {
                               }
                             >
                               Fullscreen{" "}
-                              <span className="shortcut">⌘ + Shift + F</span>
                             </li>
                             <li className="border-bottom">
                               <div title="Increase or decrease font size">
@@ -1617,6 +1631,16 @@ export function App({ version, appName } = {}) {
                               Offline Storage
                             </li>
                             <li
+                              onClick={() => {
+                                pickAndInsertMediaFile({
+                                  updateStatusText,
+                                  focusEditor,
+                                });
+                              }}
+                            >
+                              Insert media file
+                            </li>
+                            <li
                               data-is-more-options-item="true"
                               onClick={(ev) => {
                                 setConvertPDFToText(!convertPDFToText);
@@ -1688,7 +1712,7 @@ export function App({ version, appName } = {}) {
                                 .filter((v) => !!v)
                                 .join(" ")}
                             >
-                              Remove trailing spaces on Save
+                              Remove trailing spaces on save
                             </li>
                             <li
                               data-is-more-options-item="true"
@@ -1701,7 +1725,7 @@ export function App({ version, appName } = {}) {
                               }}
                               className={fullWithEditor ? "active" : null}
                             >
-                              Full-Width editing
+                              Full-Width-Editing
                             </li>
                             <div
                               style={{
@@ -1728,7 +1752,11 @@ export function App({ version, appName } = {}) {
                     <span className="shortcut">⌘ + ;</span>
                   </li>
                   <li onClick={displayGoToParagraphDialog}>
-                    Jump to paragraph <span className="shortcut">⌘ + G</span>
+                    Go to line <span className="shortcut">⌘ + G</span>
+                  </li>
+                  <li onClick={() => setJumpToFile(true)}>
+                    Jump to file
+                    <span className="shortcut">⌘ + /</span>
                   </li>
                   <li
                     onClick={(ev) => {
@@ -1747,7 +1775,7 @@ export function App({ version, appName } = {}) {
                       onMouseEnter={() => setShowLastUsedFiles(true)}
                       onMouseLeave={() => setShowLastUsedFiles(false)}
                     >
-                      Last used files
+                      Last files
                       {showLastUsedFiles && (
                         <div className="more-options">
                           <ul className="menu">
@@ -1868,6 +1896,7 @@ export function App({ version, appName } = {}) {
                     focusEditor={focusEditor}
                     setFocusEditor={setFocusEditor}
                     convertHTMLToMarkdown={convertHTMLToMarkdown}
+                    downloadAssetFile={downloadAssetFile}
                   ></EditorWrapper>
                 </div>
               </div>
@@ -1911,7 +1940,12 @@ export function App({ version, appName } = {}) {
         </div>
       )}
       {statusText && (
-        <div className="status-bar" onClick={() => setStatusText("")}>
+        <div
+          className={["status-bar", statusTextCssClass]
+            .filter((v) => !!v)
+            .join(" ")}
+          onClick={() => setStatusText("")}
+        >
           {statusText}
         </div>
       )}

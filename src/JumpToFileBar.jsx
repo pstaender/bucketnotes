@@ -160,6 +160,12 @@ export function JumpToFileBar({ s3, setJumpToFile, sortFilesByAttribute }) {
           </div>
         )}
       </div>
+      <div
+        className="file-item close"
+        onClick={() => setJumpToFile(false)}
+      >
+        Close
+      </div>
     </div>
   );
 }
