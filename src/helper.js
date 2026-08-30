@@ -169,6 +169,4 @@ export function sortS3FilesByAttribute(files, attribute) {
   return files;
 }
 
-
-export const VALID_FILE_EXTENSION =
-  /\.(txt|md|markdown|csv|html|html|info|tex|xml|xhtml)$/i;
+export const VALID_FILE_EXTENSION = /\.(txt|md|markdown|csv|html)$/i;
