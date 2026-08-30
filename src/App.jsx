@@ -1,6 +1,6 @@
 import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import moreIcon from "./icons/more.svg";
-import "./App.scss";
+// import "./App.scss";
 
 import { S3Client } from "@aws-sdk/client-s3";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -19,6 +19,7 @@ import { FileVersions } from "./FileVersions.jsx";
 import { handleDrop } from "./file-imports/handleDrop.jsx";
 import { pickAndInsertMediaFile } from "./file-imports/insertMediaFile.jsx";
 import { FileList } from "./FileList.jsx";
+import { PrintLayout } from "./PrintLayout.jsx";
 import {
   isTouch,
   VALID_FILE_EXTENSION,
@@ -132,6 +133,7 @@ export function App({ version, appName } = {}) {
   const [fullWithEditor, setFullWithEditor] = useState(
     localStorage.getItem("fullWithEditor") === "true",
   );
+  const [showPrintLayout, setShowPrintLayout] = useState(false);
   const [rightTrimTextBeforeSave, setRightTrimTextBeforeSave] = useState(
     localStorage.getItem("rightTrimTextBeforeSave") === "true",
   );
@@ -486,6 +488,11 @@ export function App({ version, appName } = {}) {
           setInitialText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
           setText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
         }
+        return;
+      }
+
+      if (ev.key.toLowerCase() === "p" && ev.shiftKey) {
+        setShowPrintLayout(true);
         return;
       }
 
@@ -847,10 +854,9 @@ export function App({ version, appName } = {}) {
     }
     s3.isBucketVersioningEnabled()
       .then((isEnabled) => {
-        isEnabled && updateStatusText('File versioning is enabled');
+        isEnabled && updateStatusText("File versioning is enabled");
       })
       .catch((err) => setS3Error(err));
-
   }, [files, credentials, s3Client]);
 
   useEffect(() => {
@@ -1727,6 +1733,16 @@ export function App({ version, appName } = {}) {
                             >
                               Full-Width-Editing
                             </li>
+                            <li
+                              onClick={() => {
+                                setShowPrintLayout(true);
+                                setShowMoreOptions(false);
+                              }}
+                              className={showPrintLayout ? "active" : null}
+                            >
+                              Print{" "}
+                              <span className="shortcut">Ctrl + Shift + P</span>
+                            </li>
                             <div
                               style={{
                                 textAlign: "right",
@@ -1938,6 +1954,13 @@ export function App({ version, appName } = {}) {
             </div>
           </div>
         </div>
+      )}
+      {showPrintLayout && (
+        <PrintLayout
+          text={text}
+          filename={decodeURI(location.pathname.replace(/^\//, ""))}
+          onClose={() => setShowPrintLayout(false)}
+        ></PrintLayout>
       )}
       {statusText && (
         <div
