@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Login } from "./Login.jsx";
 import { useDebouncedCallback } from "use-debounce";
 
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useBlocker } from "react-router-dom";
 
 import { EditorWrapper } from "./EditorWrapper.jsx";
 import { JumpToFileBar } from "./JumpToFileBar.jsx";
@@ -179,18 +179,46 @@ export function App({ version, appName } = {}) {
     );
   }
 
-  function handleUnload(ev) {
+  // True when the current buffer holds edits (to an existing file or a freshly
+  // created one) that have not been persisted yet.
+  function hasUnsavedChanges() {
     if (readonly) {
-      return;
+      return false;
     }
-    if (
-      text !== lastSavedText &&
-      VALID_FILE_EXTENSION.test(location.pathname)
-    ) {
+    const saved = (lastSavedText ?? "").trim();
+    const current = (text ?? "").trim();
+    return current !== "" && current !== saved;
+  }
+
+  function handleUnload(ev) {
+    if (hasUnsavedChanges()) {
       ev.preventDefault();
       ev.returnValue = true;
     }
   }
+
+  // Warn before in-app navigation (file switches, new file, jump-to-file,
+  // browser back/forward, …) would discard unsaved edits.
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChanges() &&
+      currentLocation.pathname !== nextLocation.pathname,
+  );
+
+  useEffect(() => {
+    if (blocker.state !== "blocked") {
+      return;
+    }
+    if (
+      window.confirm(
+        "You have unsaved changes that will be lost. Leave without saving?",
+      )
+    ) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+    }
+  }, [blocker]);
 
   async function upsyncFiles() {
     let keys = await db.fileKeysFromDatabase();
@@ -343,11 +371,7 @@ export function App({ version, appName } = {}) {
       }
       return;
     }
-    if (text.trim() !== "" && text.trim() !== lastSavedText.trim()) {
-      if (!confirm("Are you sure? File not saved!")) {
-        return;
-      }
-    }
+    // Unsaved-changes warning is handled centrally by the navigation blocker.
     navigate(`/${fileKey}`);
   }
 
@@ -740,6 +764,7 @@ export function App({ version, appName } = {}) {
     let content = await s3.contentOfVersion(version.Key, version.VersionId);
     setInitialText(content);
     setText(content);
+    setLastSavedText(content);
     setReadonly(false);
     setFileVersions([]);
     // save file
@@ -1203,6 +1228,7 @@ export function App({ version, appName } = {}) {
       if (location.pathname === "/new") {
         setText("");
         setInitialText("");
+        setLastSavedText("");
         setReadonly(false);
         setAutoSave(false);
         return;
