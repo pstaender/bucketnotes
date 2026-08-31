@@ -113,3 +113,9 @@
   }
 
 }
+
+.print-layout .print-layout-page table {
+  tbody {
+    word-break: break-word;
+  }
+}

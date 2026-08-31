@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { App } from "./src/App";
-import { HashRouter } from "react-router-dom";
+import { createHashRouter, RouterProvider } from "react-router-dom";
 
 import { registerSW } from "virtual:pwa-register";
 import { deleteDatabase, setupDatabase } from "./src/db";
@@ -29,11 +29,24 @@ const updateSW = registerSW({
 
 const container = document.getElementById("app");
 const root = createRoot(container);
+
+// A data router (createHashRouter + RouterProvider) is required so the app can
+// use useBlocker() to warn about unsaved changes on in-app navigation.
+const router = createHashRouter(
+  [
+    {
+      path: "*",
+      element: (
+        <App
+          version={import.meta.env.VITE_APP_VERSION}
+          appName="bucketnotes.app"
+        />
+      ),
+    },
+  ],
+  { future: { v7_relativeSplatPath: true } },
+);
+
 root.render(
-  <HashRouter future={{
-      v7_startTransition: true,
-      v7_relativeSplatPath: true,
-    }}>
-    <App version={import.meta.env.VITE_APP_VERSION} appName="bucketnotes.app" />
-  </HashRouter>
+  <RouterProvider router={router} future={{ v7_startTransition: true }} />,
 );
