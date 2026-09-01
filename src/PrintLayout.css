@@ -85,6 +85,7 @@
     color: #000;
     padding: 3rem 2rem;
     max-width: 58rem;
+    word-break: break-word;
   }
 
   .print-layout.landscape .print-layout-page article {
@@ -106,6 +107,7 @@
   .print-layout .print-layout-page {
     padding: 0;
     display: block;
+    word-break: break-word;
   }
 
   .print-layout .print-layout-page article {
