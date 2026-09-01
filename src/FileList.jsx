@@ -1,5 +1,5 @@
 import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VALID_FILE_EXTENSION, isTouchDevice } from "./helper.js";
 
 import { useNavigate } from "react-router-dom";
@@ -16,9 +16,16 @@ import { CSS } from "@dnd-kit/utilities";
 // even though `key` stays the same - if that remount lands between a
 // mousedown and the matching mouseup, the browser never synthesizes a click,
 // so the click is silently lost and only the next click registers.
-function Droppable({ id, folderName, realPath, location, handleClickOnFolder, handleDeleteFolder }) {
+function Droppable({
+  id,
+  folderName,
+  realPath,
+  location,
+  handleClickOnFolder,
+  handleDeleteFolder,
+}) {
   const { isOver, setNodeRef } = useDroppable({
-    id
+    id,
   });
 
   return (
@@ -26,9 +33,9 @@ function Droppable({ id, folderName, realPath, location, handleClickOnFolder, ha
       ref={setNodeRef}
       key={`folder-${folderName}`}
       className={[
-        'folder',
+        "folder",
         location.pathname?.startsWith(folderName) ? "active" : null,
-        isOver ? "over" : null
+        isOver ? "over" : null,
       ]
         .filter(Boolean)
         .join(" ")}
@@ -37,15 +44,16 @@ function Droppable({ id, folderName, realPath, location, handleClickOnFolder, ha
         className="file-name"
         onClick={(ev) => handleClickOnFolder(ev, realPath || folderName)}
       >
-        {folderName.startsWith('← ') ? (
+        {folderName.startsWith("← ") ? (
           <>
             <span>{folderName.substring(0, 2)}</span>
-            <span className="folder-path-text">{folderName.split('← ')[1]}</span>
+            <span className="folder-path-text">
+              {folderName.split("← ")[1]}
+            </span>
           </>
         ) : (
-          <>{folderName.replace(/\/*$/, '/')}</>
+          <>{folderName.replace(/\/*$/, "/")}</>
         )}
-
       </div>
       <span
         className="icons"
@@ -71,11 +79,11 @@ function Draggable({
   longPressOnFile,
 } = {}) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: fileKey
+    id: fileKey,
   });
   const style = {
     // Outputs `translate3d(x, y, 0)`
-    transform: CSS.Translate.toString(transform)
+    transform: CSS.Translate.toString(transform),
   };
 
   let clickEvents = {
@@ -89,7 +97,7 @@ function Draggable({
       setShowSideBar(false);
       handleClickOnFile(ev, fileKey);
     },
-    ...longPressOnFile(fileKey)
+    ...longPressOnFile(fileKey),
   };
 
   if (allowDragAndDrop) {
@@ -110,9 +118,7 @@ function Draggable({
           : null
       }
     >
-      <span className="file-name">
-        {fileKey.split('/').at(-1)}
-      </span>
+      <span className="file-name">{fileKey.split("/").at(-1)}</span>
       <span className="icons">
         {!isPossiblyOffline && (
           <span
@@ -143,29 +149,40 @@ export function FileList({
   lastEditedFile,
   folderPath,
   moveFileToFolder,
-  isPossiblyOffline
+  isPossiblyOffline,
 } = {}) {
   const [allowFileDragAndDrop, setAllowFileDragAndDrop] = useState(false);
   const [key, setKey] = useState(null);
+  const ulRef = useRef(null);
 
-
-  const normalizedFolderPath = (/\/[^.]+$/.test(folderPath) ? folderPath : folderPath.split('/').slice(0, -1).join('/')).replace(/\/+/, '/').replace(/[/]*$/, '/');
+  const normalizedFolderPath = (
+    /\/[^.]+$/.test(folderPath)
+      ? folderPath
+      : folderPath.split("/").slice(0, -1).join("/")
+  )
+    .replace(/\/+/, "/")
+    .replace(/[/]*$/, "/");
   // S3 object keys in `files` never have a leading slash (unlike folderPath,
   // which mirrors the router pathname), so strip it before slicing into them
   // - otherwise every substring below is off by one character.
-  const normalizedFolderPathKey = normalizedFolderPath.replace(/^\//, '');
+  const normalizedFolderPathKey = normalizedFolderPath.replace(/^\//, "");
 
   const subfolders = files
-    .filter(file => file.substring(normalizedFolderPathKey.length).includes('/'))
+    .filter((file) =>
+      file.substring(normalizedFolderPathKey.length).includes("/"),
+    )
     // Take the path segment right after the current folder, whatever depth
     // we're at - not a hardcoded index, which previously always grabbed
     // segment 1 (e.g. always "test1" for "einkaufen/test1/test2/x.txt"
     // regardless of the folder actually being browsed).
-    .map(file => file.substring(normalizedFolderPathKey.length).split('/')[0])
+    .map((file) => file.substring(normalizedFolderPathKey.length).split("/")[0])
     .filter((value, index, self) => self.indexOf(value) === index);
 
   useEffect(() => {
-    setAllowFileDragAndDrop(FEATURE_FLAGS.MOVE_FILES_WITH_DRAG_AND_DROP && (key === "Meta" || key === "Control"));
+    setAllowFileDragAndDrop(
+      FEATURE_FLAGS.MOVE_FILES_WITH_DRAG_AND_DROP &&
+        (key === "Meta" || key === "Control"),
+    );
   }, [key]);
 
   const registerKeyPress = useCallback((e) => {
@@ -185,7 +202,17 @@ export function FileList({
     () => window.removeEventListener("keydown", registerKeyUp);
   }, [registerKeyUp]);
 
-  const [parent, setParent] = useState(null);
+  useMemo(() => {
+    // scroll smoothly to current file in sidebar
+    if (!ulRef.current || !location.pathname || location.pathname === "/") {
+      return;
+    }
+    setTimeout(() => {
+      ulRef.current
+        .querySelector("li.active")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  }, [ulRef, location]);
 
   async function handleDragEnd({ over, active }) {
     if (!over || !active) {
@@ -193,7 +220,7 @@ export function FileList({
     }
     let destination = over.id;
 
-    if (destination === 'folder-up') {
+    if (destination === "folder-up") {
       return;
     }
     destination = destination.replace(/^folder::/, "");
@@ -203,46 +230,62 @@ export function FileList({
     }
     el.style.display = "none";
     console.debug("Moving file", active.id, "to folder", destination);
-    await moveFileToFolder(active.id, destination.replace(/\/*$/, '/'));
+    await moveFileToFolder(active.id, destination.replace(/\/*$/, "/"));
   }
 
-  files = files.filter(f => f.substring(normalizedFolderPathKey.length).includes('.') && !f.substring(normalizedFolderPathKey.length).includes('/'));
+  files = files.filter(
+    (f) =>
+      f.substring(normalizedFolderPathKey.length).includes(".") &&
+      !f.substring(normalizedFolderPathKey.length).includes("/"),
+  );
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <ul>
+      <ul ref={ulRef}>
         {folderPath &&
         folderPath !== "/" &&
         (!VALID_FILE_EXTENSION.test(folderPath) || folderPath.includes("/")) ? (
           <Droppable
-            folderName={'← ' + normalizedFolderPath.split('/').slice(0, -1).join('/').replace(/^\/*/, '/')}
-              id="folder-up"
-              key="folder-up"
-              location={location}
-              handleClickOnFolder={handleClickOnFolder}
-              handleDeleteFolder={handleDeleteFolder}
+            folderName={
+              "← " +
+              normalizedFolderPath
+                .split("/")
+                .slice(0, -1)
+                .join("/")
+                .replace(/^\/*/, "/")
+            }
+            id="folder-up"
+            key="folder-up"
+            location={location}
+            handleClickOnFolder={handleClickOnFolder}
+            handleDeleteFolder={handleDeleteFolder}
           ></Droppable>
         ) : (
           <li className="no-hover" key="no-hover-folder">
             &nbsp;
           </li>
         )}
-        {folders.concat(subfolders).filter(v => v !== '/').map((folderName) => (
-          <Droppable
-            folderName={folderName}
-            realPath={normalizedFolderPath + folderName}
-            id={`folder::${normalizedFolderPath + folderName}`}
-            key={`folder::${normalizedFolderPath + folderName}`}
-            location={location}
-            handleClickOnFolder={handleClickOnFolder}
-            handleDeleteFolder={handleDeleteFolder}
-          ></Droppable>
-        ))}
-        {location && ((!files || files.length === 0) && subfolders.length === 0) && (
-          <li className="no-files-found" key="no-text-file-found">
-            No files found
-          </li>
-        )}
+        {folders
+          .concat(subfolders)
+          .filter((v) => v !== "/")
+          .map((folderName) => (
+            <Droppable
+              folderName={folderName}
+              realPath={normalizedFolderPath + folderName}
+              id={`folder::${normalizedFolderPath + folderName}`}
+              key={`folder::${normalizedFolderPath + folderName}`}
+              location={location}
+              handleClickOnFolder={handleClickOnFolder}
+              handleDeleteFolder={handleDeleteFolder}
+            ></Droppable>
+          ))}
+        {location &&
+          (!files || files.length === 0) &&
+          subfolders.length === 0 && (
+            <li className="no-files-found" key="no-text-file-found">
+              No files found
+            </li>
+          )}
         {files.map((fileKey) => (
           <Draggable
             fileKey={fileKey}
