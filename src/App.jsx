@@ -357,17 +357,21 @@ export function App({ version, appName } = {}) {
           await s3.deleteFile(fileKey);
         } catch (err) {
           setS3Error(err);
+          alert('ok');
         }
+
         if (offlineStorageEnabled) {
           await db.deleteFileFromDatabase(fileKey);
         }
+
         setText("");
         setInitialText("");
         setLastEditedFile(null);
         setLastSavedText("");
         setFiles(files.filter((f) => f !== fileKey));
-        navigate(`/`);
         setReadonly(false);
+
+        history.pushState(null, '', '#/');
       }
       return;
     }
@@ -596,8 +600,6 @@ export function App({ version, appName } = {}) {
       );
       return;
     }
-
-    console.log({ fileKey }, location.pathname);
 
     let previousContent = null;
     try {
@@ -1189,9 +1191,12 @@ export function App({ version, appName } = {}) {
         while (fileName !== null && fileName?.length === 0) {
           fileName = prompt(
             "Enter file name",
-            folderPath
-              .replace(/\/*([^/]+)[.]+[^/]+$/, "$1\/")
-              .replace(/\/*$/, "/") + newNoteName(),
+            (folderPath
+              .split('/')
+              .filter((v) => !/\.[a-z]{2,}$/i.test(v))
+              .join("/") +
+              "/").replace(/\/+$/, '/') +
+              newNoteName(),
           );
           if (fileName) {
             fileName = slugifyPath(fileName);
@@ -1491,7 +1496,7 @@ export function App({ version, appName } = {}) {
                   </li>
                   <li
                     onClick={(ev) => {
-                      navigate("new-ask-for-filename");
+                      navigate("/new-ask-for-filename");
                     }}
                   >
                     New with specific name

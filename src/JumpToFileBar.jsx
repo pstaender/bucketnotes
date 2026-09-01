@@ -34,7 +34,7 @@ export function JumpToFileBar({ s3, setJumpToFile, sortFilesByAttribute }) {
   }, [searchQuery]);
 
   function showFile(file) {
-    navigate(file);
+    navigate(`/${file}`);
     setJumpToFile(false);
   }
 

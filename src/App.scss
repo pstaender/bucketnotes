@@ -239,6 +239,7 @@ html {
   padding-right: 0;
   li {
     padding: 0.1rem 1rem;
+    transition: opacity 0.2s;
     &.no-hover {
       min-height: 1.9em;
     }
@@ -247,6 +248,19 @@ html {
     li:first-child:not(.no-hover) {
       padding-top: 1rem;
     }
+  }
+  @media (hover) {
+    &:has(li.active) {
+      li:not(.active) {
+        opacity: 0.25;
+      }
+      &:hover {
+        li {
+          opacity: 1;
+        }
+      }
+    }
+
   }
 }
 
