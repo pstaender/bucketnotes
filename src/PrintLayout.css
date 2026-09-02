@@ -127,8 +127,6 @@
 
 }
 
-/*.print-layout .print-layout-page table {
-  tbody, thead {
-    word-break: break-word;
-  }
-}*/
+.print-layout .print-layout-page table {
+  word-break: keep-all;
+}
