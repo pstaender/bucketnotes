@@ -510,11 +510,7 @@ export function App({ version, appName } = {}) {
 
     if (ev.metaKey || ev.ctrlKey) {
       if (ev.key.toLowerCase() === "t") {
-        let textWithUnifiedTables = unifyMarkdownTableCellWidths(text);
-        if (textWithUnifiedTables !== text) {
-          setInitialText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
-          setText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
-        }
+        unifyTables();
         return;
       }
 
@@ -738,6 +734,35 @@ export function App({ version, appName } = {}) {
     let { error } = await s3.createFile(fileName, "");
     if (error) {
       alert(error);
+    }
+  }
+
+  // Unifies markdown table column widths. When text is selected, only the
+  // selected region (expanded to whole lines) is unified; otherwise the
+  // whole document is unified.
+  function unifyTables() {
+    const selection = focusEditor?.getSelectedText?.();
+    if (selection) {
+      const content = focusEditor.getMarkdown();
+      const lineStart = content.lastIndexOf("\n", selection.start - 1) + 1;
+      let lineEnd = content.indexOf("\n", selection.end);
+      if (lineEnd === -1) {
+        lineEnd = content.length;
+      }
+      const segment = content.slice(lineStart, lineEnd);
+      const unifiedSegment = unifyMarkdownTableCellWidths(segment);
+      if (unifiedSegment !== segment) {
+        const newText =
+          content.slice(0, lineStart) + unifiedSegment + content.slice(lineEnd);
+        setInitialText(newText);
+        setText(newText);
+      }
+      return;
+    }
+    const textWithUnifiedTables = unifyMarkdownTableCellWidths(text);
+    if (textWithUnifiedTables !== text) {
+      setInitialText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
+      setText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
     }
   }
 
@@ -1671,20 +1696,7 @@ export function App({ version, appName } = {}) {
                             </li>
                             <li
                               onClick={() => {
-                                let textWithUnifiedTables =
-                                  unifyMarkdownTableCellWidths(text);
-                                if (textWithUnifiedTables !== text) {
-                                  setInitialText(
-                                    unifyMarkdownTableCellWidths(
-                                      textWithUnifiedTables,
-                                    ),
-                                  );
-                                  setText(
-                                    unifyMarkdownTableCellWidths(
-                                      textWithUnifiedTables,
-                                    ),
-                                  );
-                                }
+                                unifyTables();
                               }}
                             >
                               Unify column widths{" "}

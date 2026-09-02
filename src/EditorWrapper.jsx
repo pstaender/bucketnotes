@@ -249,6 +249,10 @@ export function EditorWrapper({
   const refTinyMDE = useRef();
   const refTabSize = useRef(tabSize);
   const refCaretRestored = useRef(false);
+  // Remembers the last non-collapsed selection, so actions triggered from a
+  // menu (which blurs the editor and collapses the DOM selection) can still
+  // operate on what the user had selected.
+  const refLastSelection = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -373,6 +377,27 @@ export function EditorWrapper({
       line.classList.add("with-caret");
     });
 
+    // Track the last non-collapsed selection as character offsets.
+    tinyMDE.addEventListener("selection", (ev) => {
+      const focus = ev.focus;
+      const anchor = ev.anchor || focus;
+      if (!focus || !anchor) {
+        return;
+      }
+      const content = tinyMDE.getContent();
+      const a = offsetFromPosition(content, anchor);
+      const b = offsetFromPosition(content, focus);
+      if (a === b) {
+        refLastSelection.current = null;
+        return;
+      }
+      refLastSelection.current = {
+        start: Math.min(a, b),
+        end: Math.max(a, b),
+        text: content.slice(Math.min(a, b), Math.max(a, b)),
+      };
+    });
+
     tinyMDE.addEventListener("change", (ev) =>
       handleChangeDebounced(ev.content),
     );
@@ -427,6 +452,33 @@ export function EditorWrapper({
       },
       getSelection(getAnchor) {
         return tinyMDE.getSelection(getAnchor);
+      },
+      // Returns the currently selected text along with its character offsets
+      // into the full markdown, or null when nothing is selected. Falls back
+      // to the last remembered selection when the editor has been blurred
+      // (e.g. by opening a menu), as long as it still matches the content.
+      getSelectedText() {
+        const content = tinyMDE.getContent();
+        const focus = tinyMDE.getSelection(false);
+        const anchor = tinyMDE.getSelection(true) || focus;
+        if (focus && anchor) {
+          const a = offsetFromPosition(content, anchor);
+          const b = offsetFromPosition(content, focus);
+          const start = Math.min(a, b);
+          const end = Math.max(a, b);
+          if (start !== end) {
+            return { start, end, text: content.slice(start, end) };
+          }
+        }
+        const last = refLastSelection.current;
+        if (
+          last &&
+          last.end <= content.length &&
+          content.slice(last.start, last.end) === last.text
+        ) {
+          return { ...last };
+        }
+        return null;
       },
       setSelection(focus, anchor) {
         return tinyMDE.setSelection(focus, anchor);
