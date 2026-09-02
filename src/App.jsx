@@ -88,8 +88,7 @@ export function App({ version, appName } = {}) {
   const [statusTextCssClass, setStatusTextCssClass] = useState("");
   const [statusUpdatedAt, setStatusUpdatedAt] = useState(null);
   const [showSideBar, setShowSideBar] = useState(
-    !localStorage.getItem("hideSideBar") ||
-      localStorage.getItem("hideSideBar") !== "true",
+    localStorage.getItem("hideSideBar") !== "true",
   );
   const [bucketName, setBucketName] = useState("");
   const [text, setText] = useState("");
@@ -1896,7 +1895,9 @@ export function App({ version, appName } = {}) {
                               <li
                                 key={item.label}
                                 className={
-                                  modifyTextMenuIndex === i ? "highlighted" : null
+                                  modifyTextMenuIndex === i
+                                    ? "highlighted"
+                                    : null
                                 }
                                 onMouseEnter={() => setModifyTextMenuIndex(i)}
                                 onClick={() => {
@@ -2023,7 +2024,7 @@ export function App({ version, appName } = {}) {
                   <div className="root-path-welcome-hint">
                     <h1>
                       Welcome to BucketNotes
-                      <span className="version">{" "}v{version}</span>
+                      <span className="version"> v{version}</span>
                     </h1>
                     <p>
                       Select a file from the{" "}
@@ -2050,7 +2051,6 @@ export function App({ version, appName } = {}) {
                   }
                   if (ev.isTrusted) {
                     setShowMoreOptions(false);
-                    setShowSideBar(false);
                     setJumpToFile(false);
                     setShowAdditionalMenuOption(false);
                   }
