@@ -201,8 +201,7 @@ export function App({ version, appName } = {}) {
   // browser back/forward, …) would discard unsaved edits.
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      hasUnsavedChanges() &&
-      currentLocation.pathname !== nextLocation.pathname,
+      hasUnsavedChanges() && currentLocation.pathname !== nextLocation.pathname,
   );
 
   useEffect(() => {
@@ -357,7 +356,7 @@ export function App({ version, appName } = {}) {
           await s3.deleteFile(fileKey);
         } catch (err) {
           setS3Error(err);
-          alert('ok');
+          alert("ok");
         }
 
         if (offlineStorageEnabled) {
@@ -371,7 +370,7 @@ export function App({ version, appName } = {}) {
         setFiles(files.filter((f) => f !== fileKey));
         setReadonly(false);
 
-        history.pushState(null, '', '#/');
+        history.pushState(null, "", "#/");
       }
       return;
     }
@@ -540,8 +539,12 @@ export function App({ version, appName } = {}) {
       }
       if (ev.key.toLowerCase() === "b") {
         ev.preventDefault();
-        navigate("new");
-        setFolderPath("/");
+        if (ev.shiftKey) {
+          navigate("/new");
+          setFolderPath("/");
+        } else {
+          createNewFileAndAskForFilename();
+        }
         return;
       }
       if (ev.key === ".") {
@@ -694,7 +697,7 @@ export function App({ version, appName } = {}) {
       await loadS3Files();
       setReadonly(false);
     } catch (_) {}
-    navigate(newFileName);
+    navigate(`/${newFileName}`);
   }
 
   function tryToLoadNewCreatedFileAndUpdateFiles(fileName, cb) {
@@ -840,7 +843,7 @@ export function App({ version, appName } = {}) {
         db.renameFileInDatabase(fileKey, fileName);
       }
     } catch (_) {}
-    navigate(fileName);
+    navigate(`/${fileName}`);
   }
 
   useEffect(() => {
@@ -1186,50 +1189,6 @@ export function App({ version, appName } = {}) {
         return;
       }
 
-      let fileName = "";
-      if (location.pathname === "/new-ask-for-filename") {
-        while (fileName !== null && fileName?.length === 0) {
-          fileName = prompt(
-            "Enter file name",
-            (folderPath
-              .split('/')
-              .filter((v) => !/\.[a-z]{2,}$/i.test(v))
-              .join("/") +
-              "/").replace(/\/+$/, '/') +
-              newNoteName(),
-          );
-          if (fileName) {
-            fileName = slugifyPath(fileName);
-          }
-        }
-        if (fileName === null) {
-          return;
-        }
-        if (!VALID_FILE_EXTENSION.test(fileName)) {
-          fileName += ".txt";
-        }
-        // remove leading slashes
-        fileName = fileName.replace(/^\/+/, "");
-        try {
-          setS3Error(null);
-          await createNewFile(fileName);
-        } catch (err) {
-          setS3Error(err);
-          db.saveFileToDatabase(fileName, {
-            content: "",
-            bucketName,
-            fileSavedToS3: false,
-          });
-        }
-
-        tryToLoadNewCreatedFileAndUpdateFiles(fileName, () => {
-          setTimeout(() => loadS3Files(), 100);
-          navigate(`/${fileName}`);
-        });
-        setReadonly(false);
-        return;
-      }
-
       if (location.pathname === "/new") {
         setText("");
         setInitialText("");
@@ -1486,20 +1445,10 @@ export function App({ version, appName } = {}) {
                 >
                   <li
                     className="create-file"
-                    onClick={(ev) => {
-                      navigate("new");
-                      setFolderPath("/");
-                    }}
+                    onClick={createNewFileAndAskForFilename}
                   >
-                    New file
+                    New
                     <span className="shortcut">⌘ + B</span>
-                  </li>
-                  <li
-                    onClick={(ev) => {
-                      navigate("/new-ask-for-filename");
-                    }}
-                  >
-                    New with specific name
                   </li>
                   <li
                     onClick={() => setAutoSave(!autoSave)}
@@ -2007,4 +1956,49 @@ export function App({ version, appName } = {}) {
       )}
     </div>
   );
+
+  async function createNewFileAndAskForFilename() {
+    let fileName = "";
+    while (fileName !== null && fileName?.length === 0) {
+      fileName = prompt(
+        "Enter file name",
+        (
+          folderPath
+            .split("/")
+            .filter((v) => !/\.[a-z]{2,}$/i.test(v))
+            .join("/") + "/"
+        )
+          .replace(/\/+$/, "/")
+          .replace(/^\/*/, "/") + newNoteName(),
+      );
+      if (fileName) {
+        fileName = slugifyPath(fileName);
+      }
+    }
+    if (fileName === null) {
+      return;
+    }
+    if (!VALID_FILE_EXTENSION.test(fileName)) {
+      fileName += ".txt";
+    }
+    // remove leading slashes
+    fileName = fileName.replace(/^\/+/, "");
+    try {
+      setS3Error(null);
+      await createNewFile(fileName);
+    } catch (err) {
+      setS3Error(err);
+      db.saveFileToDatabase(fileName, {
+        content: "",
+        bucketName,
+        fileSavedToS3: false,
+      });
+    }
+
+    tryToLoadNewCreatedFileAndUpdateFiles(fileName, async () => {
+      await loadS3Files();
+      navigate(`/${fileName}`);
+    });
+    setReadonly(false);
+  }
 }

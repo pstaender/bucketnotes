@@ -211,7 +211,7 @@ export function FileList({
       ulRef.current
         .querySelector("li.active")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 100);
+    }, 200);
   }, [ulRef, location]);
 
   async function handleDragEnd({ over, active }) {

@@ -503,9 +503,17 @@ focus-editor [contenteditable] > div:last-child {
         }
       }
       &.active {
-        font-weight: bold;
+        &:after {
+          content: '✓';
+        }
         .shortcut {
           font-weight: normal;
+        }
+        &:has(.shortcut) {
+          font-weight: bold;
+          &:after {
+            content: unset;
+          }
         }
       }
       .shortcut {
