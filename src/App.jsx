@@ -28,9 +28,33 @@ import {
 } from "./helper.js";
 import * as db from "./db.js";
 import slugify from "slugify";
+import voca from "voca";
 import * as encrypt from "./encrypt.js";
 
 const DEFAULT_PLACEHOLDER_TEXT = "Type something…";
+
+// Pure string transforms offered in the "Modify Text" submenu. Each is applied
+// to the selected text when there is a selection, otherwise to the whole
+// document (see applyTextModifier). "Unify table columns width" is handled
+// separately because it operates on whole lines rather than an exact range.
+const TEXT_MODIFIERS = [
+  { label: "camelCase", transform: (val) => voca.camelCase(val) },
+  { label: "capitalize", transform: (val) => voca.capitalize(val) },
+  { label: "decapitalize", transform: (val) => voca.decapitalize(val) },
+  { label: "kebab-case", transform: (val) => voca.kebabCase(val) },
+  {
+    label: "lower case",
+    transform: (val) => val.toLocaleLowerCase(navigator.language),
+  },
+  {
+    label: "UPPER CASE",
+    transform: (val) => val.toLocaleUpperCase(navigator.language),
+  },
+  { label: "snake_case", transform: (val) => voca.snakeCase(val) },
+  { label: "swap case", transform: (val) => voca.swapCase(val) },
+  { label: "Title Case", transform: (val) => voca.titleCase(val) },
+  { label: "slugify", transform: (val) => slugify(val) },
+];
 
 // need to be outside of component, used in setTimeout
 
@@ -129,6 +153,7 @@ export function App({ version, appName } = {}) {
   );
   const [showAdditionalMenuOption, setShowAdditionalMenuOption] =
     useState(false);
+  const [showModifyTextMenu, setShowModifyTextMenu] = useState(false);
   const [fullWithEditor, setFullWithEditor] = useState(
     localStorage.getItem("fullWithEditor") === "true",
   );
@@ -763,6 +788,30 @@ export function App({ version, appName } = {}) {
     if (textWithUnifiedTables !== text) {
       setInitialText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
       setText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
+    }
+  }
+
+  // Applies a pure string transform. When text is selected, only the selected
+  // range is replaced; otherwise the whole document is transformed.
+  function applyTextModifier(transform) {
+    const selection = focusEditor?.getSelectedText?.();
+    if (selection) {
+      const content = focusEditor.getMarkdown();
+      const modified = transform(selection.text);
+      if (modified !== selection.text) {
+        const newText =
+          content.slice(0, selection.start) +
+          modified +
+          content.slice(selection.end);
+        setInitialText(newText);
+        setText(newText);
+      }
+      return;
+    }
+    const modified = transform(text);
+    if (modified !== text) {
+      setInitialText(modified);
+      setText(modified);
     }
   }
 
@@ -1473,6 +1522,7 @@ export function App({ version, appName } = {}) {
                     }
                     setShowMoreOptions(false);
                     setShowAdditionalMenuOption(false);
+                    setShowModifyTextMenu(false);
                     setShowLastUsedFiles(false);
                   }}
                 >
@@ -1695,14 +1745,6 @@ export function App({ version, appName } = {}) {
                               Convert HTML to MD on paste
                             </li>
                             <li
-                              onClick={() => {
-                                unifyTables();
-                              }}
-                            >
-                              Unify column widths{" "}
-                              <span className="shortcut">Ctrl + ⌘ + T</span>
-                            </li>
-                            <li
                               data-is-more-options-item="true"
                               onClick={(ev) => {
                                 setRightTrimTextBeforeSave(
@@ -1756,6 +1798,38 @@ export function App({ version, appName } = {}) {
                             >
                               v{import.meta.env.PACKAGE_VERSION}
                             </div>
+                          </ul>
+                        </div>
+                      )}
+                    </li>
+                  )}
+                  {true && (
+                    <li
+                      className={["border-bottom"].filter((v) => !!v).join(" ")}
+                      data-is-more-options-item="true"
+                      style={{ position: "relative" }}
+                      onMouseEnter={() => setShowModifyTextMenu(true)}
+                      onMouseLeave={() => setShowModifyTextMenu(false)}
+                    >
+                      Modify Text
+                      {showModifyTextMenu && (
+                        <div className="more-options">
+                          <ul className="menu">
+                            <li
+                              className="border-bottom"
+                              onClick={() => unifyTables()}
+                            >
+                              Unify table columns width{" "}
+                              <span className="shortcut">Ctrl + ⌘ + T</span>
+                            </li>
+                            {TEXT_MODIFIERS.map(({ label, transform }) => (
+                              <li
+                                key={label}
+                                onClick={() => applyTextModifier(transform)}
+                              >
+                                {label}
+                              </li>
+                            ))}
                           </ul>
                         </div>
                       )}

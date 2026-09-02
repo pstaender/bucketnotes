@@ -28,7 +28,8 @@
         "use-long-press": "^3.3.0",
         "usehooks-ts": "^3.1.1",
         "vite": "^7.3.6",
-        "vite-plugin-package-version": "^1.1.0"
+        "vite-plugin-package-version": "^1.1.0",
+        "voca": "^1.4.1"
     },
     "devDependencies": {
         "assert": "^2.1.0",
