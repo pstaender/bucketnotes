@@ -394,10 +394,10 @@ export function App({ version, appName } = {}) {
     }
     console.debug(text);
     setStatusText(text);
-    if (type === 'error') {
+    if (type === "error") {
       setStatusTextCssClass(type);
     } else {
-      setStatusTextCssClass('');
+      setStatusTextCssClass("");
     }
     setShowStatusTextInMilliseconds(timeout);
     setStatusUpdatedAt(new Date().getTime());
@@ -566,7 +566,11 @@ export function App({ version, appName } = {}) {
     }
   }
 
-  async function saveFile(fileKey, text, { autoCreateNewFile, autoSave, ignoreUrl } = {}) {
+  async function saveFile(
+    fileKey,
+    text,
+    { autoCreateNewFile, autoSave, ignoreUrl } = {},
+  ) {
     if (rightTrimTextBeforeSave) {
       text = text
         .split("\n")
@@ -1821,7 +1825,11 @@ export function App({ version, appName } = {}) {
                 </ul>
               )}
             </div>
-            {displayImageUrl || playVideoUrl || playAudioUrl ? (
+            {displayImageUrl ||
+            playVideoUrl ||
+            playAudioUrl ||
+            location.pathname === "" ||
+            location.pathname === "/" ? (
               <>
                 {displayImageUrl && (
                   <div className="display-single-image">
@@ -1846,6 +1854,27 @@ export function App({ version, appName } = {}) {
                         </p>
                       </figcaption>
                     </figure>
+                  </div>
+                )}
+                {(location.pathname === "" || location.pathname === "/") && (
+                  <div className="root-path-welcome-hint">
+                    <h1>
+                      Welcome to BucketNotes
+                      <span className="version">{" "}v{version}</span>
+                    </h1>
+                    <p>
+                      Select a file from the{" "}
+                      <span onClick={() => setShowSideBar(true)}>
+                        {" "}
+                        ← sidebar{" "}
+                      </span>{" "}
+                      or
+                    </p>
+                    <p>
+                      <button onClick={createNewFileAndAskForFilename}>
+                        Create a new text file
+                      </button>
+                    </p>
                   </div>
                 )}
               </>

@@ -1,7 +1,7 @@
 @mixin css-colors {
   --text-color: #000;
   --grey-color: #aaa;
-  --red-color: rgb(239,135,142);
+  --red-color: rgb(239, 135, 142);
   --background-color: #f7f7f7;
   --background-color-very-light: #eee;
   --background-color-light: #ddd;
@@ -260,7 +260,6 @@ html {
         }
       }
     }
-
   }
 }
 
@@ -504,7 +503,7 @@ focus-editor [contenteditable] > div:last-child {
       }
       &.active {
         &:after {
-          content: '✓';
+          content: "✓";
         }
         .shortcut {
           font-weight: normal;
@@ -621,6 +620,24 @@ button {
   color: var(--background-color);
   border: 0px;
   border-radius: 4px;
+}
+.main:has(.root-path-welcome-hint) {
+  display: grid;
+  place-content: center;
+  .root-path-welcome-hint {
+    text-align: center;
+    padding-bottom: 3rem;
+    padding-right: 2rem;
+    .version {
+      opacity: 0.5;
+      font-size: 0.8rem;
+    }
+    @media (hover) {
+      p > *:hover {
+        cursor: pointer;
+      }
+    }
+  }
 }
 .login {
   color: var(--color-black-responsive);
