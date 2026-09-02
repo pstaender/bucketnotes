@@ -169,9 +169,9 @@ export function App({ version, appName } = {}) {
     }
   });
 
-  function newNoteName() {
+  function newNoteName(prefix = "note-") {
     return slugifyPath(
-      `note-${new Date()
+      `${prefix}${new Date()
         .toISOString()
         .replace(/\.\d.+$/, "")
         .replace(/(\d)T(\d)/, "$1-$2")
@@ -356,7 +356,6 @@ export function App({ version, appName } = {}) {
           await s3.deleteFile(fileKey);
         } catch (err) {
           setS3Error(err);
-          alert("ok");
         }
 
         if (offlineStorageEnabled) {
@@ -395,8 +394,10 @@ export function App({ version, appName } = {}) {
     }
     console.debug(text);
     setStatusText(text);
-    if (type) {
+    if (type === 'error') {
       setStatusTextCssClass(type);
+    } else {
+      setStatusTextCssClass('');
     }
     setShowStatusTextInMilliseconds(timeout);
     setStatusUpdatedAt(new Date().getTime());
@@ -565,7 +566,7 @@ export function App({ version, appName } = {}) {
     }
   }
 
-  async function saveFile(fileKey, text, { autoCreateNewFile, autoSave } = {}) {
+  async function saveFile(fileKey, text, { autoCreateNewFile, autoSave, ignoreUrl } = {}) {
     if (rightTrimTextBeforeSave) {
       text = text
         .split("\n")
@@ -596,7 +597,7 @@ export function App({ version, appName } = {}) {
       return;
     }
 
-    if (fileKey !== location.pathname.replace(/^\//, "")) {
+    if (!ignoreUrl && fileKey !== location.pathname.replace(/^\//, "")) {
       updateStatusText(
         `Could not save file, because location url (${location.pathname.replace(/^\//, "")}) differs from fileKey ${fileKey}`,
         { type: "error" },
@@ -804,7 +805,7 @@ export function App({ version, appName } = {}) {
           .replace(/^\W+/, "")
           .substring(0, 64);
         if (fileName.trim() === "") {
-          fileName = "unnamed";
+          fileName = newNoteName("unnamed-");
         }
         fileName = slugifyPath(fileName).replace(/\.txt$/i, "");
         if (files.indexOf(fileName + ".txt") !== -1) {
@@ -812,13 +813,16 @@ export function App({ version, appName } = {}) {
         } else {
           fileName += ".txt";
         }
-        saveFile(fileName, textToSave);
-        localStorage.setItem("new-unsaved-text", "");
-        tryToLoadNewCreatedFileAndUpdateFiles(fileName, () => {
-          setTimeout(() => loadS3Files(), 100);
-          navigate(`/${fileName}`);
-        });
-        setReadonly(false);
+
+        (async () => {
+          await saveFile(fileName, textToSave, { ignoreUrl: true });
+          setReadonly(false);
+          localStorage.setItem("new-unsaved-text", "");
+          tryToLoadNewCreatedFileAndUpdateFiles(fileName, async () => {
+            await loadS3Files();
+            navigate(`/${fileName}`);
+          });
+        })();
         return;
       } else {
         saveFile(location?.pathname?.replace(/^\//, ""), textToSave);
@@ -886,7 +890,7 @@ export function App({ version, appName } = {}) {
     }
     s3.isBucketVersioningEnabled()
       .then((isEnabled) => {
-        isEnabled && updateStatusText("File versioning is enabled");
+        isEnabled && consoe.debug("File versioning is enabled");
       })
       .catch((err) => setS3Error(err));
   }, [files, credentials, s3Client]);
