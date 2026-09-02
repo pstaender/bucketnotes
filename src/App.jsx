@@ -154,6 +154,9 @@ export function App({ version, appName } = {}) {
   const [showAdditionalMenuOption, setShowAdditionalMenuOption] =
     useState(false);
   const [showModifyTextMenu, setShowModifyTextMenu] = useState(false);
+  // Index of the keyboard-highlighted item in the "Modify Text" submenu
+  // (-1 = nothing highlighted, for mouse users).
+  const [modifyTextMenuIndex, setModifyTextMenuIndex] = useState(-1);
   const [fullWithEditor, setFullWithEditor] = useState(
     localStorage.getItem("fullWithEditor") === "true",
   );
@@ -502,6 +505,9 @@ export function App({ version, appName } = {}) {
   useEffect(() => {
     if (globalKey === "Escape") {
       setShowMoreOptions(false);
+      setShowAdditionalMenuOption(false);
+      setShowModifyTextMenu(false);
+      setModifyTextMenuIndex(-1);
       setShowSideBar(false);
       setJumpToFile(false);
       focusEditor?.target?.focus();
@@ -527,6 +533,10 @@ export function App({ version, appName } = {}) {
   }, [lastUsedFiles]);
 
   async function handleKeyDown(ev) {
+    if (handleModifyTextMenuKey(ev)) {
+      return;
+    }
+
     if ((ev.metaKey || ev.ctrlKey) && ev.key === ";") {
       setShowSideBar(!showSideBar);
       ev.preventDefault();
@@ -535,7 +545,8 @@ export function App({ version, appName } = {}) {
 
     if (ev.metaKey || ev.ctrlKey) {
       if (ev.key.toLowerCase() === "t") {
-        unifyTables();
+        ev.preventDefault();
+        openModifyTextMenu();
         return;
       }
 
@@ -813,6 +824,67 @@ export function App({ version, appName } = {}) {
       setInitialText(modified);
       setText(modified);
     }
+  }
+
+  // Flat list of the "Modify Text" submenu entries, so the menu render and the
+  // keyboard navigation stay in sync.
+  const modifyTextMenuItems = [
+    { label: "Unify table columns width", run: () => unifyTables() },
+    ...TEXT_MODIFIERS.map(({ label, transform }) => ({
+      label,
+      run: () => applyTextModifier(transform),
+    })),
+  ];
+
+  // Opens the "Modify Text" submenu with the first entry highlighted, so it can
+  // be driven entirely from the keyboard (Ctrl + ⌘ + T).
+  function openModifyTextMenu() {
+    setShowMoreOptions(true);
+    setShowAdditionalMenuOption(false);
+    setShowLastUsedFiles(false);
+    setShowModifyTextMenu(true);
+    setModifyTextMenuIndex(0);
+  }
+
+  function closeModifyTextMenu() {
+    setShowModifyTextMenu(false);
+    setShowAdditionalMenuOption(false);
+    setShowMoreOptions(false);
+    setModifyTextMenuIndex(-1);
+    focusEditor?.target?.focus();
+  }
+
+  // Arrow-key navigation / Enter / Escape while the "Modify Text" submenu is
+  // open. Returns true when the key was handled.
+  function handleModifyTextMenuKey(ev) {
+    if (!showModifyTextMenu || !showMoreOptions) {
+      return false;
+    }
+    const count = modifyTextMenuItems.length;
+    if (ev.key === "ArrowDown") {
+      ev.preventDefault();
+      setModifyTextMenuIndex((i) => (i >= count - 1 ? 0 : i + 1));
+      return true;
+    }
+    if (ev.key === "ArrowUp") {
+      ev.preventDefault();
+      setModifyTextMenuIndex((i) => (i <= 0 ? count - 1 : i - 1));
+      return true;
+    }
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      // Run before restoring focus so the modifier sees the current (or
+      // remembered) selection, then close the menu and focus the editor.
+      modifyTextMenuItems[modifyTextMenuIndex]?.run();
+      closeModifyTextMenu();
+      return true;
+    }
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      closeModifyTextMenu();
+      return true;
+    }
+    return false;
   }
 
   function handleOnChangeEditor(text, { caretPosition } = {}) {
@@ -1493,6 +1565,8 @@ export function App({ version, appName } = {}) {
                 ev.target.tagName !== "INPUT"
               ) {
                 setShowMoreOptions(false);
+                setShowModifyTextMenu(false);
+                setModifyTextMenuIndex(-1);
               }
             }}
           >
@@ -1808,26 +1882,29 @@ export function App({ version, appName } = {}) {
                       className={["border-bottom"].filter((v) => !!v).join(" ")}
                       data-is-more-options-item="true"
                       style={{ position: "relative" }}
-                      onMouseEnter={() => setShowModifyTextMenu(true)}
+                      onMouseEnter={() => {
+                        setShowModifyTextMenu(true);
+                        setModifyTextMenuIndex(-1);
+                      }}
                       onMouseLeave={() => setShowModifyTextMenu(false)}
                     >
                       Modify Text
                       {showModifyTextMenu && (
                         <div className="more-options">
                           <ul className="menu">
-                            <li
-                              className="border-bottom"
-                              onClick={() => unifyTables()}
-                            >
-                              Unify table columns width{" "}
-                              <span className="shortcut">Ctrl + ⌘ + T</span>
-                            </li>
-                            {TEXT_MODIFIERS.map(({ label, transform }) => (
+                            {modifyTextMenuItems.map((item, i) => (
                               <li
-                                key={label}
-                                onClick={() => applyTextModifier(transform)}
+                                key={item.label}
+                                className={
+                                  modifyTextMenuIndex === i ? "highlighted" : null
+                                }
+                                onMouseEnter={() => setModifyTextMenuIndex(i)}
+                                onClick={() => {
+                                  item.run();
+                                  closeModifyTextMenu();
+                                }}
                               >
-                                {label}
+                                {item.label}
                               </li>
                             ))}
                           </ul>

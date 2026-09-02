@@ -501,6 +501,10 @@ focus-editor [contenteditable] > div:last-child {
           cursor: pointer;
         }
       }
+      &.highlighted {
+        background: var(--background-color-light);
+        cursor: pointer;
+      }
       &.active {
         &:after {
           content: "✓";
