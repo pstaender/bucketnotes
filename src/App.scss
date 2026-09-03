@@ -310,6 +310,9 @@ html {
 
 focus-editor > div {
   max-width: 50rem;
+  @media print {
+    max-width: 100%;
+  }
 }
 
 focus-editor.full-width-editor > div {
