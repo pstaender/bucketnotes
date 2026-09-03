@@ -135,6 +135,12 @@ html {
     .folder-path-text {
       opacity: 0.3;
     }
+    &[contenteditable="true"] {
+      overflow: visible;
+      white-space: normal;
+      outline: none;
+      cursor: text;
+    }
   }
 
   .no-files-found {

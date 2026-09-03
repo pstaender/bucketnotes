@@ -164,6 +164,7 @@ export function App({ version, appName } = {}) {
     localStorage.getItem("rightTrimTextBeforeSave") === "true",
   );
   const [globalKey, setGlobalKey] = useState(null);
+  const [renamingFileKey, setRenamingFileKey] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -192,7 +193,7 @@ export function App({ version, appName } = {}) {
   const longPressOnFile = useLongPress((ev, arg) => {
     let fileKey = arg.context;
     if (fileKey) {
-      renameFile(fileKey);
+      setRenamingFileKey(fileKey);
     }
   });
 
@@ -677,24 +678,28 @@ export function App({ version, appName } = {}) {
     setLastEditedFile(fileKey);
   }
 
-  async function renameFile(fileKey) {
-    let newFileName = "";
+  function cancelRenameFile() {
+    setRenamingFileKey(null);
+  }
 
-    while (newFileName !== null && newFileName?.length === 0) {
-      newFileName = prompt("Enter new file name", fileKey);
-      if (newFileName) {
-        newFileName = slugifyPath(newFileName);
-      }
+  // `newBaseName` is the (uncommitted) text of the file-name span after
+  // inline contenteditable renaming - it never contains the folder prefix,
+  // so that gets reattached from the original fileKey before comparing/saving.
+  async function renameFile(fileKey, newBaseName) {
+    setRenamingFileKey(null);
+
+    let pathSegments = fileKey.split("/");
+    let folderPrefix = pathSegments.slice(0, -1).join("/");
+    if (folderPrefix) {
+      folderPrefix += "/";
     }
 
-    console.log({ newFileName }, slugifyPath(fileKey));
+    let newFileName = slugifyPath((newBaseName || "").trim());
 
-    if (newFileName === null || slugifyPath(fileKey) === newFileName) {
+    if (!newFileName || folderPrefix + newFileName === fileKey) {
       updateStatusText(`No change in filename detected… skipping`);
       return;
     }
-
-    newFileName = slugifyPath(newFileName.trim());
 
     if (
       !FEATURE_FLAGS.ASSETS_BASE_PATH.startsWith(newFileName) &&
@@ -702,6 +707,8 @@ export function App({ version, appName } = {}) {
     ) {
       newFileName += ".txt";
     }
+
+    newFileName = folderPrefix + newFileName;
 
     updateStatusText(`Renaming '${fileKey}' to '${newFileName}'`);
     setReadonly(true);
@@ -1532,6 +1539,9 @@ export function App({ version, appName } = {}) {
                   handleDeleteFolder={handleDeleteFolder}
                   lastEditedFile={lastEditedFile}
                   isPossiblyOffline={isPossiblyOffline}
+                  renamingFileKey={renamingFileKey}
+                  onRenameFile={renameFile}
+                  onCancelRename={cancelRenameFile}
                 ></FileList>
               )}
             </div>

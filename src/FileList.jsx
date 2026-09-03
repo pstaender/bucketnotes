@@ -77,6 +77,9 @@ function Draggable({
   handleClickOnFile,
   handleClickOnHistory,
   longPressOnFile,
+  isRenaming,
+  onRenameFile,
+  onCancelRename,
 } = {}) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: fileKey,
@@ -86,21 +89,83 @@ function Draggable({
     transform: CSS.Translate.toString(transform),
   };
 
+  const baseName = fileKey.split("/").at(-1);
+  const fileNameRef = useRef(null);
+  // Guards against double-handling: Enter/Escape blur the span themselves,
+  // which would otherwise also fire onBlur's commit right after.
+  const settledRef = useRef(false);
+
+  useEffect(() => {
+    if (!isRenaming || !fileNameRef.current) {
+      return;
+    }
+    settledRef.current = false;
+    const el = fileNameRef.current;
+    el.textContent = baseName;
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRenaming]);
+
+  function commitRename() {
+    if (settledRef.current) {
+      return;
+    }
+    settledRef.current = true;
+    onRenameFile(fileKey, fileNameRef.current?.textContent ?? "");
+  }
+
+  function cancelRename() {
+    settledRef.current = true;
+    onCancelRename(fileKey);
+  }
+
+  function handleRenameKeyDown(ev) {
+    ev.stopPropagation();
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      commitRename();
+      ev.target.blur();
+    } else if (ev.key === "Escape") {
+      ev.preventDefault();
+      cancelRename();
+      ev.target.blur();
+    }
+  }
+
+  function handleRenamePaste(ev) {
+    // Force plain text - a formatted/multi-line paste would otherwise leave
+    // markup or line breaks inside what has to end up as a single file name.
+    ev.preventDefault();
+    const text = ev.clipboardData.getData("text/plain").replace(/\s+/g, " ");
+    document.execCommand("insertText", false, text);
+  }
+
   let clickEvents = {
     onClick: (ev) => {
+      if (isRenaming) {
+        return;
+      }
       if (isTouchDevice()) {
         setShowSideBar(false);
       }
       handleClickOnFile(ev, fileKey);
     },
     onDoubleClick: (ev) => {
+      if (isRenaming) {
+        return;
+      }
       setShowSideBar(false);
       handleClickOnFile(ev, fileKey);
     },
     ...longPressOnFile(fileKey),
   };
 
-  if (allowDragAndDrop) {
+  if (allowDragAndDrop && !isRenaming) {
     clickEvents = { ...listeners, ...attributes };
   }
 
@@ -118,7 +183,18 @@ function Draggable({
           : null
       }
     >
-      <span className="file-name">{fileKey.split("/").at(-1)}</span>
+      <span
+        className="file-name"
+        ref={fileNameRef}
+        contentEditable={isRenaming}
+        suppressContentEditableWarning
+        onKeyDown={isRenaming ? handleRenameKeyDown : undefined}
+        onPaste={isRenaming ? handleRenamePaste : undefined}
+        onBlur={isRenaming ? commitRename : undefined}
+        onClick={isRenaming ? (ev) => ev.stopPropagation() : undefined}
+      >
+        {isRenaming ? null : baseName}
+      </span>
       <span className="icons">
         {!isPossiblyOffline && (
           <span
@@ -150,6 +226,9 @@ export function FileList({
   folderPath,
   moveFileToFolder,
   isPossiblyOffline,
+  renamingFileKey,
+  onRenameFile,
+  onCancelRename,
 } = {}) {
   const [allowFileDragAndDrop, setAllowFileDragAndDrop] = useState(false);
   const [key, setKey] = useState(null);
@@ -298,6 +377,9 @@ export function FileList({
             handleClickOnFile={handleClickOnFile}
             handleClickOnHistory={handleClickOnHistory}
             longPressOnFile={longPressOnFile}
+            isRenaming={fileKey === renamingFileKey}
+            onRenameFile={onRenameFile}
+            onCancelRename={onCancelRename}
           ></Draggable>
         ))}
       </ul>
