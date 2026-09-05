@@ -180,7 +180,6 @@ focus-editor .TinyMDE .TMCodeFenceBacktickClose {
   padding-bottom: 0.5rem;
 }
 
-/* blockquote */
 focus-editor .TinyMDE .TMBlockquote {
   background: var(--background-color-very-light);
   padding-left: var(--tmde-space);
@@ -192,12 +191,12 @@ focus-editor .TinyMDE .TMBlockquote {
 
 focus-editor .TinyMDE .TMBlockquote:not(.TMBlockquote + .TMBlockquote) {
   padding-top: 1rem;
-  border-radius: var(--tmde-border-radius) 0 0 var(--tmde-border-radius);
+  border-radius: var(--tmde-border-radius) var(--tmde-border-radius) 0 0;
 }
 
 focus-editor .TinyMDE .TMBlockquote:not(:has(+ .TMBlockquote)) {
   padding-bottom: 1rem;
-  border-radius: 0 var(--tmde-border-radius) var(--tmde-border-radius) 0;
+  border-radius: 0 0  var(--tmde-border-radius) var(--tmde-border-radius);
 }
 
 /* markup characters (#, *, -, >, etc.) - de-emphasized */
