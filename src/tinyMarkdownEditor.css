@@ -196,7 +196,7 @@ focus-editor .TinyMDE .TMBlockquote:not(.TMBlockquote + .TMBlockquote) {
 
 focus-editor .TinyMDE .TMBlockquote:not(:has(+ .TMBlockquote)) {
   padding-bottom: 1rem;
-  border-radius: 0 0  var(--tmde-border-radius) var(--tmde-border-radius);
+  border-radius: 0 0 var(--tmde-border-radius) var(--tmde-border-radius);
 }
 
 /* markup characters (#, *, -, >, etc.) - de-emphasized */
@@ -337,4 +337,15 @@ focus-editor.highlight-current-paragraph .TinyMDE > div {
 }
 focus-editor.highlight-current-paragraph .TinyMDE > div.with-caret {
   opacity: 1;
+}
+
+.editor-wrapper {
+  focus-editor.full-width-editor {
+    > div {
+      max-width: unset;
+    }
+    .TinyMDE {
+      white-space: pre !important;
+    }
+  }
 }
