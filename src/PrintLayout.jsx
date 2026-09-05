@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { marked } from "marked";
+import { Marked } from "marked";
+import markedFootnote from "marked-footnote";
+import katex from "katex";
 import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import closeIcon from "./icons/close.svg";
 import * as s3 from "./s3";
@@ -11,9 +13,12 @@ const MINIMAX_STYLESHEETS = [
 ];
 
 const MINIMAX_VARIANTS = [
-  { label: "Default", hrefs: [
-    "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-alternate-fonts.css",
-  ] },
+  {
+    label: "Default",
+    hrefs: [
+      "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-alternate-fonts.css",
+    ],
+  },
   {
     label: "Serif",
     hrefs: [
@@ -23,9 +28,7 @@ const MINIMAX_VARIANTS = [
   },
   {
     label: "Browser Serif",
-    hrefs: [
-      "https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-serif.css",
-    ],
+    hrefs: ["https://cdn.jsdelivr.net/npm/minimaxcss@latest/minimax-serif.css"],
   },
   {
     label: "Browser Sans Serif",
@@ -97,7 +100,10 @@ export function PrintLayout({ text, filename, onClose } = {}) {
   const articleRef = useRef(null);
 
   const html = useMemo(
-    () => marked.parse(text || "", { gfm: true, breaks: false }),
+    () =>
+      new Marked()
+        .use(markedFootnote())
+        .parse(text || "", { gfm: true, breaks: true }),
     [text],
   );
 
@@ -105,9 +111,10 @@ export function PrintLayout({ text, filename, onClose } = {}) {
   // prints/exports reliably instead of depending on a (possibly expired or
   // unauthenticated) signed URL being fetchable at print time.
   useEffect(() => {
-    const images = Array.from(
-      articleRef.current?.querySelectorAll("img") || [],
-    );
+    if (!articleRef.current) {
+      return;
+    }
+    const images = Array.from(articleRef.current.querySelectorAll("img") || []);
     let cancelled = false;
     images.forEach((img) => {
       const key = assetKeyFromImageSrc(img.getAttribute("src"));
@@ -128,6 +135,24 @@ export function PrintLayout({ text, filename, onClose } = {}) {
         }
       })();
     });
+
+    // katex
+    articleRef.current
+      .querySelectorAll("pre:has(> code.language-katex)")
+      .forEach((pre) => {
+        const div = document.createElement("div");
+        console.log('ok');
+        try {
+          katex.render(pre.querySelector("code.language-katex").innerText, div, {
+            throwOnError: true,
+          });
+        } catch (e) {
+          console.debug(`Could not render katex (check syntax):`, e);
+        }
+        div.classList.add('katex');
+        pre.replaceWith(div);
+      });
+
     return () => {
       cancelled = true;
     };
@@ -206,13 +231,13 @@ export function PrintLayout({ text, filename, onClose } = {}) {
           </button>
         </div>
       </div>
-      <div className="print-layout-page">
-        <article
+      <article className="print-layout-page">
+        <section
           ref={articleRef}
           className="minimax"
           dangerouslySetInnerHTML={{ __html: html }}
-        ></article>
-      </div>
+        ></section>
+      </article>
     </div>
   );
 }
