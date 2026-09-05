@@ -21,15 +21,13 @@ if (window.location.hash === "#reset") {
 // see: https://vite-pwa-org.netlify.app/guide/auto-update.html#ready-to-work-offline
 // make this app work offline
 const updateSW = registerSW({
-  onOfflineReady() {
-  },
+  onOfflineReady() {},
   onNeedRefresh() {
     if (confirm("New app available. Reload?")) {
       updateSW(true);
     }
   },
 });
-
 
 const container = document.getElementById("app");
 const root = createRoot(container);
@@ -38,10 +36,12 @@ const root = createRoot(container);
 // required so the app can use useBlocker() to warn about unsaved changes on
 // in-app navigation.
 // Set VITE_APP_ROUTER=HashRouter in .env to use hash-based routing (needed
-// when the app is served from a static host without SPA fallback routing);
-// any other value (or unset) defaults to path-based BrowserRouter.
+// when the app is served from a static host without SPA fallback routing).
+// Also enable it on PWA, to ensure that the manifest scope is respected.
+// Any other value (or unset) defaults to path-based BrowserRouter.
 const createRouter =
-  import.meta.env.VITE_APP_ROUTER === "HashRouter"
+  import.meta.env.VITE_APP_ROUTER === "HashRouter" ||
+  new URLSearchParams(document.location.search).get("source") === 'pwa'
     ? createHashRouter
     : createBrowserRouter;
 
