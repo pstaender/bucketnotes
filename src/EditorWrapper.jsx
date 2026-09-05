@@ -217,7 +217,14 @@ function openLink(url, downloadAssetFile, navigate) {
       return;
     }
     if (VALID_FILE_EXTENSION.test(String(target))) {
-      return navigate(String(target).split('#')[1]);
+      // Same-origin note links come either as a hash fragment (e.g. pasted
+      // from a HashRouter address bar, or written as "#/notes/x.md") or as a
+      // plain path (e.g. pasted from a BrowserRouter address bar, or written
+      // as "/notes/x.md" or "notes/x.md"). Prefer the hash when present so
+      // this works regardless of which router mode is active.
+      return navigate(
+        target.hash ? target.hash.slice(1) : `${target.pathname}${target.search}`,
+      );
     }
     downloadAssetFile(`${target.pathname}${target.search}${target.hash}`);
     return;
