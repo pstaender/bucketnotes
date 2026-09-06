@@ -97,6 +97,7 @@ function appendPrintStylesheet(href) {
 export function PrintLayout({ text, filename, onClose } = {}) {
   const [variant, setVariant] = useState("Default");
   const [landscape, setLandscape] = useState(false);
+  const [fixedTableLayout, setFixedTableLayout] = useState(false);
   const articleRef = useRef(null);
 
   const html = useMemo(
@@ -200,7 +201,11 @@ export function PrintLayout({ text, filename, onClose } = {}) {
 
   return (
     <div
-      className={["print-layout", landscape ? "landscape" : null]
+      className={[
+        "print-layout",
+        landscape ? "landscape" : null,
+        fixedTableLayout ? "fixed-table-layout" : null,
+      ]
         .filter((v) => !!v)
         .join(" ")}
     >
@@ -214,6 +219,14 @@ export function PrintLayout({ text, filename, onClose } = {}) {
               onChange={(ev) => setLandscape(ev.target.checked)}
             />
             Landscape
+          </label>
+          <label className="print-layout-fixed-table-layout">
+            <input
+              type="checkbox"
+              checked={fixedTableLayout}
+              onChange={(ev) => setFixedTableLayout(ev.target.checked)}
+            />
+            Uniform table size
           </label>
           <select
             value={variant}

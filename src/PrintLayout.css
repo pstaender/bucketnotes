@@ -79,7 +79,8 @@
     }
   }
 
-  .print-layout .print-layout-landscape {
+  .print-layout .print-layout-landscape,
+  .print-layout .print-layout-fixed-table-layout {
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -154,10 +155,12 @@
 }
 
 .print-layout .print-layout-page table {
-  word-break: keep-all;
   hyphens: auto;
-  @media print {
-    table-layout: fixed;
-    word-break: break-word;
-  }
+  word-break: normal;
+  max-width: 100%;
+}
+
+.print-layout.fixed-table-layout .print-layout-page table {
+  table-layout: fixed;
+  word-break: break-word;
 }
