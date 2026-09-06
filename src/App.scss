@@ -514,6 +514,10 @@ focus-editor [contenteditable] > div:last-child {
         background: var(--background-color-light);
         cursor: pointer;
       }
+      &.current {
+        font-weight: bold;
+        background: var(--background-color-light);
+      }
       &.active {
         &:after {
           content: "✓";
@@ -548,6 +552,8 @@ focus-editor [contenteditable] > div:last-child {
       left: -20rem;
       width: 20rem;
       top: 0;
+      max-height: 80vh;
+      overflow-y: auto;
       @media screen and (max-width: 900px) {
         left: -5.2rem;
       }
