@@ -27,6 +27,11 @@ import {
   sortS3FilesByAttribute,
 } from "./helper.js";
 import * as db from "./db.js";
+import {
+  SUPPORTED_LANGUAGES,
+  userAgentLanguage,
+  detectLanguage,
+} from "./lib/detectLanguage.js";
 import slugify from "slugify";
 import voca from "voca";
 import * as encrypt from "./encrypt.js";
@@ -165,6 +170,16 @@ export function App({ version, appName } = {}) {
   );
   const [globalKey, setGlobalKey] = useState(null);
   const [renamingFileKey, setRenamingFileKey] = useState(null);
+  // Explicit language identifier the user picked from the "Text language"
+  // submenu ("" = auto-detect). `detectedLang` is what LanguageDetector (or the
+  // navigator) reported for the current document. The effective identifier is
+  // written to `.app-window[lang]` so the browser uses the right spellcheck
+  // dictionary and hyphenation rules.
+  const [textLang, setTextLang] = useState("");
+  const [detectedLang, setDetectedLang] = useState("");
+  const [showTextLanguageMenu, setShowTextLanguageMenu] = useState(false);
+  const effectiveLang =
+    textLang || detectedLang || userAgentLanguage();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -507,6 +522,7 @@ export function App({ version, appName } = {}) {
       setShowMoreOptions(false);
       setShowAdditionalMenuOption(false);
       setShowModifyTextMenu(false);
+      setShowTextLanguageMenu(false);
       setModifyTextMenuIndex(-1);
       setShowSideBar(false);
       setJumpToFile(false);
@@ -1032,6 +1048,25 @@ export function App({ version, appName } = {}) {
     }
   }, [fontFamily]);
 
+  // Auto-detect the document language a moment after typing stops, unless the
+  // user has pinned a language explicitly via the "Text language" submenu.
+  useEffect(() => {
+    if (textLang) {
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const lang = (await detectLanguage(text)) || userAgentLanguage();
+      if (!cancelled && lang) {
+        setDetectedLang(lang);
+      }
+    }, 1000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [text, textLang]);
+
   useEffect(() => {
     sessionStorage.setItem("focusMode", !!focusMode);
   }, [focusMode]);
@@ -1502,6 +1537,7 @@ export function App({ version, appName } = {}) {
       ]
         .filter((v) => !!v)
         .join(" ")}
+      lang={effectiveLang || undefined}
       onKeyDown={handleKeyDown}
     >
       {s3Client && !loginErrorMessage && (
@@ -1575,6 +1611,7 @@ export function App({ version, appName } = {}) {
               ) {
                 setShowMoreOptions(false);
                 setShowModifyTextMenu(false);
+                setShowTextLanguageMenu(false);
                 setModifyTextMenuIndex(-1);
               }
             }}
@@ -1606,6 +1643,7 @@ export function App({ version, appName } = {}) {
                     setShowMoreOptions(false);
                     setShowAdditionalMenuOption(false);
                     setShowModifyTextMenu(false);
+                    setShowTextLanguageMenu(false);
                     setShowLastUsedFiles(false);
                   }}
                 >
@@ -1916,6 +1954,67 @@ export function App({ version, appName } = {}) {
                                 }}
                               >
                                 {item.label}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </li>
+                  )}
+                  {true && (
+                    <li
+                      className={["border-bottom"].filter((v) => !!v).join(" ")}
+                      data-is-more-options-item="true"
+                      style={{ position: "relative" }}
+                      onMouseEnter={() => setShowTextLanguageMenu(true)}
+                      onMouseLeave={() => setShowTextLanguageMenu(false)}
+                    >
+                      Text language
+                      <span className="shortcut">{effectiveLang}</span>
+                      {showTextLanguageMenu && (
+                        <div className="more-options">
+                          <ul className="menu">
+                            <li
+                              data-is-more-options-item="true"
+                              className="border-bottom"
+                              onClick={() => {
+                                const value = prompt(
+                                  "Enter a language identifier (e.g. en, de, fr-CA):",
+                                  textLang || effectiveLang || "",
+                                );
+                                if (value !== null) {
+                                  setTextLang(value.trim());
+                                }
+                              }}
+                            >
+                              Set custom language
+                            </li>
+                            <li
+                              data-is-more-options-item="true"
+                              className={[
+                                "border-bottom",
+                                textLang === "" ? "current" : null,
+                              ]
+                                .filter((v) => !!v)
+                                .join(" ")}
+                              onClick={() => setTextLang("")}
+                            >
+                              Detected language
+                              <span className="shortcut">
+                                {detectedLang || "…"}
+                              </span>
+                            </li>
+                            {SUPPORTED_LANGUAGES.map((l) => (
+                              <li
+                                key={l.code}
+                                data-is-more-options-item="true"
+                                className={
+                                  effectiveLang === l.code ? "current" : null
+                                }
+                                onClick={() => setTextLang(l.code)}
+                              >
+                                {l.label}
+                                <span className="shortcut">{l.code}</span>
                               </li>
                             ))}
                           </ul>
