@@ -155,4 +155,9 @@
 
 .print-layout .print-layout-page table {
   word-break: keep-all;
+  hyphens: auto;
+  @media print {
+    table-layout: fixed;
+    word-break: break-word;
+  }
 }
