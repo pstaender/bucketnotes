@@ -27,6 +27,11 @@ import {
   sortS3FilesByAttribute,
 } from "./helper.js";
 import * as db from "./db.js";
+import {
+  SUPPORTED_LANGUAGES,
+  userAgentLanguage,
+  detectLanguage,
+} from "./lib/detectLanguage.js";
 import slugify from "slugify";
 import voca from "voca";
 import * as encrypt from "./encrypt.js";
@@ -165,6 +170,11 @@ export function App({ version, appName } = {}) {
   );
   const [globalKey, setGlobalKey] = useState(null);
   const [renamingFileKey, setRenamingFileKey] = useState(null);
+
+  const [textLang, setTextLang] = useState("");
+  const [detectedLang, setDetectedLang] = useState("");
+  const [showTextLanguageMenu, setShowTextLanguageMenu] = useState(false);
+  const effectiveLang = textLang || detectedLang || userAgentLanguage();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -507,6 +517,7 @@ export function App({ version, appName } = {}) {
       setShowMoreOptions(false);
       setShowAdditionalMenuOption(false);
       setShowModifyTextMenu(false);
+      setShowTextLanguageMenu(false);
       setModifyTextMenuIndex(-1);
       setShowSideBar(false);
       setJumpToFile(false);
@@ -1032,6 +1043,25 @@ export function App({ version, appName } = {}) {
     }
   }, [fontFamily]);
 
+  // Auto-detect the document language a moment after typing stops, unless the
+  // user has pinned a language explicitly via the "Text language" submenu.
+  useEffect(() => {
+    if (textLang) {
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const lang = (await detectLanguage(text)) || userAgentLanguage();
+      if (!cancelled && lang) {
+        setDetectedLang(lang);
+      }
+    }, 1000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [text, textLang]);
+
   useEffect(() => {
     sessionStorage.setItem("focusMode", !!focusMode);
   }, [focusMode]);
@@ -1502,6 +1532,7 @@ export function App({ version, appName } = {}) {
       ]
         .filter((v) => !!v)
         .join(" ")}
+      lang={effectiveLang || undefined}
       onKeyDown={handleKeyDown}
     >
       {s3Client && !loginErrorMessage && (
@@ -1575,6 +1606,7 @@ export function App({ version, appName } = {}) {
               ) {
                 setShowMoreOptions(false);
                 setShowModifyTextMenu(false);
+                setShowTextLanguageMenu(false);
                 setModifyTextMenuIndex(-1);
               }
             }}
@@ -1606,6 +1638,7 @@ export function App({ version, appName } = {}) {
                     setShowMoreOptions(false);
                     setShowAdditionalMenuOption(false);
                     setShowModifyTextMenu(false);
+                    setShowTextLanguageMenu(false);
                     setShowLastUsedFiles(false);
                   }}
                 >
@@ -1624,305 +1657,352 @@ export function App({ version, appName } = {}) {
                   >
                     Autosave
                   </li>
-                  {true && (
-                    <li
-                      className={["border-bottom"].filter((v) => !!v).join(" ")}
-                      data-is-more-options-item="true"
-                      style={{ position: "relative" }}
-                      onMouseEnter={() => setShowAdditionalMenuOption(true)}
-                      onMouseLeave={() => setShowAdditionalMenuOption(false)}
-                    >
-                      More Options
-                      {showAdditionalMenuOption && (
-                        <div className="more-options">
-                          <ul className="menu">
+                  <li
+                    className={["border-bottom"].filter((v) => !!v).join(" ")}
+                    data-is-more-options-item="true"
+                    style={{ position: "relative" }}
+                    onMouseEnter={() => setShowAdditionalMenuOption(true)}
+                    onMouseLeave={() => setShowAdditionalMenuOption(false)}
+                  >
+                    More Options
+                    {showAdditionalMenuOption && (
+                      <div className="more-options">
+                        <ul className="menu">
+                          <li
+                            data-is-more-options-item="true"
+                            onClick={() => {
+                              if (colorScheme === "dark") {
+                                setColorScheme("light");
+                              } else if (colorScheme === "light") {
+                                setColorScheme("");
+                              } else {
+                                setColorScheme("dark");
+                              }
+                            }}
+                          >
+                            Color scheme (
+                            {colorScheme ? colorScheme + " → " : "auto → "}
+                            {colorScheme === "dark"
+                              ? "light"
+                              : colorScheme === "light"
+                                ? "auto"
+                                : "dark"}
+                            )
+                          </li>
+                          <li
+                            data-is-more-options-item="true"
+                            onClick={() => {
+                              if (fontFamily === "firacode") {
+                                setFontFamily("");
+                              } else if (fontFamily === "ibm") {
+                                setFontFamily("firacode");
+                              } else {
+                                setFontFamily("ibm");
+                              }
+                            }}
+                          >
+                            Font ({fontFamily ? fontFamily + " → " : "auto → "}
+                            {fontFamily === "ibm"
+                              ? "fira code"
+                              : fontFamily === "firacode"
+                                ? "auto"
+                                : "ibm"}
+                            )
+                          </li>
+                          {!isTouch() && (
                             <li
-                              data-is-more-options-item="true"
                               onClick={() => {
-                                if (colorScheme === "dark") {
-                                  setColorScheme("light");
-                                } else if (colorScheme === "light") {
-                                  setColorScheme("");
-                                } else {
-                                  setColorScheme("dark");
-                                }
+                                setScrollWindowToCenterCaret(
+                                  !scrollWindowToCenterCaret,
+                                );
+                                localStorage.setItem(
+                                  "scrollWindowToCenterCaret",
+                                  !scrollWindowToCenterCaret,
+                                );
                               }}
-                            >
-                              Color scheme (
-                              {colorScheme ? colorScheme + " → " : "auto → "}
-                              {colorScheme === "dark"
-                                ? "light"
-                                : colorScheme === "light"
-                                  ? "auto"
-                                  : "dark"}
-                              )
-                            </li>
-                            <li
-                              data-is-more-options-item="true"
-                              onClick={() => {
-                                if (fontFamily === "firacode") {
-                                  setFontFamily("");
-                                } else if (fontFamily === "ibm") {
-                                  setFontFamily("firacode");
-                                } else {
-                                  setFontFamily("ibm");
-                                }
-                              }}
-                            >
-                              Font (
-                              {fontFamily ? fontFamily + " → " : "auto → "}
-                              {fontFamily === "ibm"
-                                ? "fira code"
-                                : fontFamily === "firacode"
-                                  ? "auto"
-                                  : "ibm"}
-                              )
-                            </li>
-                            {!isTouch() && (
-                              <li
-                                onClick={() => {
-                                  setScrollWindowToCenterCaret(
-                                    !scrollWindowToCenterCaret,
-                                  );
-                                  localStorage.setItem(
-                                    "scrollWindowToCenterCaret",
-                                    !scrollWindowToCenterCaret,
-                                  );
-                                }}
-                                /* NOT WORKING?! TODO: check why not… */
-                                style={{ display: "none" }}
-                                className={
-                                  scrollWindowToCenterCaret ? "active" : null
-                                }
-                              >
-                                Scroll to center
-                              </li>
-                            )}
-                            <li
-                              onClick={toggleFullScreen}
+                              /* NOT WORKING?! TODO: check why not… */
+                              style={{ display: "none" }}
                               className={
-                                document.fullscreenElement ? "active" : null
+                                scrollWindowToCenterCaret ? "active" : null
                               }
                             >
-                              Fullscreen{" "}
+                              Scroll to center
                             </li>
-                            <li className="border-bottom">
-                              <div title="Increase or decrease font size">
-                                <span
-                                  data-is-more-options-item="true"
-                                  onClick={() => {
-                                    setFontSize(Number(fontSize || 16) + 1);
-                                  }}
-                                >
-                                  Larger font
-                                </span>
-                                <span
-                                  data-is-more-options-item="true"
-                                  style={{
-                                    transform: "scale(0.75)",
-                                    display: "inline-flex",
-                                    paddingLeft: "0.25rem",
-                                  }}
-                                  onClick={() => {
-                                    setFontSize(Number(fontSize || 16) - 1);
-                                  }}
-                                >
-                                  Smaller Font
-                                </span>
-                              </div>
-                            </li>
-                            <li
-                              data-is-more-options-item="true"
-                              onClick={async () => {
-                                const value =
-                                  sortFilesByAttribute === "LastModified"
-                                    ? "Key"
-                                    : "LastModified";
-                                localStorage.setItem(
-                                  "sortFilesByAttribute",
-                                  value,
-                                );
-                                setSortFilesByAttribute(value);
-                              }}
-                            >
-                              Sort files (
-                              {sortFilesByAttribute === "Key"
-                                ? "name"
-                                : "modified"}{" "}
-                              →{" "}
-                              {sortFilesByAttribute === "LastModified"
-                                ? "name"
-                                : "modified"}
-                              )
-                            </li>
-                            <li
-                              data-is-more-options-item="true"
-                              className={[
-                                "border-bottom",
-                                offlineStorageEnabled ? "active" : null,
-                              ]
-                                .filter((v) => !!v)
-                                .join(" ")}
-                              onClick={async () => {
-                                let value = !offlineStorageEnabled;
-                                if (value) {
-                                  updateStatusText("Offline Storage enabled");
-                                  setOfflineStorageEnabled(true);
-                                  localStorage.setItem(
-                                    "offlineStorage",
-                                    "true",
-                                  );
-                                } else {
-                                  setOfflineStorageEnabled(false);
-                                  localStorage.removeItem("offlineStorage");
-                                  await db.clearFiles();
-                                  updateStatusText(
-                                    "Offline Storage disabled + cleared",
-                                  );
-                                }
-                              }}
-                            >
-                              Offline Storage
-                            </li>
-                            <li
-                              onClick={() => {
-                                pickAndInsertMediaFile({
-                                  updateStatusText,
-                                  focusEditor,
-                                });
-                              }}
-                            >
-                              Insert media file
-                            </li>
-                            <li
-                              data-is-more-options-item="true"
-                              onClick={(ev) => {
-                                setConvertPDFToText(!convertPDFToText);
-                                localStorage.setItem(
-                                  "convertPDFToText",
-                                  convertPDFToText ? "false" : "true",
-                                );
-                              }}
-                              className={convertPDFToText ? "active" : null}
-                            >
-                              Extract text from PDF on drop
-                            </li>
-                            <li
-                              data-is-more-options-item="true"
-                              onClick={(ev) => {
-                                setConvertHTMLToMarkdown(
-                                  !convertHTMLToMarkdown,
-                                );
-                                localStorage.setItem(
-                                  "convertHTMLToMarkdown",
-                                  convertHTMLToMarkdown ? "false" : "true",
-                                );
-                              }}
-                              className={[
-                                convertHTMLToMarkdown ? "active" : null,
-                                "border-bottom",
-                              ]
-                                .filter((v) => !!v)
-                                .join(" ")}
-                            >
-                              Convert HTML to MD on paste
-                            </li>
-                            <li
-                              data-is-more-options-item="true"
-                              onClick={(ev) => {
-                                setRightTrimTextBeforeSave(
-                                  !rightTrimTextBeforeSave,
-                                );
-                                localStorage.setItem(
-                                  "rightTrimTextBeforeSave",
-                                  rightTrimTextBeforeSave ? "false" : "true",
-                                );
-                              }}
-                              className={[
-                                rightTrimTextBeforeSave ? "active" : null,
-                                "border-bottom",
-                              ]
-                                .filter((v) => !!v)
-                                .join(" ")}
-                            >
-                              Remove trailing spaces on save
-                            </li>
-                            <li
-                              data-is-more-options-item="true"
-                              onClick={(ev) => {
-                                setFullWithEditor(!fullWithEditor);
-                                localStorage.setItem(
-                                  "fullWithEditor",
-                                  fullWithEditor ? "false" : "true",
-                                );
-                              }}
-                              className={fullWithEditor ? "active" : null}
-                            >
-                              Full-Width-Editing
-                            </li>
-                            <li
-                              onClick={() => {
-                                setShowPrintLayout(true);
-                                setShowMoreOptions(false);
-                              }}
-                              className={showPrintLayout ? "active" : null}
-                            >
-                              Print{" "}
-                              <span className="shortcut">Ctrl + Shift + P</span>
-                            </li>
-                            <div
-                              style={{
-                                textAlign: "right",
-                                fontSize: "0.8em",
-                                padding: "0.75rem 1rem",
-                                paddingTop: 0,
-                                opacity: 0.3,
-                              }}
-                            >
-                              v{import.meta.env.PACKAGE_VERSION}
-                            </div>
-                          </ul>
-                        </div>
-                      )}
-                    </li>
-                  )}
-                  {true && (
-                    <li
-                      className={["border-bottom"].filter((v) => !!v).join(" ")}
-                      data-is-more-options-item="true"
-                      style={{ position: "relative" }}
-                      onMouseEnter={() => {
-                        setShowModifyTextMenu(true);
-                        setModifyTextMenuIndex(-1);
-                      }}
-                      onMouseLeave={() => setShowModifyTextMenu(false)}
-                    >
-                      Modify Text
-                      {showModifyTextMenu && (
-                        <div className="more-options">
-                          <ul className="menu">
-                            {modifyTextMenuItems.map((item, i) => (
-                              <li
-                                key={item.label}
-                                className={
-                                  modifyTextMenuIndex === i
-                                    ? "highlighted"
-                                    : null
-                                }
-                                onMouseEnter={() => setModifyTextMenuIndex(i)}
+                          )}
+                          <li
+                            onClick={toggleFullScreen}
+                            className={
+                              document.fullscreenElement ? "active" : null
+                            }
+                          >
+                            Fullscreen{" "}
+                          </li>
+                          <li className="border-bottom">
+                            <div title="Increase or decrease font size">
+                              <span
+                                data-is-more-options-item="true"
                                 onClick={() => {
-                                  item.run();
-                                  closeModifyTextMenu();
+                                  setFontSize(Number(fontSize || 16) + 1);
                                 }}
                               >
-                                {item.label}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </li>
-                  )}
+                                Larger font
+                              </span>
+                              <span
+                                data-is-more-options-item="true"
+                                style={{
+                                  transform: "scale(0.75)",
+                                  display: "inline-flex",
+                                  paddingLeft: "0.25rem",
+                                }}
+                                onClick={() => {
+                                  setFontSize(Number(fontSize || 16) - 1);
+                                }}
+                              >
+                                Smaller Font
+                              </span>
+                            </div>
+                          </li>
+                          <li
+                            data-is-more-options-item="true"
+                            onClick={async () => {
+                              const value =
+                                sortFilesByAttribute === "LastModified"
+                                  ? "Key"
+                                  : "LastModified";
+                              localStorage.setItem(
+                                "sortFilesByAttribute",
+                                value,
+                              );
+                              setSortFilesByAttribute(value);
+                            }}
+                          >
+                            Sort files (
+                            {sortFilesByAttribute === "Key"
+                              ? "name"
+                              : "modified"}{" "}
+                            →{" "}
+                            {sortFilesByAttribute === "LastModified"
+                              ? "name"
+                              : "modified"}
+                            )
+                          </li>
+                          <li
+                            data-is-more-options-item="true"
+                            className={[
+                              "border-bottom",
+                              offlineStorageEnabled ? "active" : null,
+                            ]
+                              .filter((v) => !!v)
+                              .join(" ")}
+                            onClick={async () => {
+                              let value = !offlineStorageEnabled;
+                              if (value) {
+                                updateStatusText("Offline Storage enabled");
+                                setOfflineStorageEnabled(true);
+                                localStorage.setItem("offlineStorage", "true");
+                              } else {
+                                setOfflineStorageEnabled(false);
+                                localStorage.removeItem("offlineStorage");
+                                await db.clearFiles();
+                                updateStatusText(
+                                  "Offline Storage disabled + cleared",
+                                );
+                              }
+                            }}
+                          >
+                            Offline Storage
+                          </li>
+                          <li
+                            onClick={() => {
+                              pickAndInsertMediaFile({
+                                updateStatusText,
+                                focusEditor,
+                              });
+                            }}
+                          >
+                            Insert media file
+                          </li>
+                          <li
+                            data-is-more-options-item="true"
+                            onClick={(ev) => {
+                              setConvertPDFToText(!convertPDFToText);
+                              localStorage.setItem(
+                                "convertPDFToText",
+                                convertPDFToText ? "false" : "true",
+                              );
+                            }}
+                            className={convertPDFToText ? "active" : null}
+                          >
+                            Extract text from PDF on drop
+                          </li>
+                          <li
+                            data-is-more-options-item="true"
+                            onClick={(ev) => {
+                              setConvertHTMLToMarkdown(!convertHTMLToMarkdown);
+                              localStorage.setItem(
+                                "convertHTMLToMarkdown",
+                                convertHTMLToMarkdown ? "false" : "true",
+                              );
+                            }}
+                            className={[
+                              convertHTMLToMarkdown ? "active" : null,
+                              "border-bottom",
+                            ]
+                              .filter((v) => !!v)
+                              .join(" ")}
+                          >
+                            Convert HTML to MD on paste
+                          </li>
+                          <li
+                            data-is-more-options-item="true"
+                            onClick={(ev) => {
+                              setRightTrimTextBeforeSave(
+                                !rightTrimTextBeforeSave,
+                              );
+                              localStorage.setItem(
+                                "rightTrimTextBeforeSave",
+                                rightTrimTextBeforeSave ? "false" : "true",
+                              );
+                            }}
+                            className={[
+                              rightTrimTextBeforeSave ? "active" : null,
+                              "border-bottom",
+                            ]
+                              .filter((v) => !!v)
+                              .join(" ")}
+                          >
+                            Remove trailing spaces on save
+                          </li>
+                          <li
+                            data-is-more-options-item="true"
+                            onClick={(ev) => {
+                              setFullWithEditor(!fullWithEditor);
+                              localStorage.setItem(
+                                "fullWithEditor",
+                                fullWithEditor ? "false" : "true",
+                              );
+                            }}
+                            className={fullWithEditor ? "active" : null}
+                          >
+                            Full-Width-Editing
+                          </li>
+                          <li
+                            onClick={() => {
+                              setShowPrintLayout(true);
+                              setShowMoreOptions(false);
+                            }}
+                            className={showPrintLayout ? "active" : null}
+                          >
+                            Print{" "}
+                            <span className="shortcut">Ctrl + Shift + P</span>
+                          </li>
+                          <div
+                            style={{
+                              textAlign: "right",
+                              fontSize: "0.8em",
+                              padding: "0.75rem 1rem",
+                              paddingTop: 0,
+                              opacity: 0.3,
+                            }}
+                          >
+                            v{import.meta.env.PACKAGE_VERSION}
+                          </div>
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                  <li
+                    className={["border-bottom"].filter((v) => !!v).join(" ")}
+                    data-is-more-options-item="true"
+                    style={{ position: "relative" }}
+                    onMouseEnter={() => {
+                      setShowModifyTextMenu(true);
+                      setModifyTextMenuIndex(-1);
+                    }}
+                    onMouseLeave={() => setShowModifyTextMenu(false)}
+                  >
+                    Modify Text
+                    {showModifyTextMenu && (
+                      <div className="more-options">
+                        <ul className="menu">
+                          {modifyTextMenuItems.map((item, i) => (
+                            <li
+                              key={item.label}
+                              className={
+                                modifyTextMenuIndex === i ? "highlighted" : null
+                              }
+                              onMouseEnter={() => setModifyTextMenuIndex(i)}
+                              onClick={() => {
+                                item.run();
+                                closeModifyTextMenu();
+                              }}
+                            >
+                              {item.label}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                  <li
+                    className={["border-bottom"].filter((v) => !!v).join(" ")}
+                    data-is-more-options-item="true"
+                    style={{ position: "relative" }}
+                    onMouseEnter={() => setShowTextLanguageMenu(true)}
+                    onMouseLeave={() => setShowTextLanguageMenu(false)}
+                  >
+                    Text language
+                    <span className="shortcut">{effectiveLang}</span>
+                    {showTextLanguageMenu && (
+                      <div className="more-options">
+                        <ul className="menu">
+                          <li
+                            data-is-more-options-item="true"
+                            className="border-bottom"
+                            onClick={() => {
+                              const value = prompt(
+                                "Enter a language identifier (e.g. en, de, fr-CA):",
+                                textLang || effectiveLang || "",
+                              );
+                              if (value !== null) {
+                                setTextLang(value.trim());
+                              }
+                            }}
+                          >
+                            Set custom language
+                          </li>
+                          <li
+                            data-is-more-options-item="true"
+                            className={[
+                              "border-bottom",
+                              textLang === "" ? "current" : null,
+                            ]
+                              .filter((v) => !!v)
+                              .join(" ")}
+                            onClick={() => setTextLang("")}
+                          >
+                            Detected language
+                            <span className="shortcut">
+                              {detectedLang || "…"}
+                            </span>
+                          </li>
+                          {SUPPORTED_LANGUAGES.map((l) => (
+                            <li
+                              key={l.code}
+                              data-is-more-options-item="true"
+                              className={
+                                effectiveLang === l.code ? "current" : null
+                              }
+                              onClick={() => setTextLang(l.code)}
+                            >
+                              {l.label}
+                              <span className="shortcut">{l.code}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
                   <li
                     onClick={(ev) => {
                       setShowSideBar(!showSideBar);
@@ -1947,49 +2027,47 @@ export function App({ version, appName } = {}) {
                   >
                     Focus <span className="shortcut">⌘ + .</span>
                   </li>
-                  {true && (
-                    <li
-                      className={["border-top"].filter((v) => !!v).join(" ")}
-                      data-is-more-options-item="true"
-                      style={{ position: "relative" }}
-                      onMouseEnter={() => setShowLastUsedFiles(true)}
-                      onMouseLeave={() => setShowLastUsedFiles(false)}
-                    >
-                      Last files
-                      {showLastUsedFiles && (
-                        <div className="more-options">
-                          <ul className="menu">
-                            {lastUsedFiles?.length > 0 &&
-                              lastUsedFiles.map((f) => (
-                                <li
-                                  key={"last-opened-file" + slugify(f)}
-                                  className="filename"
-                                  onClick={() => navigate(f)}
-                                >
-                                  {f.replace(/^\/+/, "")}
-                                </li>
-                              ))}
-                            <li
-                              className={[
-                                openLastUsedFileOnStartup ? "active" : "",
-                                lastUsedFiles?.length > 0 ? "border-top" : "",
-                              ]
-                                .filter((v) => !!v)
-                                .join(" ")}
-                              onClick={(ev) => {
-                                setOpenLastUsedFileOnStartup(
-                                  !openLastUsedFileOnStartup,
-                                );
-                                ev.preventDefault();
-                              }}
-                            >
-                              Remember last used file(s)
-                            </li>
-                          </ul>
-                        </div>
-                      )}
-                    </li>
-                  )}
+                  <li
+                    className={["border-top"].filter((v) => !!v).join(" ")}
+                    data-is-more-options-item="true"
+                    style={{ position: "relative" }}
+                    onMouseEnter={() => setShowLastUsedFiles(true)}
+                    onMouseLeave={() => setShowLastUsedFiles(false)}
+                  >
+                    Last files
+                    {showLastUsedFiles && (
+                      <div className="more-options">
+                        <ul className="menu">
+                          {lastUsedFiles?.length > 0 &&
+                            lastUsedFiles.map((f) => (
+                              <li
+                                key={"last-opened-file" + slugify(f)}
+                                className="filename"
+                                onClick={() => navigate(f)}
+                              >
+                                {f.replace(/^\/+/, "")}
+                              </li>
+                            ))}
+                          <li
+                            className={[
+                              openLastUsedFileOnStartup ? "active" : "",
+                              lastUsedFiles?.length > 0 ? "border-top" : "",
+                            ]
+                              .filter((v) => !!v)
+                              .join(" ")}
+                            onClick={(ev) => {
+                              setOpenLastUsedFileOnStartup(
+                                !openLastUsedFileOnStartup,
+                              );
+                              ev.preventDefault();
+                            }}
+                          >
+                            Remember last used file(s)
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                  </li>
                   <li onClick={logout} className="border-top border-bottom">
                     Logout
                   </li>
