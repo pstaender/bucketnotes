@@ -251,6 +251,7 @@ export function EditorWrapper({
   tabSize = 2,
   initialCaretPosition,
   downloadAssetFile,
+  preserveHistoryOnTextChangeRef,
 } = {}) {
   const refEditor = useRef();
   const refTinyMDE = useRef();
@@ -289,7 +290,15 @@ export function EditorWrapper({
     const focusPos = hadFocus ? focusEditor.getSelection(false) : null;
     const anchorPos = hadFocus ? focusEditor.getSelection(true) : null;
 
-    focusEditor.replaceText(initialText, { clearHistory: true });
+    // Callers that programmatically edit the *currently open* document (e.g.
+    // the "Modify Text" transforms) set this ref right before triggering the
+    // change, so the edit stays undoable instead of wiping history the way a
+    // genuine file load should.
+    const clearHistory = !preserveHistoryOnTextChangeRef?.current;
+    if (preserveHistoryOnTextChangeRef) {
+      preserveHistoryOnTextChangeRef.current = false;
+    }
+    focusEditor.replaceText(initialText, { clearHistory });
 
     if (hadFocus) {
       focusEditor.target.focus();

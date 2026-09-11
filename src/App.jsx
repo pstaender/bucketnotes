@@ -89,6 +89,10 @@ export function App({ version, appName } = {}) {
   const [folders, setFolders] = useState(null);
 
   const [initialText, setInitialText] = useState("");
+  // Set to true right before an in-place programmatic text edit (e.g. a
+  // "Modify Text" transform) so EditorWrapper keeps undo history instead of
+  // treating it like a fresh file load.
+  const preserveHistoryOnTextChangeRef = useRef(false);
   const [statusText, setStatusText] = useState("");
   const [statusTextCssClass, setStatusTextCssClass] = useState("");
   const [statusUpdatedAt, setStatusUpdatedAt] = useState(null);
@@ -807,6 +811,7 @@ export function App({ version, appName } = {}) {
       if (unifiedSegment !== segment) {
         const newText =
           content.slice(0, lineStart) + unifiedSegment + content.slice(lineEnd);
+        preserveHistoryOnTextChangeRef.current = true;
         setInitialText(newText);
         setText(newText);
       }
@@ -814,6 +819,7 @@ export function App({ version, appName } = {}) {
     }
     const textWithUnifiedTables = unifyMarkdownTableCellWidths(text);
     if (textWithUnifiedTables !== text) {
+      preserveHistoryOnTextChangeRef.current = true;
       setInitialText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
       setText(unifyMarkdownTableCellWidths(textWithUnifiedTables));
     }
@@ -831,6 +837,7 @@ export function App({ version, appName } = {}) {
           content.slice(0, selection.start) +
           modified +
           content.slice(selection.end);
+        preserveHistoryOnTextChangeRef.current = true;
         setInitialText(newText);
         setText(newText);
       }
@@ -838,6 +845,7 @@ export function App({ version, appName } = {}) {
     }
     const modified = transform(text);
     if (modified !== text) {
+      preserveHistoryOnTextChangeRef.current = true;
       setInitialText(modified);
       setText(modified);
     }
@@ -2177,6 +2185,9 @@ export function App({ version, appName } = {}) {
                     fullWithEditor={fullWithEditor}
                     focusEditor={focusEditor}
                     setFocusEditor={setFocusEditor}
+                    preserveHistoryOnTextChangeRef={
+                      preserveHistoryOnTextChangeRef
+                    }
                     convertHTMLToMarkdown={convertHTMLToMarkdown}
                     downloadAssetFile={downloadAssetFile}
                   ></EditorWrapper>
