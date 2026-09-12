@@ -522,6 +522,29 @@ export function App({ version, appName } = {}) {
   }, [registerGlobalKeyUp]);
 
   useEffect(() => {
+    // Block the browser's native "Save page" dialog for Ctrl/Cmd+S as early
+    // as possible. The app's own save-on-Ctrl+S logic lives in
+    // handleKeyDown (a bubble-phase React onKeyDown on the app root), which
+    // is enough in Chrome/Firefox, but Microsoft Edge on Windows still pops
+    // up its save dialog unless the default is prevented from a
+    // capture-phase listener on window - so this is a belt-and-suspenders
+    // native listener, independent of route/focus, that only ever calls
+    // preventDefault (the actual save still happens in handleKeyDown).
+    function preventBrowserSaveDialog(ev) {
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "s") {
+        ev.preventDefault();
+      }
+    }
+    window.addEventListener("keydown", preventBrowserSaveDialog, {
+      capture: true,
+    });
+    return () =>
+      window.removeEventListener("keydown", preventBrowserSaveDialog, {
+        capture: true,
+      });
+  }, []);
+
+  useEffect(() => {
     if (globalKey === "Escape") {
       setShowMoreOptions(false);
       setShowAdditionalMenuOption(false);
