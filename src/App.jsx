@@ -698,8 +698,10 @@ export function App({ version, appName } = {}) {
   }
 
   // `newBaseName` is the (uncommitted) text of the file-name span after
-  // inline contenteditable renaming - it never contains the folder prefix,
-  // so that gets reattached from the original fileKey before comparing/saving.
+  // inline contenteditable renaming. Normally it's just a bare filename, and
+  // the current folder prefix gets reattached from the original fileKey
+  // before comparing/saving - but a leading "/" (move to root) or an
+  // embedded "/" (move to a subfolder of the current path) is honored too.
   async function renameFile(fileKey, newBaseName) {
     setRenamingFileKey(null);
 
@@ -709,9 +711,29 @@ export function App({ version, appName } = {}) {
       folderPrefix += "/";
     }
 
-    let newFileName = slugifyPath((newBaseName || "").trim());
+    let rawNewBaseName = (newBaseName || "").trim();
 
-    if (!newFileName || folderPrefix + newFileName === fileKey) {
+    // A leading "/" means "resolve from the bucket root" rather than being
+    // literal text in the name - e.g. "/newname" moves the file to the root
+    // folder, "/sub/newname" moves it into "sub/" from the root. Without
+    // stripping it here, it would get re-combined with folderPrefix below
+    // into a malformed key like "notes//newname".
+    if (rawNewBaseName.startsWith("/")) {
+      folderPrefix = "";
+      rawNewBaseName = rawNewBaseName.replace(/^\/+/, "");
+    }
+
+    let newFileName = slugifyPath(rawNewBaseName);
+
+    // Reject anything that doesn't leave an actual filename behind (a bare
+    // "/", or a path ending in "/" with no basename) instead of silently
+    // creating a key like "/.txt" or "sub/.txt".
+    if (!newFileName || newFileName.endsWith("/")) {
+      updateStatusText(`Please enter a filename`);
+      return;
+    }
+
+    if (folderPrefix + newFileName === fileKey) {
       updateStatusText(`No change in filename detected… skipping`);
       return;
     }
