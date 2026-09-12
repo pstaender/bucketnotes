@@ -71,6 +71,11 @@ function slugifyPath(s) {
       return slugify(s.trim(), {
         replacement: "_",
         trim: false,
+        // slugify's own default `remove` still lets punctuation like
+        // `"` `'` `!` `:` `@` `+` `(` `)` through, which is fine in a
+        // filename but needs percent-encoding in a URL/S3 key - strip
+        // anything outside word characters, whitespace, "." and "~".
+        remove: /[^\w\s.~-]+/g,
         locale: navigator.language
           ? navigator.language.split("-")[0]
           : undefined,
