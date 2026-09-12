@@ -172,7 +172,10 @@ export function App({ version, appName } = {}) {
   const [fontFamily, setFontFamily] = useState(
     localStorage.getItem("font-family"),
   );
-  const [fontSize, setFontSize] = useState(null);
+  const [fontSize, setFontSize] = useState(() => {
+    const stored = parseInt(localStorage.getItem("font-size"), 10);
+    return Number.isFinite(stored) ? stored : null;
+  });
   const [initialCaretPosition, setInitialCaretPosition] = useState(null);
   // TODO: replace location.pathname with folderPath
   const [folderPath, setFolderPath] = useState("");
@@ -517,6 +520,7 @@ export function App({ version, appName } = {}) {
     if (fontSize && fontSize >= 0) {
       // set the font size on html
       document.documentElement.style.fontSize = `${fontSize}px`;
+      localStorage.setItem("font-size", String(fontSize));
     }
   }, [fontSize]);
 
