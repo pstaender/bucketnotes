@@ -236,6 +236,16 @@ html {
         cursor: pointer;
       }
     }
+    // On pointer devices, the same handle also drags to resize the sidebar
+    // while it's shown - swap in a resize cursor to signal that.
+    @media (hover) and (pointer: fine) and (min-width: 901px) {
+      .app-window.sidebar-expanded & {
+        cursor: col-resize;
+        &:hover {
+          cursor: col-resize;
+        }
+      }
+    }
   }
 }
 
@@ -281,7 +291,6 @@ html {
 .app-window {
   display: grid;
   grid-template-columns: 1rem 1fr;
-  transition: 0.2s;
   &.sidebar-expanded {
     grid-template-columns: var(--file-list-width) 1fr;
   }
@@ -643,6 +652,9 @@ button {
 .main:has(.root-path-welcome-hint) {
   display: grid;
   place-content: center;
+  @media (max-width: 900px) {
+    height: 100vh;
+  }
   .root-path-welcome-hint {
     text-align: center;
     padding-bottom: 3rem;

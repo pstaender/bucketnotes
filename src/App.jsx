@@ -38,6 +38,14 @@ import * as encrypt from "./encrypt.js";
 
 const DEFAULT_PLACEHOLDER_TEXT = "Type something…";
 
+const SIDEBAR_WIDTH_STORAGE_KEY = "sidebarWidth";
+const MIN_SIDEBAR_WIDTH = 220;
+const MAX_SIDEBAR_WIDTH = 640;
+// Keep the resize handle inert below this viewport width, where the sidebar
+// switches to a full-width mobile layout and its "toggle-bar" strip is
+// repurposed as a thin (20px) tap target rather than a resizable edge.
+const NARROW_VIEWPORT_QUERY = "(max-width: 900px)";
+
 // Pure string transforms offered in the "Modify Text" submenu. Each is applied
 // to the selected text when there is a selection, otherwise to the whole
 // document (see applyTextModifier). "Unify table columns width" is handled
@@ -104,6 +112,29 @@ export function App({ version, appName } = {}) {
   const [showSideBar, setShowSideBar] = useState(
     localStorage.getItem("hideSideBar") !== "true",
   );
+  // Custom sidebar width in px, set by dragging the toggle-bar handle on
+  // pointer devices. Stays null (falls back to the default CSS width) on
+  // touch devices, where there is no drag-to-resize interaction.
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (isTouch()) {
+      return null;
+    }
+    const stored = parseInt(
+      localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY),
+      10,
+    );
+    return Number.isFinite(stored)
+      ? Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, stored))
+      : null;
+  });
+  const [isNarrowViewport, setIsNarrowViewport] = useState(
+    () => window.matchMedia(NARROW_VIEWPORT_QUERY).matches,
+  );
+  const appWindowRef = useRef(null);
+  const sideRef = useRef(null);
+  // Distinguishes a drag-to-resize from a plain click on the toggle-bar
+  // handle, since both start with the same mousedown/mouseup on it.
+  const justResizedSidebarRef = useRef(false);
   const [bucketName, setBucketName] = useState("");
   const [text, setText] = useState("");
   const [s3Client, setS3Client] = useState(null);
@@ -498,6 +529,19 @@ export function App({ version, appName } = {}) {
   }, [showSideBar]);
 
   useEffect(() => {
+    if (sidebarWidth) {
+      localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(sidebarWidth));
+    }
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const mql = window.matchMedia(NARROW_VIEWPORT_QUERY);
+    const onChange = (ev) => setIsNarrowViewport(ev.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
     window.addEventListener("beforeprint", handleBeforePrint);
     return () => {
       window.removeEventListener("beforeprint", handleBeforePrint);
@@ -723,6 +767,57 @@ export function App({ version, appName } = {}) {
 
   function cancelRenameFile() {
     setRenamingFileKey(null);
+  }
+
+  // Drag-to-resize for the sidebar's toggle-bar handle. Only pointer devices
+  // get here (touch devices don't render onMouseDown-driven drags usefully),
+  // and only while the sidebar is actually shown in its resizable desktop
+  // layout - on the narrow/mobile layout the same element is a thin tap
+  // target, not a resize edge.
+  function handleSidebarResizeMouseDown(ev) {
+    if (isTouch() || !showSideBar || isNarrowViewport || ev.button !== 0) {
+      return;
+    }
+    const startWidth = sideRef.current?.getBoundingClientRect().width;
+    if (!startWidth) {
+      return;
+    }
+    ev.preventDefault();
+    const drag = { startX: ev.clientX, startWidth, moved: false, width: startWidth };
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+
+    function onMouseMove(moveEv) {
+      const delta = moveEv.clientX - drag.startX;
+      if (Math.abs(delta) > 2) {
+        drag.moved = true;
+      }
+      drag.width = Math.min(
+        MAX_SIDEBAR_WIDTH,
+        Math.max(MIN_SIDEBAR_WIDTH, Math.round(drag.startWidth + delta)),
+      );
+      appWindowRef.current?.style.setProperty(
+        "--sidebar-width",
+        `${drag.width}px`,
+      );
+      appWindowRef.current?.style.setProperty(
+        "--file-list-width",
+        `${drag.width}px`,
+      );
+    }
+
+    function onMouseUp() {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      document.body.style.userSelect = previousUserSelect;
+      if (drag.moved) {
+        justResizedSidebarRef.current = true;
+        setSidebarWidth(drag.width);
+      }
+    }
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
   }
 
   // `newBaseName` is the (uncommitted) text of the file-name span after
@@ -1582,6 +1677,7 @@ export function App({ version, appName } = {}) {
 
   return (
     <div
+      ref={appWindowRef}
       className={[
         "app-window",
         showSideBar ? "sidebar-expanded" : null,
@@ -1590,12 +1686,20 @@ export function App({ version, appName } = {}) {
       ]
         .filter((v) => !!v)
         .join(" ")}
+      style={
+        !isTouch() && !isNarrowViewport && sidebarWidth
+          ? {
+              "--sidebar-width": `${sidebarWidth}px`,
+              "--file-list-width": `${sidebarWidth}px`,
+            }
+          : undefined
+      }
       lang={effectiveLang || undefined}
       onKeyDown={handleKeyDown}
     >
       {s3Client && !loginErrorMessage && (
         <>
-          <div className="side">
+          <div className="side" ref={sideRef}>
             <div className="files">
               {folders !== null && files !== null && (
                 <FileList
@@ -1636,7 +1740,12 @@ export function App({ version, appName } = {}) {
             </div>
             <div
               className="toggle-bar"
+              onMouseDown={handleSidebarResizeMouseDown}
               onClick={() => {
+                if (justResizedSidebarRef.current) {
+                  justResizedSidebarRef.current = false;
+                  return;
+                }
                 setShowSideBar(!showSideBar);
                 if (!showSideBar) {
                   setFocusMode(false);
