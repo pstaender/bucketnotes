@@ -157,12 +157,21 @@ focus-editor .TinyMDE .TMCodeFenceBacktickOpen,
 focus-editor .TinyMDE .TMCodeFenceBacktickClose {
   border-radius: var(--tmde-border-radius);
 }
+/* inline code renders as three siblings (opening mark, code, closing mark):
+   round only the outer corners so they read as one seamless box */
 focus-editor .TinyMDE .TMCode,
 focus-editor .TinyMDE .TMMark_TMCode {
-  border-radius: var(--tmde-border-radius);
+  border-radius: 0;
   background: var(--background-color-very-light);
-  padding: 0.1em 0.15em;
-  margin-left: -0.25em;
+  padding: 0.1em 0;
+}
+focus-editor .TinyMDE .TMMark_TMCode:has(+ .TMCode) {
+  border-radius: var(--tmde-border-radius) 0 0 var(--tmde-border-radius);
+  padding-left: 0.15em;
+}
+focus-editor .TinyMDE .TMCode + .TMMark_TMCode {
+  border-radius: 0 var(--tmde-border-radius) var(--tmde-border-radius) 0;
+  padding-right: 0.15em;
 }
 focus-editor .TinyMDE .TMCodeFenceBacktickOpen,
 focus-editor .TinyMDE .TMFencedCodeBacktick,
@@ -347,5 +356,50 @@ focus-editor.highlight-current-paragraph .TinyMDE > div.with-caret {
     .TinyMDE {
       white-space: pre !important;
     }
+  }
+}
+
+/* line numbers: subtle, every 10th a bit stronger, current line emphasized */
+focus-editor.show-line-numbers .TinyMDE {
+  counter-reset: tmde-line;
+  padding-left: 3rem;
+}
+focus-editor.show-line-numbers .TinyMDE > div {
+  counter-increment: tmde-line;
+  position: relative;
+}
+focus-editor.show-line-numbers .TinyMDE > div::after {
+  content: counter(tmde-line);
+  position: absolute;
+  top: 0;
+  right: 100%;
+  margin-right: 1rem;
+  min-width: 2rem;
+  text-align: right;
+  text-indent: 0;
+  line-height: var(--tmde-line-height);
+  font-size: 0.75em;
+  font-weight: normal;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--grey-color, #a0a0a0);
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.2s, color 0.2s;
+}
+focus-editor.show-line-numbers .TinyMDE > div:nth-child(10n)::after {
+  opacity: 0.85;
+}
+focus-editor.show-line-numbers .TinyMDE > div.with-caret::after {
+  color: var(--text-color, #000);
+  opacity: 1;
+}
+@media print {
+  focus-editor.show-line-numbers .TinyMDE {
+    padding-left: 0;
+  }
+  focus-editor.show-line-numbers .TinyMDE > div::after {
+    display: none;
   }
 }

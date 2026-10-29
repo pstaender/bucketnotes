@@ -207,6 +207,9 @@ export function App({ version, appName } = {}) {
   const [fullWithEditor, setFullWithEditor] = useState(
     localStorage.getItem("fullWithEditor") === "true",
   );
+  const [showLineNumbers, setShowLineNumbers] = useState(
+    localStorage.getItem("showLineNumbers") === "true",
+  );
   const [showPrintLayout, setShowPrintLayout] = useState(false);
   const [rightTrimTextBeforeSave, setRightTrimTextBeforeSave] = useState(
     localStorage.getItem("rightTrimTextBeforeSave") === "true",
@@ -2058,6 +2061,19 @@ export function App({ version, appName } = {}) {
                             Full-Width-Editing
                           </li>
                           <li
+                            data-is-more-options-item="true"
+                            onClick={() => {
+                              setShowLineNumbers(!showLineNumbers);
+                              localStorage.setItem(
+                                "showLineNumbers",
+                                showLineNumbers ? "false" : "true",
+                              );
+                            }}
+                            className={showLineNumbers ? "active" : null}
+                          >
+                            Line numbers
+                          </li>
+                          <li
                             onClick={() => {
                               setShowPrintLayout(true);
                               setShowMoreOptions(false);
@@ -2346,6 +2362,7 @@ export function App({ version, appName } = {}) {
                     initialCaretPosition={initialCaretPosition}
                     scrollWindowToCenterCaret={scrollWindowToCenterCaret}
                     fullWithEditor={fullWithEditor}
+                    showLineNumbers={showLineNumbers}
                     focusEditor={focusEditor}
                     setFocusEditor={setFocusEditor}
                     preserveHistoryOnTextChangeRef={

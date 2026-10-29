@@ -245,6 +245,7 @@ export function EditorWrapper({
   focusMode,
   scrollWindowToCenterCaret,
   fullWithEditor,
+  showLineNumbers,
   focusEditor,
   setFocusEditor,
   convertHTMLToMarkdown,
@@ -549,6 +550,7 @@ export function EditorWrapper({
         focusMode ? "highlight-current-paragraph" : "",
         fullWithEditor ? "full-width-editor" : "",
         fullWithEditor ? "no-wrap" : "",
+        showLineNumbers ? "show-line-numbers" : "",
       ]
         .filter((v) => !!v)
         .join(" ")}

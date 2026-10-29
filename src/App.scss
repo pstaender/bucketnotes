@@ -99,20 +99,29 @@ html {
   scroll-behavior: smooth;
 }
 
+// Slim, full-width bar pinned to the bottom edge. Opaque so it never renders
+// on top of editor text, kept low-contrast so it doesn't draw attention.
 .status-bar {
   position: fixed;
   bottom: 0;
-  right: 0.5rem;
-  padding: 1rem;
-  background: var(--background-color);
-  width: calc(100% - 2rem);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  box-sizing: border-box;
+  padding: 0.35rem 1rem;
+  padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
+  font-size: 0.8em;
+  line-height: 1.4;
+  background: var(--background-color-very-light);
+  box-shadow: 0 -1px 4px color-mix(in srgb, var(--text-color) 8%, transparent);
   color: var(--grey-color);
   text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
   &.error {
     color: var(--red-color);
-  }
-  @media (hover) {
-    background: color-mix(in srgb, var(--background-color) 25%, transparent);
   }
 }
 
