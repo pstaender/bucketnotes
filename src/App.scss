@@ -112,9 +112,13 @@ html {
   padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
   font-size: 0.8em;
   line-height: 1.4;
-  background: var(--background-color-very-light);
-  box-shadow: 0 -1px 4px color-mix(in srgb, var(--text-color) 8%, transparent);
-  color: var(--grey-color);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--text-color);
   text-align: right;
   white-space: nowrap;
   overflow: hidden;
