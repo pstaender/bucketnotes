@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Marked } from "marked";
 import markedFootnote from "marked-footnote";
 import katex from "katex";
+import DOMPurify from "dompurify";
 import FEATURE_FLAGS from "./featureFlags.json" with { type: "json" };
 import closeIcon from "./icons/close.svg";
 import * as s3 from "./s3";
@@ -100,11 +101,17 @@ export function PrintLayout({ text, filename, onClose } = {}) {
   const [fixedTableLayout, setFixedTableLayout] = useState(false);
   const articleRef = useRef(null);
 
+  // Notes may contain raw HTML (e.g. `<img onerror=…>`), which marked passes
+  // through unchanged. Sanitize it, otherwise a note could run scripts with
+  // access to the S3 credentials.
   const html = useMemo(
     () =>
-      new Marked()
-        .use(markedFootnote())
-        .parse(text || "", { gfm: true, breaks: true }),
+      DOMPurify.sanitize(
+        new Marked()
+          .use(markedFootnote())
+          .parse(text || "", { gfm: true, breaks: true }),
+        { FORBID_TAGS: ["style", "form"], FORBID_ATTR: ["style"] },
+      ),
     [text],
   );
 

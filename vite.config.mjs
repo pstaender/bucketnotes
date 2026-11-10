@@ -10,6 +10,42 @@ if (process.env.BUILD_BASE_PATH) {
   base = process.env.BUILD_BASE_PATH;
 }
 
+// Content-Security-Policy, injected as <meta> into the production build only
+// (the dev server needs inline scripts for React Fast Refresh).
+// - scripts only from the app itself: blocks injected inline scripts/handlers
+// - connect/img/media allow any http(s) origin, because the S3 endpoint is
+//   user-defined and notes may embed external images
+// - styles from jsdelivr for the print layout (minimaxcss)
+// Note: frame-ancestors can't be set via <meta>; send it as a header if the
+// app shouldn't be embeddable.
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "worker-src 'self' blob:",
+  "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+  "font-src 'self' data: https://cdn.jsdelivr.net",
+  "img-src 'self' data: blob: https: http:",
+  "media-src 'self' data: blob: https: http:",
+  "connect-src 'self' https: http:",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
+function contentSecurityPolicy() {
+  return {
+    name: "content-security-policy",
+    apply: "build",
+    transformIndexHtml(html) {
+      return html.replace(
+        "<head>",
+        `<head>\n  <meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}">`,
+      );
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   base,
@@ -24,6 +60,7 @@ export default defineConfig({
     sourcemap: true,
   },
   plugins: [
+    contentSecurityPolicy(),
     react(),
     version(),
     topLevelAwait({
