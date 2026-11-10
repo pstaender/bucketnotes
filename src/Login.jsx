@@ -30,8 +30,13 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
   const [passkeySupported, setPasskeySupported] = useState(false);
   const [usePasskey, setUsePasskey] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmedUnprotected, setConfirmedUnprotected] = useState(false);
   const canUnlockWithPassword = encrypt.hasPasswordProtection(localStorage);
   const canUnlockWithPasskey = passkey.hasPasskey(localStorage);
+  // The passkey is offered but the user neither wants it nor a password:
+  // make them explicitly accept that the credentials are not protected
+  const requiresUnprotectedConfirmation =
+    rememberLogin && passkeySupported && !usePasskey && !tempPassword;
 
   const navigate = useNavigate();
 
@@ -134,6 +139,12 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
     ev.preventDefault();
     if (region && bucketName && accessKeyId && secretAccessKey) {
       /* we allow empty password to keep it easier (but unsafer) to use */
+      if (requiresUnprotectedConfirmation && !confirmedUnprotected) {
+        setErrorMessage(
+          "Please set a password, use a passkey or confirm that your credentials are stored unprotected",
+        );
+        return;
+      }
       if (rememberLogin) {
         console.debug("Setting credentials encrypted");
         const masterKey = encrypt.generateMasterKey();
@@ -356,7 +367,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
               </div>
             </div>
             {showPasswordField && passkeySupported && (
-              <div>
+              <div className="checkbox-row">
                 <input
                   type="checkbox"
                   id="use-passkey"
@@ -383,10 +394,28 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                   placeholder={
                     usePasskey && passkeySupported
                       ? "Leave empty to unlock with passkey only"
-                      : "Without password, credentials are stored unprotected"
+                      : "Leave empty for no protection"
                   }
                   onChange={(ev) => setTempPassword(ev.target.value)}
                 />
+              </div>
+            )}
+            {requiresUnprotectedConfirmation && (
+              <div className="checkbox-row confirm-unprotected">
+                <input
+                  type="checkbox"
+                  id="confirm-unprotected"
+                  required={true}
+                  checked={confirmedUnprotected}
+                  onChange={(ev) => setConfirmedUnprotected(ev.target.checked)}
+                ></input>
+                <label htmlFor="confirm-unprotected">
+                  I understand that without a password or passkey, my S3
+                  credentials, including the secret key, are stored effectively
+                  unencrypted in this browser. Anyone with access to this device
+                  or browser profile (or any malicious browser extension) could
+                  read them.
+                </label>
               </div>
             )}
 

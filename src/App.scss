@@ -699,6 +699,17 @@ button {
     width: 100%;
     margin-bottom: 2rem;
   }
+  // checkboxes between text inputs need room for the next (absolutely
+  // positioned) input label
+  .checkbox-row {
+    margin-bottom: 2rem;
+  }
+  .confirm-unprotected {
+    align-items: flex-start;
+    input {
+      margin-top: 0.3em;
+    }
+  }
 
   .headline {
     display: grid;
