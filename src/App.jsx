@@ -1156,6 +1156,27 @@ export function App({ version, appName } = {}) {
     updateStatusText("Passkey unlock enabled");
   }
 
+  // Locking only makes sense if the remembered credentials are protected by a
+  // password or passkey; otherwise they would be unlocked right away again.
+  function canLock() {
+    return (
+      !!localStorage.getItem("s3-access-key") &&
+      !localStorage.getItem("tempPassword") &&
+      (encrypt.hasPasswordProtection(localStorage) || passkeyEnabled)
+    );
+  }
+
+  // Forgets the unlocked session (master key / plain credentials) and reloads,
+  // so the in-memory S3 client and note content are gone, too.
+  function lock() {
+    if (hasUnsavedChanges()) {
+      updateStatusText("Save your changes before locking");
+      return;
+    }
+    sessionStorage.clear();
+    window.location.reload();
+  }
+
   function logout() {
     setS3Client(null);
     setCredentials(null);
@@ -2308,7 +2329,20 @@ export function App({ version, appName } = {}) {
                       </div>
                     )}
                   </li>
-                  <li onClick={logout} className="border-top border-bottom">
+                  {canLock() && (
+                    <li onClick={lock} className="border-top">
+                      Lock
+                    </li>
+                  )}
+                  <li
+                    onClick={logout}
+                    className={[
+                      canLock() ? null : "border-top",
+                      "border-bottom",
+                    ]
+                      .filter((v) => !!v)
+                      .join(" ")}
+                  >
                     Logout
                   </li>
                   <li onClick={() => createOrSaveFile()}>
