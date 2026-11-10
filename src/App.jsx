@@ -36,6 +36,7 @@ import slugify from "slugify";
 import voca from "voca";
 import * as encrypt from "./encrypt.js";
 import * as passkey from "./passkey.js";
+import { LockDialog } from "./LockDialog.jsx";
 
 const DEFAULT_PLACEHOLDER_TEXT = "Type something…";
 
@@ -92,6 +93,13 @@ function slugifyPath(s) {
     })
     .join("/");
 }
+
+// Cycles the "Unsaved notes on lock" setting
+const NEXT_UNSAVED_NOTES_ON_LOCK = {
+  ask: "discard",
+  discard: "keep",
+  keep: "ask",
+};
 
 export function App({ version, appName } = {}) {
   const defaultShowStatusTextInMilliseconds = 3000;
@@ -203,6 +211,13 @@ export function App({ version, appName } = {}) {
     useState(false);
   const [showModifyTextMenu, setShowModifyTextMenu] = useState(false);
   const [passkeySupported, setPasskeySupported] = useState(false);
+  // { hasDraft, unsyncedKeys, resolve } while asking about unsaved notes
+  const [lockPrompt, setLockPrompt] = useState(null);
+  // "ask" | "discard" | "keep": what to do with unsaved notes on lock
+  const [unsavedNotesOnLock, setUnsavedNotesOnLock] = useState(
+    () => localStorage.getItem("unsavedNotesOnLock") || "ask",
+  );
+  const skipUnloadWarningRef = useRef(false);
   const [passkeyEnabled, setPasskeyEnabled] = useState(() =>
     passkey.hasPasskey(localStorage),
   );
@@ -277,7 +292,7 @@ export function App({ version, appName } = {}) {
   }
 
   function handleUnload(ev) {
-    if (hasUnsavedChanges()) {
+    if (!skipUnloadWarningRef.current && hasUnsavedChanges()) {
       ev.preventDefault();
       ev.returnValue = true;
     }
@@ -1167,13 +1182,56 @@ export function App({ version, appName } = {}) {
   }
 
   // Forgets the unlocked session (master key / plain credentials) and reloads,
-  // so the in-memory S3 client and note content are gone, too.
-  function lock() {
-    if (hasUnsavedChanges()) {
+  // so the in-memory S3 client and note content are gone, too. Also clears
+  // the offline storage; unsaved notes (new-note draft, offline edits not yet
+  // uploaded) are only discarded if the user agrees.
+  async function lock() {
+    const isEditingFile = VALID_FILE_EXTENSION.test(location.pathname);
+    if (isEditingFile && hasUnsavedChanges()) {
       updateStatusText("Save your changes before locking");
       return;
     }
+
+    const hasDraft = !!localStorage.getItem("new-unsaved-text")?.trim();
+    const syncedKeys = [];
+    const unsyncedKeys = [];
+    for (const key of await db.fileKeysFromDatabase()) {
+      const file = await db.loadFileFromDatabase(key);
+      (file?.fileSavedToS3 === false ? unsyncedKeys : syncedKeys).push(key);
+    }
+
+    let decision = "discard";
+    if (hasDraft || unsyncedKeys.length > 0) {
+      decision = unsavedNotesOnLock;
+      if (decision === "ask") {
+        const answer = await new Promise((resolve) =>
+          setLockPrompt({ hasDraft, unsyncedKeys, resolve }),
+        );
+        setLockPrompt(null);
+        if (!answer) {
+          return;
+        }
+        decision = answer.decision;
+        if (answer.remember) {
+          setUnsavedNotesOnLock(decision);
+          localStorage.setItem("unsavedNotesOnLock", decision);
+        }
+      }
+    }
+
+    for (const key of syncedKeys) {
+      await db.deleteFileFromDatabase(key);
+    }
+    if (decision === "discard") {
+      for (const key of unsyncedKeys) {
+        await db.deleteFileFromDatabase(key);
+      }
+      localStorage.removeItem("new-unsaved-text");
+    }
+
     sessionStorage.clear();
+    // unsaved notes were either kept in storage or deliberately discarded
+    skipUnloadWarningRef.current = true;
     window.location.reload();
   }
 
@@ -2073,6 +2131,22 @@ export function App({ version, appName } = {}) {
                                 Unlock with passkey
                               </li>
                             )}
+                          {canLock() && (
+                            <li
+                              data-is-more-options-item="true"
+                              onClick={() => {
+                                const next =
+                                  NEXT_UNSAVED_NOTES_ON_LOCK[unsavedNotesOnLock];
+                                setUnsavedNotesOnLock(next);
+                                localStorage.setItem("unsavedNotesOnLock", next);
+                              }}
+                              title="What to do with unsaved notes when locking"
+                            >
+                              Unsaved notes on lock ({unsavedNotesOnLock} →{" "}
+                              {NEXT_UNSAVED_NOTES_ON_LOCK[unsavedNotesOnLock]}
+                              )
+                            </li>
+                          )}
                           <li
                             onClick={() => {
                               pickAndInsertMediaFile({
@@ -2497,6 +2571,14 @@ export function App({ version, appName } = {}) {
             </div>
           </div>
         </div>
+      )}
+      {lockPrompt && (
+        <LockDialog
+          hasDraft={lockPrompt.hasDraft}
+          unsyncedKeys={lockPrompt.unsyncedKeys}
+          onDecision={(answer) => lockPrompt.resolve(answer)}
+          onCancel={() => lockPrompt.resolve(null)}
+        ></LockDialog>
       )}
       {showPrintLayout && (
         <PrintLayout

@@ -1156,3 +1156,61 @@ button {
     padding: 0;
   }
 }
+
+.lock-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--background-color) 50%, transparent);
+  backdrop-filter: blur(10px);
+  font-family: var(--font-family-sans);
+  line-height: 1.5em;
+
+  [role="dialog"] {
+    width: 100%;
+    max-width: 30rem;
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+    padding: 1.5rem;
+    border-radius: 6px;
+    background: var(--background-color);
+    color: var(--text-color);
+    box-shadow: var(--strong-shadow);
+  }
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.15rem;
+  }
+  p,
+  ul {
+    margin: 0 0 1rem;
+  }
+  ul {
+    padding-left: 1.25rem;
+    overflow-wrap: anywhere;
+  }
+  label {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: var(--font-size-small);
+  }
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    button {
+      cursor: pointer;
+      background: var(--background-color-light);
+      color: var(--text-color);
+    }
+    button.danger {
+      background: var(--red-color);
+      color: #000;
+    }
+  }
+}
