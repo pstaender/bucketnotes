@@ -3,6 +3,7 @@ import Logo from "../logo.svg";
 import LogoDark from "../logo-dark.svg";
 import GitHubLogo from "../src/icons/github.svg";
 import * as encrypt from "./encrypt";
+import * as passkey from "./passkey";
 import { useNavigate } from "react-router-dom";
 import Markdown from "react-markdown";
 
@@ -26,6 +27,11 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
   const [showPasswordField, setShowPasswordField] = useState(false);
   const [tempPassword, setTempPassword] = useState("");
   const [showPasswordLogin, setShowPasswordLogin] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [usePasskey, setUsePasskey] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const canUnlockWithPassword = encrypt.hasPasswordProtection(localStorage);
+  const canUnlockWithPasskey = passkey.hasPasskey(localStorage);
 
   const navigate = useNavigate();
 
@@ -38,6 +44,7 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
     ) {
       setShowPasswordLogin(true);
     }
+    passkey.isPasskeySupported().then(setPasskeySupported);
   }, []);
 
   useEffect(() => {
@@ -90,15 +97,33 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
 
   async function handlePasswordOnlySubmit(ev) {
     ev.preventDefault();
-    if (await encrypt.validateTempPassword(tempPassword, localStorage)) {
-      const data = JSON.parse(localStorage.getItem("tempPasswordEncrypted"));
-      const randomTempPassword = await encrypt.decryptText(data, tempPassword);
-      sessionStorage.setItem("tempPassword", randomTempPassword);
+    setBusy(true);
+    const unlocked = await encrypt.unlockWithPassword(
+      tempPassword,
+      localStorage,
+      sessionStorage,
+    );
+    setBusy(false);
+    if (unlocked) {
       return navigate(0);
     }
     setErrorMessage(
       "Please check password or `Login with other S3 credentials`",
     );
+  }
+
+  async function handlePasskeyUnlock() {
+    setErrorMessage("");
+    try {
+      const masterKey = await passkey.unlockWithPasskey(localStorage);
+      sessionStorage.setItem("tempPassword", masterKey);
+      return navigate(0);
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(
+        passkey.passkeyErrorMessage(err, "Could not unlock with passkey"),
+      );
+    }
   }
 
   function handleClickOnRelogin() {
@@ -111,10 +136,31 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
       /* we allow empty password to keep it easier (but unsafer) to use */
       if (rememberLogin) {
         console.debug("Setting credentials encrypted");
+        const masterKey = encrypt.generateMasterKey();
+        const withPasskey = usePasskey && passkeySupported;
+        passkey.removePasskey(localStorage);
+        if (withPasskey) {
+          try {
+            setBusy(true);
+            await passkey.registerPasskey(masterKey, localStorage, bucketName);
+          } catch (err) {
+            console.error(err);
+            setErrorMessage(
+              passkey.passkeyErrorMessage(err, "Could not create passkey"),
+            );
+            return;
+          } finally {
+            setBusy(false);
+          }
+        }
         await encrypt.setEncryptionPassword(
           tempPassword || "",
           localStorage,
           sessionStorage,
+          {
+            masterKey,
+            persist: !tempPassword && !withPasskey,
+          },
         );
         await encrypt.encryptLocalStorageItem(
           "s3-access-key",
@@ -152,6 +198,9 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
         localStorage.removeItem("s3-region");
         localStorage.removeItem("s3-endpoint");
         localStorage.removeItem("s3-secret-access-key");
+        localStorage.removeItem("tempPassword");
+        localStorage.removeItem("tempPasswordEncrypted");
+        passkey.removePasskey(localStorage);
       }
       sessionStorage.setItem("s3-access-key", accessKeyId);
       sessionStorage.setItem("s3-bucket", bucketName);
@@ -190,24 +239,42 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
         )}
         {showPasswordLogin ? (
           <form onSubmit={handlePasswordOnlySubmit}>
-            <div className="input">
-              <label>Password</label>
-              <input
-                type="password"
-                id="password"
-                required={true}
-                autoComplete="password"
-                autoFocus={true}
-                onKeyDown={(ev) => setErrorMessage("")}
-                onChange={(ev) => setTempPassword(ev.target.value)}
-              />
-            </div>
+            {canUnlockWithPasskey && (
+              <div className="input">
+                <button
+                  type="button"
+                  className="passkey-button"
+                  autoFocus={true}
+                  onClick={handlePasskeyUnlock}
+                >
+                  Unlock with passkey
+                </button>
+              </div>
+            )}
+            {(canUnlockWithPassword || !canUnlockWithPasskey) && (
+              <div className="input">
+                <label>Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  required={true}
+                  autoComplete="password"
+                  autoFocus={!canUnlockWithPasskey}
+                  onKeyDown={(ev) => setErrorMessage("")}
+                  onChange={(ev) => setTempPassword(ev.target.value)}
+                />
+              </div>
+            )}
 
             <div>
               <div className="message" onClick={handleClickOnRelogin}>
                 Login with other S3 credentials
               </div>
-              <button type="submit">Login</button>
+              {(canUnlockWithPassword || !canUnlockWithPasskey) && (
+                <button type="submit" disabled={busy}>
+                  Login
+                </button>
+              )}
             </div>
           </form>
         ) : (
@@ -280,20 +347,44 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                 <input
                   type="text"
                   id="s3-endpoint"
+                  autoCapitalize="off"
                   placeholder="https://my-s3-service…"
+                  value={endpoint || ""}
+                  onChange={(ev) => setEndpoint(ev.target.value)}
                 />
                 <label htmlFor="s3-endpoint">Endpoint</label>
               </div>
             </div>
+            {showPasswordField && passkeySupported && (
+              <div>
+                <input
+                  type="checkbox"
+                  id="use-passkey"
+                  checked={usePasskey}
+                  onChange={(ev) => setUsePasskey(ev.target.checked)}
+                ></input>
+                <label htmlFor="use-passkey">Unlock with passkey</label>
+              </div>
+            )}
             {showPasswordField && (
               <div className="input">
-                <label>Lock Password (optional)</label>
+                <label>
+                  Lock Password (optional
+                  {usePasskey && passkeySupported
+                    ? ", alternative to passkey"
+                    : ""}
+                  )
+                </label>
                 <input
                   type="password"
                   id="temp-password"
-                  autoComplete="password"
+                  autoComplete="new-password"
                   autoFocus={true}
-                  placeholder="Memorable password to unlock editor"
+                  placeholder={
+                    usePasskey && passkeySupported
+                      ? "Leave empty to unlock with passkey only"
+                      : "Without password, credentials are stored unprotected"
+                  }
                   onChange={(ev) => setTempPassword(ev.target.value)}
                 />
               </div>
@@ -311,7 +402,9 @@ export function Login({ setCredentials, errorMessage, setErrorMessage }) {
                   <label htmlFor="remember-secret">Remember login</label>
                 </div>
               </div>
-              <button type="submit">Login</button>
+              <button type="submit" disabled={busy}>
+                Login
+              </button>
             </div>
           </form>
         )}

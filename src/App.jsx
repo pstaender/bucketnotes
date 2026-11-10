@@ -35,6 +35,7 @@ import {
 import slugify from "slugify";
 import voca from "voca";
 import * as encrypt from "./encrypt.js";
+import * as passkey from "./passkey.js";
 
 const DEFAULT_PLACEHOLDER_TEXT = "Type something…";
 
@@ -201,6 +202,10 @@ export function App({ version, appName } = {}) {
   const [showAdditionalMenuOption, setShowAdditionalMenuOption] =
     useState(false);
   const [showModifyTextMenu, setShowModifyTextMenu] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [passkeyEnabled, setPasskeyEnabled] = useState(() =>
+    passkey.hasPasskey(localStorage),
+  );
   // Index of the keyboard-highlighted item in the "Modify Text" submenu
   // (-1 = nothing highlighted, for mouse users).
   const [modifyTextMenuIndex, setModifyTextMenuIndex] = useState(-1);
@@ -1103,11 +1108,60 @@ export function App({ version, appName } = {}) {
     }
   }
 
+  useEffect(() => {
+    passkey.isPasskeySupported().then(setPasskeySupported);
+  }, []);
+
+  async function togglePasskeyUnlock() {
+    const masterKey = encrypt.getMasterKey(localStorage, sessionStorage);
+    if (!masterKey || !localStorage.getItem("s3-access-key")) {
+      updateStatusText("Enable 'Remember login' first");
+      return;
+    }
+    const hasPassword = encrypt.hasPasswordProtection(localStorage);
+    if (passkeyEnabled) {
+      if (
+        !confirm(
+          hasPassword
+            ? "Remove passkey? You can still unlock with your password."
+            : "Remove passkey? Without a password, the remembered credentials will be stored unprotected.",
+        )
+      ) {
+        return;
+      }
+      passkey.removePasskey(localStorage);
+      if (!hasPassword) {
+        localStorage.setItem("tempPassword", masterKey);
+      }
+      setPasskeyEnabled(false);
+      updateStatusText("Passkey removed");
+      return;
+    }
+    try {
+      await passkey.registerPasskey(
+        masterKey,
+        localStorage,
+        sessionStorage.getItem("s3-bucket") || bucketName || "",
+      );
+    } catch (err) {
+      console.error(err);
+      updateStatusText(
+        passkey.passkeyErrorMessage(err, "Could not create passkey"),
+      );
+      return;
+    }
+    // the passkey protects the master key now, don't keep it in plain text
+    localStorage.removeItem("tempPassword");
+    setPasskeyEnabled(true);
+    updateStatusText("Passkey unlock enabled");
+  }
+
   function logout() {
     setS3Client(null);
     setCredentials(null);
     setLoginErrorMessage(null);
     setErrorMessage(null);
+    setPasskeyEnabled(false);
     localStorage.clear();
     sessionStorage.clear();
     db.deleteDatabase();
@@ -1983,6 +2037,21 @@ export function App({ version, appName } = {}) {
                           >
                             Offline Storage
                           </li>
+                          {passkeySupported &&
+                            !!localStorage.getItem("s3-access-key") && (
+                              <li
+                                data-is-more-options-item="true"
+                                className={[
+                                  "border-bottom",
+                                  passkeyEnabled ? "active" : null,
+                                ]
+                                  .filter((v) => !!v)
+                                  .join(" ")}
+                                onClick={togglePasskeyUnlock}
+                              >
+                                Unlock with passkey
+                              </li>
+                            )}
                           <li
                             onClick={() => {
                               pickAndInsertMediaFile({

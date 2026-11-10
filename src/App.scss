@@ -695,6 +695,10 @@ button {
     background-color: var(--primary-color);
     cursor: pointer;
   }
+  button.passkey-button {
+    width: 100%;
+    margin-bottom: 2rem;
+  }
 
   .headline {
     display: grid;

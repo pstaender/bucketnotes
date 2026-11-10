@@ -1,23 +1,97 @@
-export function encrypt(message, sessionStorage, localStorage) {}
+// PBKDF2 iterations for wrapping the master key with the user's password
+// (OWASP recommendation for PBKDF2-HMAC-SHA256). Data encrypted before this
+// was introduced carries no `iterations` field and used LEGACY_ITERATIONS.
+const PASSWORD_ITERATIONS = 600000;
+// The credential items are encrypted with the random 64 char master key, so
+// key stretching adds nothing there; kept at the legacy value for
+// compatibility.
+const LEGACY_ITERATIONS = 100000;
 
+export function generateMasterKey() {
+  return generateSafeRandomString(64);
+}
+
+/**
+ * Stores a new master key ("tempPassword") which is used to encrypt the
+ * credentials in localStorage.
+ *
+ * - With a password, the master key is stored wrapped with the password.
+ * - With `persist`, the master key is stored in plain text in localStorage
+ *   (no real protection, just convenience).
+ * - Otherwise (e.g. passkey only), the caller is responsible for storing the
+ *   master key somewhere (see passkey.js).
+ */
 export async function setEncryptionPassword(
   password,
   localStorage,
   sessionStorage,
+  { masterKey = generateMasterKey(), persist = password === "" } = {},
 ) {
-  const tempPassword = generateSafeRandomString(64);
+  if (password) {
+    const encryptionKey = await encryptText(
+      masterKey,
+      password,
+      PASSWORD_ITERATIONS,
+    );
+    localStorage.setItem("tempPasswordEncrypted", JSON.stringify(encryptionKey));
+  } else {
+    localStorage.removeItem("tempPasswordEncrypted");
+  }
 
-  const persist = password === '';
-
-  let encryptionKey = await encryptText(tempPassword, password);
-  localStorage.setItem("tempPasswordEncrypted", JSON.stringify(encryptionKey));
-
-  sessionStorage.setItem("tempPassword", tempPassword);
+  sessionStorage.setItem("tempPassword", masterKey);
   if (persist) {
-    localStorage.setItem("tempPassword", tempPassword);
+    localStorage.setItem("tempPassword", masterKey);
   } else {
     localStorage.removeItem("tempPassword");
   }
+  return masterKey;
+}
+
+export function getMasterKey(localStorage, sessionStorage) {
+  return (
+    sessionStorage.getItem("tempPassword") ||
+    localStorage.getItem("tempPassword") ||
+    null
+  );
+}
+
+export function hasPasswordProtection(localStorage) {
+  return !!localStorage.getItem("tempPasswordEncrypted");
+}
+
+/**
+ * Unwraps the master key with the password and stores it in the session.
+ * Returns false if the password is wrong.
+ */
+export async function unlockWithPassword(
+  password,
+  localStorage,
+  sessionStorage,
+) {
+  let data;
+  try {
+    data = JSON.parse(localStorage.getItem("tempPasswordEncrypted"));
+  } catch (e) {
+    return false;
+  }
+  if (!data) {
+    return false;
+  }
+  const masterKey = await decryptText(data, password);
+  if (!masterKey) {
+    return false;
+  }
+  if ((data.iterations || LEGACY_ITERATIONS) < PASSWORD_ITERATIONS) {
+    // upgrade data wrapped with the legacy iteration count
+    localStorage.setItem(
+      "tempPasswordEncrypted",
+      JSON.stringify(
+        await encryptText(masterKey, password, PASSWORD_ITERATIONS),
+      ),
+    );
+  }
+  sessionStorage.setItem("tempPassword", masterKey);
+  return true;
 }
 
 export async function encryptLocalStorageItem(
@@ -26,13 +100,10 @@ export async function encryptLocalStorageItem(
   localStorage,
   sessionStorage,
 ) {
-  let tempPassword =
-    sessionStorage.getItem("tempPassword") ||
-    localStorage.getItem("tempPassword");
+  const tempPassword = getMasterKey(localStorage, sessionStorage);
   if (!tempPassword) {
     throw new Error("tempPassword is missing, set with setEncryptionPassword");
   }
-  // todo: check tempPasswordEncrypted
   if (typeof data === "object" && data !== null) {
     data = JSON.stringify(data);
   } else {
@@ -49,12 +120,7 @@ export async function decryptLocalStorageItem(
   localStorage,
   sessionStorage,
 ) {
-  let tempPassword =
-    sessionStorage.getItem("tempPassword") ||
-    localStorage.getItem("tempPassword");
-  if (!tempPassword) {
-    tempPassword = '';
-  }
+  const tempPassword = getMasterKey(localStorage, sessionStorage) || "";
 
   let data = localStorage.getItem(itemKey);
   if (!data) {
@@ -76,12 +142,17 @@ function generateSafeRandomString(length) {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const charactersLength = characters.length;
   let result = "";
-  const randomValues = new Uint8Array(length);
-  crypto.getRandomValues(randomValues); // Populate the array with random values
-
-  for (let i = 0; i < length; i++) {
-    // Map the random byte to an index within the characters string
-    result += characters.charAt(randomValues[i] % charactersLength);
+  // Rejection sampling: only accept bytes below the largest multiple of the
+  // alphabet size, otherwise `byte % charactersLength` is biased
+  const limit = 256 - (256 % charactersLength);
+  const randomValues = new Uint8Array(length * 2);
+  while (result.length < length) {
+    crypto.getRandomValues(randomValues);
+    for (const byte of randomValues) {
+      if (byte < limit && result.length < length) {
+        result += characters.charAt(byte % charactersLength);
+      }
+    }
   }
   return result;
 }
@@ -99,13 +170,13 @@ async function getCryptoKey(password) {
   );
 }
 
-async function deriveKey(password, salt) {
+async function deriveKey(password, salt, iterations) {
   const keyMaterial = await getCryptoKey(password);
   return crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
       salt: salt,
-      iterations: 100000,
+      iterations,
       hash: "SHA-256",
     },
     keyMaterial,
@@ -115,24 +186,15 @@ async function deriveKey(password, salt) {
   );
 }
 
-export async function validateTempPassword(password, localStorage) {
-  let data = localStorage.getItem("tempPasswordEncrypted");
-  if (!data) {
-    return null;
-  }
-  try {
-    data = JSON.parse(data);
-  } catch (e) {
-    return null;
-  }
-  return !!(await decryptText(data, password));
-}
-
-export async function encryptText(text, password) {
+export async function encryptText(
+  text,
+  password,
+  iterations = LEGACY_ITERATIONS,
+) {
   const encoder = new TextEncoder();
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await deriveKey(password, salt);
+  const key = await deriveKey(password, salt, iterations);
 
   const encrypted = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: iv },
@@ -144,6 +206,7 @@ export async function encryptText(text, password) {
     cipherText: arrayBufferToHex(encrypted),
     iv: arrayBufferToHex(iv),
     salt: arrayBufferToHex(salt),
+    iterations,
   };
 }
 
@@ -152,9 +215,10 @@ export async function decryptText(encryptedData, password) {
     return null;
   }
   const { cipherText, iv, salt } = encryptedData;
+  const iterations = encryptedData.iterations || LEGACY_ITERATIONS;
 
   try {
-    const key = await deriveKey(password, hexToArrayBuffer(salt));
+    const key = await deriveKey(password, hexToArrayBuffer(salt), iterations);
     const decrypted = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: hexToArrayBuffer(iv) },
       key,
